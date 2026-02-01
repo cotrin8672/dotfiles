@@ -1,0 +1,49 @@
+model = "gpt-5.2-codex"
+approval_policy = "never"             # 承認をスキップ
+windows_wsl_setup_acknowledged = true
+hide_agent_reasoning = false # TUI（テキストユーザーインターフェース）とcodex execの出力において、推論イベントを表示するようにする
+model_reasoning_effort = "medium"
+web_search = "live"             # モデルによるウェブ検索の実行を許可
+
+[projects.'\\?\C:\Users\gummy\VSCodeProjects\SalesNetwork']
+trust_level = "trusted"
+
+[projects.'\\?\C:\Users\gummy\RustroverProjects\codex']
+trust_level = "trusted"
+
+[projects.'\\?\C:\Users\gummy\IdeaProjects\SophisticatedBackpacks']
+trust_level = "trusted"
+
+[projects.'\\?\C:\Users\gummy\IdeaProjects\SophisticatedMAS']
+trust_level = "trusted"
+
+[projects.'\\?\C:\Users\gummy\VSCodeProjects\SalesPlatform']
+trust_level = "trusted"
+
+[notice]
+hide_full_access_warning = true
+
+[notice.model_migrations]
+"gpt-5.1-codex-max" = "gpt-5.2-codex"
+
+[features]
+shell_snapshot = true                 # 繰り返し実行するコマンドの処理速度を向上
+apply_patch_freeform = true           # フリーフォーム形式のapply_patchツールを利用可能に
+remote_compaction = true              # リモート圧縮を有効に
+remote_models = true                  # 準備状態を表示する前にリモートモデルリストを更新
+shell_tool = true                     # コマンド実行用のデフォルトツール「shell」を有効化
+undo = true                           # ターン単位のUndo機能を有効に
+powershell_utf8 = true                # UTF-8強制(文字化け対策)
+experimental_windows_sandbox = true
+elevated_windows_sandbox = true
+collab = true
+
+[model_providers.glm]
+name = "GLM"
+base_url = "http://127.0.0.1:31415"
+env_key = "GLM_API_KEY"
+wire_api = "responses"
+
+[profiles.glm]
+model_provider = "glm"
+model = "glm-4.7"
