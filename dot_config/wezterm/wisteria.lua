@@ -7,6 +7,7 @@ wisteria.colors = {
   cursor_bg = "#8fa8aa", -- More vivid cyan-gray
   cursor_fg = "#002831",
   cursor_border = "#8fa8aa",
+  compose_cursor = "#E6D5A8",
 
   selection_fg = "#a0b5b5",    -- Brighter selection
   selection_bg = "#003545",    -- Slightly lighter for transparency

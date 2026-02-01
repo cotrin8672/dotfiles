@@ -27,10 +27,11 @@ local mux                            = wezterm.mux
 local ICONS                          = {
     wsl = wezterm.nerdfonts.cod_terminal_ubuntu,
     cmd = wezterm.nerdfonts.oct_terminal,
-    fallback = wezterm.nerdfonts.fa_terminal,}
+    fallback = wezterm.nerdfonts.fa_terminal,
+}
 local ICON_COLORS                    = {
-    wsl = "#DF4E1C",     
-    cmd = "#CCCCCC",     
+    wsl = "#DF4E1C",
+    cmd = "#CCCCCC",
     fallback = "#FFFFFF",
 }
 -- wezterm.on("save_session", function(window) session_manager.save_state(window) end)
@@ -169,10 +170,15 @@ wisteria.colors.tab_bar = {
     background = "none",
 }
 config.colors = wisteria.colors
+
+wezterm.on('update-right-status', function(window, pane)
+    local leader = ''
+    if window:leader_is_active() then
+        leader = 'LEADER'
+    end
+    window:set_right_status(leader)
+end)
+
 status.setup()
 -- and finally, return the configuration to wezterm
 return config
-
-
-
-
