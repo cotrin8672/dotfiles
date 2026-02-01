@@ -7,8 +7,7 @@ local status                         = require 'status'
 local config                         = wezterm.config_builder()
 config.automatically_reload_config   = true
 config.font                          = wezterm.font_with_fallback({
-    { family = "JetBrainsMono Nerd Font", weight = "Bold" },
-    { family = "JetBrainsMonoNL Nerd Font", weight = "Bold" },
+    { family = "JetBrainsMonoNL Nerd Font Mono", weight = "Bold" },
     "Symbols Nerd Font Mono",
     "Nerd Font Symbols",
 })
