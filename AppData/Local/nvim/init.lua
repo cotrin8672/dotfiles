@@ -1,4 +1,4 @@
--- init.lua (minimal lazy.nvim bootstrap)
+﻿-- init.lua (minimal lazy.nvim bootstrap)
 -- 余計なものは入れず、必要な機能だけを手で組む前提の最小構成
 
 -- lazy.nvim のインストール先（標準の data ディレクトリ）
@@ -45,6 +45,21 @@ end
 -- プラグイン管理（lazy.nvim）
 require("lazy").setup({
   spec = {
+    -- 補完（blink.cmp）
+    {
+      "saghen/blink.cmp",
+      version = "1.*", -- 公式のリリースタグを使ってバイナリ自動取得
+      -- 他のプラグインから sources を拡張しやすくする
+      opts_extend = { "sources.default" },
+      opts = {
+        -- 最低限のソースだけ使う
+        sources = {
+          default = { "lsp", "path", "snippets", "buffer" },
+        },
+        -- fuzzy matcher（Rust優先、なければLuaにフォールバック）
+        fuzzy = { implementation = "prefer_rust_with_warning" },
+      },
+    },
     -- カラースキーム（Wisteria）
     {
       "masisz/wisteria.nvim",
@@ -136,18 +151,25 @@ require("lazy").setup({
     {
       -- Mason と lspconfig をつなぐ
       "williamboman/mason-lspconfig.nvim",
-      dependencies = { "williamboman/mason.nvim", "neovim/nvim-lspconfig" },
+      dependencies = { "williamboman/mason.nvim", "neovim/nvim-lspconfig", "saghen/blink.cmp" },
       opts = {
         -- MATLAB LSP を自動インストール対象にする
         ensure_installed = { "matlab_ls" },
         handlers = {
           -- それ以外のサーバはデフォルト設定で起動
           function(server_name)
-            require("lspconfig")[server_name].setup({})
+            local capabilities = vim.lsp.protocol.make_client_capabilities()
+            capabilities = require("blink.cmp").get_lsp_capabilities(capabilities)
+            require("lspconfig")[server_name].setup({
+              capabilities = capabilities,
+            })
           end,
           -- MATLAB LSP のみ個別設定
           ["matlab_ls"] = function()
+            local capabilities = vim.lsp.protocol.make_client_capabilities()
+            capabilities = require("blink.cmp").get_lsp_capabilities(capabilities)
             require("lspconfig").matlab_ls.setup({
+              capabilities = capabilities,
               settings = {
                 MATLAB = {
                   -- MATLAB 本体のパス（必須）
