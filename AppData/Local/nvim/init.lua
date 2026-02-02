@@ -1,4 +1,4 @@
-﻿-- init.lua (minimal lazy.nvim bootstrap)
+-- init.lua (minimal lazy.nvim bootstrap)
 -- 余計なものは入れず、必要な機能だけを手で組む前提の最小構成
 
 -- lazy.nvim のインストール先（標準の data ディレクトリ）
