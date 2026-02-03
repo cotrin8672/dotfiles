@@ -188,5 +188,83 @@ require("lazy").setup({
     },
     -- LSP クライアント側の設定（サーバ定義）
     { "neovim/nvim-lspconfig" },
+
+    -- === おすすめセット（用途別） ===
+    -- 検索 / ナビゲーション
+    {
+      "nvim-telescope/telescope.nvim",
+      dependencies = { "nvim-lua/plenary.nvim" },
+      config = function()
+        require("telescope").setup({})
+        local builtin = require("telescope.builtin")
+        vim.keymap.set("n", "<leader>ff", builtin.find_files)
+        vim.keymap.set("n", "<leader>fg", builtin.live_grep)
+        vim.keymap.set("n", "<leader>fb", builtin.buffers)
+        vim.keymap.set("n", "<leader>fh", builtin.help_tags)
+      end,
+    },
+    {
+      "stevearc/aerial.nvim",
+      opts = {},
+      config = function(_, opts)
+        require("aerial").setup(opts)
+        vim.keymap.set("n", "<leader>o", "<cmd>AerialToggle<CR>")
+      end,
+    },
+    {
+      "akinsho/bufferline.nvim",
+      version = "*",
+      dependencies = { "nvim-tree/nvim-web-devicons" },
+      opts = {},
+    },
+    {
+      "kevinhwang91/nvim-bqf",
+      opts = {},
+    },
+
+    -- 見た目 / 表示
+    { "folke/lsp-colors.nvim", opts = {} },
+    { "norcalli/nvim-colorizer.lua", opts = {} },
+    { "mvllow/modes.nvim", opts = {} },
+    {
+      "goolord/alpha-nvim",
+      config = function()
+        local alpha = require("alpha")
+        local dashboard = require("alpha.themes.dashboard")
+        alpha.setup(dashboard.config)
+      end,
+    },
+    {
+      "petertriho/nvim-scrollbar",
+      opts = {
+        handlers = {
+          search = true,
+        },
+      },
+    },
+    { "lukas-reineke/indent-blankline.nvim", main = "ibl", opts = {} },
+
+    -- 編集支援
+    { "machakann/vim-sandwich" },
+    {
+      "kevinhwang91/nvim-hlslens",
+      opts = {},
+      config = function(_, opts)
+        require("hlslens").setup(opts)
+        local map = vim.keymap.set
+        map("n", "n", "<Cmd>execute('normal! ' .. v:count1 .. 'n')<CR><Cmd>lua require('hlslens').start()<CR>")
+        map("n", "N", "<Cmd>execute('normal! ' .. v:count1 .. 'N')<CR><Cmd>lua require('hlslens').start()<CR>")
+        map("n", "*", "*<Cmd>lua require('hlslens').start()<CR>")
+        map("n", "#", "#<Cmd>lua require('hlslens').start()<CR>")
+        map("n", "g*", "g*<Cmd>lua require('hlslens').start()<CR>")
+        map("n", "g#", "g#<Cmd>lua require('hlslens').start()<CR>")
+      end,
+    },
+    { "akinsho/toggleterm.nvim", version = "*", opts = {} },
+    { "segeljakt/vim-silicon" },
+    { "windwp/nvim-autopairs", opts = {} },
+    { "andymass/vim-matchup" },
+    { "ntpeters/vim-better-whitespace" },
+    { "t9md/vim-quickhl" },
   },
 })

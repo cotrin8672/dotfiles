@@ -4,6 +4,7 @@ windows_wsl_setup_acknowledged = true
 hide_agent_reasoning = false # TUI（テキストユーザーインターフェース）とcodex execの出力において、推論イベントを表示するようにする
 model_reasoning_effort = "medium"
 web_search = "live"             # モデルによるウェブ検索の実行を許可
+personality = "pragmatic"
 
 [projects.'\\?\C:\Users\gummy\VSCodeProjects\SalesNetwork']
 trust_level = "trusted"
@@ -22,6 +23,7 @@ trust_level = "trusted"
 
 [notice]
 hide_full_access_warning = true
+hide_rate_limit_model_nudge = true
 
 [notice.model_migrations]
 "gpt-5.1-codex-max" = "gpt-5.2-codex"
