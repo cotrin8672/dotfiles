@@ -42,7 +42,7 @@ wisteria.colors = {
 }
 
 wisteria.tab_colors = {
-  active_bg = "#7068d0",
+  active_bg = "#6FD0B2",
   inactive_bg = "#6f8f90"
 }
 
