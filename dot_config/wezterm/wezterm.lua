@@ -13,6 +13,7 @@ end
 xdg_config_home = xdg_config_home .. "/.config"
 config.set_environment_variables     = {
     XDG_CONFIG_HOME = xdg_config_home,
+    NU_CONFIG_DIR = xdg_config_home .. "/nushell",
     CHEZMOI_CONFIG_DIR = xdg_config_home .. "/chezmoi",
 }
 config.automatically_reload_config   = true
