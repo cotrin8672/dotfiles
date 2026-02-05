@@ -5,17 +5,6 @@ local status                         = require 'status'
 -- local session_manager                = require("wezterm-session-manager/session-manager")
 -- This will hold the configuration.
 local config                         = wezterm.config_builder()
-local home                           = wezterm.home_dir
-local xdg_config_home                = home
-if wezterm.target_triple:find("windows") then
-    xdg_config_home = home:gsub("\\", "/")
-end
-xdg_config_home = xdg_config_home .. "/.config"
-config.set_environment_variables     = {
-    XDG_CONFIG_HOME = xdg_config_home,
-    NU_CONFIG_DIR = xdg_config_home .. "/nushell",
-    CHEZMOI_CONFIG_DIR = xdg_config_home .. "/chezmoi",
-}
 config.automatically_reload_config   = true
 config.font                          = wezterm.font_with_fallback({
     { family = "JetBrainsMono Nerd Font Mono", weight = "Bold" },

@@ -16,7 +16,6 @@
 #
 # You can remove these comments if you want or leave
 # them for future reference.
-$env.XDG_CONFIG_HOME = $"($env.HOME | str replace '\\' '/')/.config"
 source ~/.cache/starship/init.nu
 
 # use ($nu.default-config-dir | path join mise.nu)
