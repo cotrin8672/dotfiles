@@ -1,29 +1,279 @@
-ï»¿-- Minimal Neovim config with nvim-colorizer.lua
+-- init.lua (minimal lazy.nvim bootstrap)
+-- —]Œv‚È‚à‚Ì‚Í“ü‚ê‚¸A•K—v‚È‹@”\‚¾‚¯‚ğè‚Å‘g‚Ş‘O’ñ‚ÌÅ¬\¬
+
+-- lazy.nvim ‚ÌƒCƒ“ƒXƒg[ƒ‹æi•W€‚Ì data ƒfƒBƒŒƒNƒgƒŠj
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not vim.loop.fs_stat(lazypath) then
-  vim.fn.system({
-    "git",
-    "clone",
-    "--filter=blob:none",
-    "https://github.com/folke/lazy.nvim.git",
-    "--branch=stable",
-    lazypath,
-  })
+if not (vim.uv or vim.loop).fs_stat(lazypath) then
+  -- lazy.nvim ‚ğ‚Ü‚¾“ü‚ê‚Ä‚¢‚È‚¯‚ê‚Î©“®‚Åæ“¾
+  local lazyrepo = "https://github.com/folke/lazy.nvim.git"
+  local out = vim.fn.system({ "git", "clone", "--filter=blob:none", "--branch=stable", lazyrepo, lazypath })
+  if vim.v.shell_error ~= 0 then
+    vim.api.nvim_echo({
+      { "Failed to clone lazy.nvim:\n", "ErrorMsg" },
+      { out, "WarningMsg" },
+      { "\nPress any key to exit..." },
+    }, true, {})
+    vim.fn.getchar()
+    os.exit(1)
+  end
 end
+-- lazy.nvim ‚ğƒ‰ƒ“ƒ^ƒCƒ€ƒpƒX‚É’Ç‰Á
 vim.opt.rtp:prepend(lazypath)
 
--- Required by nvim-colorizer.lua
+-- Šî–{İ’èiÅ’áŒÀj
+vim.g.mapleader = " "
+vim.opt.number = true
 vim.opt.termguicolors = true
 
+-- Mason ‚ª npm ‚ğŒÄ‚×‚é‚æ‚¤‚ÉAmise ‚Ì shims ‚ğ PATH ‚É’Ç‰Á
+-- PowerShell ‚Æ Neovim ‚Ì PATH ‚ªƒYƒŒ‚é‚±‚Æ‚ª‚ ‚é‚½‚ßA‚±‚±‚Å•â³‚·‚é
+local mise_shims = (os.getenv("LOCALAPPDATA") or "") .. "\\mise\\shims"
+if not string.find(vim.env.PATH or "", mise_shims, 1, true) then
+  vim.env.PATH = (vim.env.PATH or "") .. ";" .. mise_shims
+end
+
+-- MATLAB ‚ÌƒCƒ“ƒXƒg[ƒ‹æi©•ª‚ÌŠÂ‹«‚É‡‚í‚¹‚Ä•ÏXj
+local matlab_install = nil
+if vim.fn.has("win32") == 1 then
+  -- Windows ‘¤‚Ì MATLAB ƒpƒX
+  matlab_install = "C:\\Program Files\\MATLAB\\R2022a"
+else
+  -- WSL / Linux ‘¤‚Ì MATLAB ƒpƒX
+  matlab_install = "/usr/local/MATLAB/R2024b"
+end
+
+-- ƒvƒ‰ƒOƒCƒ“ŠÇ—ilazy.nvimj
 require("lazy").setup({
-  {
-    "norcalli/nvim-colorizer.lua",
-    config = function()
-      require("colorizer").setup({
-        "*",
-      }, {
-        names = false,
-      })
-    end,
+  spec = {
+    -- •âŠ®iblink.cmpj
+    {
+      "saghen/blink.cmp",
+      version = "1.*", -- Œö®‚ÌƒŠƒŠ[ƒXƒ^ƒO‚ğg‚Á‚ÄƒoƒCƒiƒŠ©“®æ“¾
+      -- ‘¼‚Ìƒvƒ‰ƒOƒCƒ“‚©‚ç sources ‚ğŠg’£‚µ‚â‚·‚­‚·‚é
+      opts_extend = { "sources.default" },
+      opts = {
+        -- Å’áŒÀ‚Ìƒ\[ƒX‚¾‚¯g‚¤
+        sources = {
+          default = { "lsp", "path", "snippets", "buffer" },
+        },
+        -- fuzzy matcheriRust—DæA‚È‚¯‚ê‚ÎLua‚ÉƒtƒH[ƒ‹ƒoƒbƒNj
+        fuzzy = { implementation = "prefer_rust_with_warning" },
+      },
+    },
+    -- ƒJƒ‰[ƒXƒL[ƒ€iWisteriaj
+    {
+      "masisz/wisteria.nvim",
+      name = "wisteria",
+      lazy = false,
+      priority = 1000,
+      opts = {
+        transparent = true,
+        overrides = function(_colors)
+          return {}
+        end,
+      },
+      config = function(_, opts)
+        require("wisteria").setup(opts)
+        vim.cmd.colorscheme("wisteria")
+      end,
+    },
+    -- LSP ƒT[ƒoŠÇ—iMasonj
+    { "williamboman/mason.nvim", opts = {} },
+    -- ƒXƒe[ƒ^ƒXƒ‰ƒCƒ“ilualinej
+    {
+      "nvim-lualine/lualine.nvim",
+      dependencies = { "nvim-tree/nvim-web-devicons" },
+      opts = {
+        options = {
+          theme = "wisteria",
+          section_separators = "",
+          component_separators = "",
+        },
+      },
+      config = function(_, opts)
+        require("lualine").setup(opts)
+      end,
+    },
+    -- ƒL[“ü—Í‚Ìƒqƒ“ƒg•\¦ikey-menu.nvimj
+    {
+      "emmanueltouzery/key-menu.nvim",
+      config = function()
+        -- ƒL[‘Ò‚¿ŠÔiƒqƒ“ƒg•\¦‚Ìƒ^ƒCƒ~ƒ“ƒOj
+        vim.o.timeoutlen = 300
+        -- <Space>iƒŠ[ƒ_[j‚Åƒqƒ“ƒg‚ğo‚·
+        require("key-menu").set("n", "<Space>")
+      end,
+    },
+    -- ƒRƒƒ“ƒgƒAƒEƒg‘€ìiComment.nvimj
+    {
+      "numToStr/Comment.nvim",
+      opts = {},
+    },
+    -- LSP ‚Ìi’»/’Ê’m•\¦ifidget.nvimj
+    {
+      "j-hui/fidget.nvim",
+      opts = {},
+    },
+    -- ƒtƒ@ƒCƒ‹ƒcƒŠ[ineo-treej
+    {
+      "nvim-neo-tree/neo-tree.nvim",
+      branch = "v3.x",
+      dependencies = {
+        "nvim-lua/plenary.nvim",
+        "nvim-tree/nvim-web-devicons",
+        "MunifTanjim/nui.nvim",
+      },
+      opts = {
+        filesystem = {
+          filtered_items = { hide_dotfiles = false },
+        },
+      },
+      config = function(_, opts)
+        require("neo-tree").setup(opts)
+        -- <leader>e ‚ÅƒcƒŠ[‚Ì•\¦/”ñ•\¦
+        vim.keymap.set("n", "<leader>e", "<cmd>Neotree toggle<CR>")
+      end,
+    },
+    {
+      -- Tree-sitteriƒVƒ“ƒ^ƒbƒNƒXƒnƒCƒ‰ƒCƒg‹­‰»j
+      "nvim-treesitter/nvim-treesitter",
+      build = ":TSUpdate",
+      opts = {
+        -- •K—v‚ÈŒ¾Œê‚¾‚¯ƒCƒ“ƒXƒg[ƒ‹
+        ensure_installed = { "matlab", "markdown", "markdown_inline", "lua" },
+        highlight = { enable = true },
+      },
+      config = function(_, opts)
+        -- V‚µ‚¢ƒGƒ“ƒgƒŠƒ|ƒCƒ“ƒg‚Åİ’è
+        require("nvim-treesitter").setup(opts)
+      end,
+    },
+    {
+      -- Mason ‚Æ lspconfig ‚ğ‚Â‚È‚®
+      "williamboman/mason-lspconfig.nvim",
+      dependencies = { "williamboman/mason.nvim", "neovim/nvim-lspconfig", "saghen/blink.cmp" },
+      opts = {
+        -- MATLAB LSP ‚ğ©“®ƒCƒ“ƒXƒg[ƒ‹‘ÎÛ‚É‚·‚é
+        ensure_installed = { "matlab_ls" },
+        handlers = {
+          -- ‚»‚êˆÈŠO‚ÌƒT[ƒo‚ÍƒfƒtƒHƒ‹ƒgİ’è‚Å‹N“®
+          function(server_name)
+            local capabilities = vim.lsp.protocol.make_client_capabilities()
+            capabilities = require("blink.cmp").get_lsp_capabilities(capabilities)
+            require("lspconfig")[server_name].setup({
+              capabilities = capabilities,
+            })
+          end,
+          -- MATLAB LSP ‚Ì‚İŒÂ•Êİ’è
+          ["matlab_ls"] = function()
+            local capabilities = vim.lsp.protocol.make_client_capabilities()
+            capabilities = require("blink.cmp").get_lsp_capabilities(capabilities)
+            require("lspconfig").matlab_ls.setup({
+              capabilities = capabilities,
+              settings = {
+                MATLAB = {
+                  -- MATLAB –{‘Ì‚ÌƒpƒXi•K{j
+                  installPath = matlab_install,
+                  indexWorkspace = true,
+                  matlabConnectionTiming = "onStart",
+                  telemetry = false,
+                },
+              },
+              -- ’Pˆêƒtƒ@ƒCƒ‹‚Å‚à“®‚©‚µ‚½‚¢ê‡‚Í true
+              single_file_support = true,
+            })
+          end,
+        },
+      },
+    },
+    -- LSP ƒNƒ‰ƒCƒAƒ“ƒg‘¤‚Ìİ’èiƒT[ƒo’è‹`j
+    { "neovim/nvim-lspconfig" },
+
+    -- === ‚¨‚·‚·‚ßƒZƒbƒgi—p“r•Êj ===
+    -- ŒŸõ / ƒiƒrƒQ[ƒVƒ‡ƒ“
+    {
+      "nvim-telescope/telescope.nvim",
+      dependencies = { "nvim-lua/plenary.nvim" },
+      config = function()
+        require("telescope").setup({})
+        local builtin = require("telescope.builtin")
+        vim.keymap.set("n", "<leader>ff", builtin.find_files)
+        vim.keymap.set("n", "<leader>fg", builtin.live_grep)
+        vim.keymap.set("n", "<leader>fb", builtin.buffers)
+        vim.keymap.set("n", "<leader>fh", builtin.help_tags)
+      end,
+    },
+    {
+      "stevearc/aerial.nvim",
+      opts = {},
+      config = function(_, opts)
+        require("aerial").setup(opts)
+        vim.keymap.set("n", "<leader>o", "<cmd>AerialToggle<CR>")
+      end,
+    },
+    {
+      "akinsho/bufferline.nvim",
+      version = "*",
+      dependencies = { "nvim-tree/nvim-web-devicons" },
+      opts = {},
+    },
+    {
+      "kevinhwang91/nvim-bqf",
+      opts = {},
+    },
+
+    -- Œ©‚½–Ú / •\¦
+    { "folke/lsp-colors.nvim", opts = {} },
+    {
+      "norcalli/nvim-colorizer.lua",
+      config = function()
+        require("colorizer").setup({
+          "*",
+        }, {
+          names = false,
+        })
+      end,
+    },
+    { "mvllow/modes.nvim", opts = {} },
+    {
+      "goolord/alpha-nvim",
+      config = function()
+        local alpha = require("alpha")
+        local dashboard = require("alpha.themes.dashboard")
+        alpha.setup(dashboard.config)
+      end,
+    },
+    {
+      "petertriho/nvim-scrollbar",
+      opts = {
+        handlers = {
+          search = true,
+        },
+      },
+    },
+    { "lukas-reineke/indent-blankline.nvim", main = "ibl", opts = {} },
+
+    -- •ÒWx‰‡
+    { "machakann/vim-sandwich" },
+    {
+      "kevinhwang91/nvim-hlslens",
+      opts = {},
+      config = function(_, opts)
+        require("hlslens").setup(opts)
+        local map = vim.keymap.set
+        map("n", "n", "<Cmd>execute('normal! ' .. v:count1 .. 'n')<CR><Cmd>lua require('hlslens').start()<CR>")
+        map("n", "N", "<Cmd>execute('normal! ' .. v:count1 .. 'N')<CR><Cmd>lua require('hlslens').start()<CR>")
+        map("n", "*", "*<Cmd>lua require('hlslens').start()<CR>")
+        map("n", "#", "#<Cmd>lua require('hlslens').start()<CR>")
+        map("n", "g*", "g*<Cmd>lua require('hlslens').start()<CR>")
+        map("n", "g#", "g#<Cmd>lua require('hlslens').start()<CR>")
+      end,
+    },
+    { "akinsho/toggleterm.nvim", version = "*", opts = {} },
+    { "segeljakt/vim-silicon" },
+    { "windwp/nvim-autopairs", opts = {} },
+    { "andymass/vim-matchup" },
+    { "ntpeters/vim-better-whitespace" },
+    { "t9md/vim-quickhl" },
   },
 })
