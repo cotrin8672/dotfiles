@@ -1,0 +1,182 @@
+palette = "wisteria"
+
+# 左：OS/Host/Shell + 作業場所 + Git
+format = """
+[](fg:blue)\
+$os\
+[](fg:blue bg:black)\
+$directory\
+$git_branch\
+$git_status\
+[](fg:black)\
+$fill\
+[](fg:black)\
+$cmd_duration\
+$nodejs\
+$deno\
+$bun\
+$lua\
+$rust\
+$java\
+$kotlin\
+$gradle\
+[](fg:black)\
+\n$character\
+"""
+
+# 右：言語/パッケージ/クラウド + メモリ + 実行時間
+right_format = """
+$memory_usage\
+"""
+
+# ----------------------
+# 基本情報
+# ----------------------
+
+[os]
+disabled = false
+symbols.Windows = "󰖳 "
+symbols.Macos = "󰀵 "
+symbols.Ubuntu = " "
+format = "[$symbol](bg:blue fg:black)"
+
+[directory]
+style = "bg:black fg:blue"
+truncation_length = 7
+truncation_symbol = "  "
+home_symbol = "   ~"
+format = "[$path ]($style)"
+
+# ----------------------
+# Git
+# ----------------------
+
+[git_branch]
+style = "bg:black fg:blue"
+symbol = " "
+truncation_length = 40
+truncation_symbol = ''
+format = "[ $symbol$branch(:$remote_branch) ]($style)"
+
+[git_status]
+style = "bg:black fg:yellow"
+conflicted = '='
+ahead = '⇡${count}'
+behind = '⇣${count}'
+diverged = '⇕'
+up_to_date = '✓'
+untracked = '?'
+modified = '!${count}'
+renamed = '»'
+deleted = '✘'
+format = '[\[$all_status$ahead_behind\] ]($style)'
+
+[fill]
+symbol = '─'
+style = "blue"
+
+# ----------------------
+# 言語・ランタイム
+# ----------------------
+
+[nodejs]
+style = "bg:black fg:cyan"
+format = "[  $version]($style)"
+
+[deno]
+style = "bg:black fg:cyan"
+format = "[   $version]($style)"
+
+[bun]
+style = "bg:black fg:cyan"
+format = "[   $version]($style)"
+
+[lua]
+style = "bg:black fg:cyan"
+format = "[   $version]($style)"
+
+[rust]
+style = "bg:black fg:cyan"
+format = "[  󱘗 $version]($style)"
+
+[java]
+style = "bg:black fg:cyan"
+format = "[   $version]($style)"
+
+[kotlin]
+style = "bg:black fg:cyan"
+format = "[   $version]($style)"
+
+[gradle]
+style = "bg:black fg:cyan"
+format = "[   $version]($style)"
+
+# ----------------------
+# クラウド
+# ----------------------
+
+[aws]
+style = "bg:black fg:cyan"
+format = "[  ($profile )($region)]($style)"
+
+[gcloud]
+style = "bg:black fg:cyan"
+format = "[  ($account@)($project)]($style)"
+
+# ----------------------
+# 状態・負荷
+# ----------------------
+
+[memory_usage]
+disabled = false
+threshold = 75
+style = "fg:bright_black"
+format = "[  $ram ]($style)"
+
+[cmd_duration]
+min_time = 0
+style = "bg:black fg:cyan"
+format = "[  $duration]($style)"
+
+# -------------------
+# プロンプト記号
+# ----------------------
+
+[character]
+success_symbol = "[ ❯](bold blue)"
+error_symbol = "[ ❯](bold red)"
+vimcmd_symbol = "[ ❮](bold bright_black)"
+
+# Palette definitions - matched to wezterm theme colors
+[palettes.wisteria]
+# Primary colors from wezterm
+background = "#001217"
+foreground = "#c5c5c5"
+
+# Normal ANSI colors from wezterm
+black = "#003545"
+red = "#c44f4f"
+green = "#8ab020"
+yellow = "#e6d5a8"
+blue = "#8fadce"
+magenta = "#ddc8f2"
+cyan = "#8ed49a"
+white = "#f5ead5"
+
+# Bright ANSI colors from wezterm
+bright_black = "#5a7580"
+bright_red = "#bd3613"
+bright_green = "#5a7580"
+bright_yellow = "#6a8088"
+bright_blue = "#8fa8aa"
+bright_magenta = "#7068d0"
+bright_cyan = "#a0b5b5"
+bright_white = "#fffdf0"
+
+# Semantic color aliases for starship usage
+text = "#c5c5c5"
+base = "#001217"
+surface0 = "#003545"
+surface1 = "#5a7580"
+cursor = "#8fa8aa"
+selection = "#a0b5b5"

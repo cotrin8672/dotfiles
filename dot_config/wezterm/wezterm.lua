@@ -8,10 +8,10 @@ local config                         = wezterm.config_builder()
 config.automatically_reload_config   = true
 config.font                          = wezterm.font_with_fallback({
     { family = "JetBrainsMono Nerd Font Mono", weight = "Bold" },
-    "Symbols Nerd Font Mono",
-    "Nerd Font Symbols",
+    "Symbols Nerd Font Mono"
+    -- "Nerd Font Symbols",
 })
-config.font_size                     = 10
+config.font_size                     = 10.5
 config.use_ime                       = true
 config.window_background_opacity     = 0.75
 config.macos_window_background_blur  = 20
@@ -23,6 +23,8 @@ config.cursor_blink_ease_out         = "Constant"
 config.use_ime                       = true
 config.ime_preedit_rendering         = "Builtin"
 config.show_close_tab_button_in_tabs = false
+config.custom_block_glyphs           = false
+
 local mux                            = wezterm.mux
 local ICONS                          = {
     wsl = wezterm.nerdfonts.cod_terminal_ubuntu,
@@ -180,5 +182,5 @@ wezterm.on('update-right-status', function(window, pane)
 end)
 
 status.setup()
--- and finally, return the configuration to wezterm
+
 return config
