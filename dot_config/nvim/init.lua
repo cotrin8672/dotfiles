@@ -14,11 +14,29 @@ vim.opt.rtp:prepend(lazypath)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
+if vim.fn.executable('npm') == 0 then
+  local node_bins = vim.fn.glob(vim.fn.expand('~/.local/share/mise/installs/node/*/bin'), true, true)
+  if #node_bins > 0 then
+    table.sort(node_bins)
+    vim.env.PATH = node_bins[#node_bins] .. ':' .. vim.env.PATH
+  end
+end
+
 vim.opt.number = true
 vim.opt.relativenumber = false
 vim.opt.termguicolors = true
 vim.opt.updatetime = 300
 vim.opt.signcolumn = 'yes'
+
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = { 'javascript', 'javascriptreact', 'typescript', 'typescriptreact', 'tsx', 'jsx' },
+  callback = function()
+    vim.opt_local.shiftwidth = 2
+    vim.opt_local.tabstop = 2
+    vim.opt_local.softtabstop = 2
+    vim.opt_local.expandtab = true
+  end,
+})
 
 vim.keymap.set('i', 'jj', '<Esc>', { noremap = true, silent = true })
 vim.keymap.set('n', '<M-h>', '<C-w>h', { noremap = true, silent = true })
@@ -27,6 +45,10 @@ vim.keymap.set('n', '<M-k>', '<C-w>k', { noremap = true, silent = true })
 vim.keymap.set('n', '<M-l>', '<C-w>l', { noremap = true, silent = true })
 
 require('lazy').setup({
+  {
+    'tpope/vim-sleuth',
+    lazy = false,
+  },
   {
     'masisz/wisteria.nvim',
     name = 'wisteria',
@@ -51,6 +73,16 @@ require('lazy').setup({
         ensure_installed = {
           'rust_analyzer',
           'ts_ls',
+          'html',
+          'cssls',
+          'lua_ls',
+          'kotlin_lsp',
+          'jdtls',
+          'taplo',
+          'jsonls',
+          'marksman',
+          'gradle_ls',
+          'biome',
         },
       })
 
@@ -70,7 +102,20 @@ require('lazy').setup({
         single_file_support = true,
       })
 
-      vim.lsp.enable({ 'rust_analyzer', 'ts_ls' })
+      vim.lsp.enable({
+        'rust_analyzer',
+        'ts_ls',
+        'html',
+        'cssls',
+        'lua_ls',
+        'kotlin_lsp',
+        'jdtls',
+        'taplo',
+        'jsonls',
+        'marksman',
+        'gradle_ls',
+        'biome',
+      })
       vim.api.nvim_create_autocmd('LspAttach', {
         callback = function(args)
           local client = vim.lsp.get_client_by_id(args.data.client_id)
@@ -116,9 +161,23 @@ require('lazy').setup({
       'nvim-tree/nvim-web-devicons',
     },
     config = function()
+      local function short_ft()
+        local ft = vim.bo.filetype
+        if ft == 'typescriptreact' then
+          return 'tsx'
+        end
+        if ft == 'javascriptreact' then
+          return 'jsx'
+        end
+        return ft
+      end
+
       require('lualine').setup({
         options = {
           theme = 'wisteria',
+        },
+        sections = {
+          lualine_x = { 'encoding', 'fileformat', short_ft },
         },
       })
     end,
@@ -130,6 +189,9 @@ require('lazy').setup({
       require('hlchunk').setup({
         indent = {
           enable = true,
+          chars = {
+            '│',
+          },
         },
         chunk = {
           enable = false,
@@ -138,16 +200,7 @@ require('lazy').setup({
           enable = false,
         },
         blank = {
-          enable = true,
-          chars = {
-            ' ',
-          },
-          style = {
-            { bg = '#434437' },
-            { bg = '#2f4440' },
-            { bg = '#433054' },
-            { bg = '#284251' },
-          },
+          enable = false,
         },
       })
     end,
