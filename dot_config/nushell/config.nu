@@ -16,7 +16,7 @@
 #
 # You can remove these comments if you want or leave
 # them for future reference.
-source ~/.cache/starship/init.nu
+source ~/.config/nushell/starship.nu
 
 # use ($nu.default-config-dir | path join mise.nu)
 
