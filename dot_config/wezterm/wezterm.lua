@@ -14,6 +14,7 @@ config.font                          = wezterm.font_with_fallback({
 config.font_size                     = 10.5
 config.use_ime                       = true
 config.window_background_opacity     = 0.75
+config.front_end                     = "WebGpu"
 config.macos_window_background_blur  = 20
 config.window_decorations            = "RESIZE"
 config.default_cursor_style          = "BlinkingBlock"
@@ -172,14 +173,6 @@ wisteria.colors.tab_bar = {
     background = "none",
 }
 config.colors = wisteria.colors
-
-wezterm.on('update-right-status', function(window, pane)
-    local leader = ''
-    if window:leader_is_active() then
-        leader = 'LEADER'
-    end
-    window:set_right_status(leader)
-end)
 
 status.setup()
 

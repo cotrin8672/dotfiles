@@ -31,9 +31,3 @@ if ('Path' in $env) {
     # OS 向けの文字列も同期
     $env.Path = ($env.PATH | str join ';')
 }
-
-$env.config = ($env.config | upsert hooks.env_change.PWD [
-    { ||
-        try { ^mise env --json | from json | reject Path | load-env }
-    }
-])

@@ -71,25 +71,9 @@ local function cwd_path(pane, wezterm)
 end
 
 function M.setup()
-  local calendar_icon = wezterm.nerdfonts.md_calendar_month
-  local clock_icon = wezterm.nerdfonts.md_clock_outline
-  local explorer_icon = wezterm.nerdfonts.fa_folder_open
-  wezterm.on('update-right-status', function(window, pane)
-    local cwd = cwd_path(pane, wezterm)
-    window:set_right_status(wezterm.format {
-      { Foreground = { Color = '#7fc7ff' } },
-      { Text = explorer_icon .. ' ' },
-      { Foreground = { Color = '#9a9eab' } },
-      { Text = cwd .. '   ' },
-      { Foreground = { Color = '#f2b95f' } },
-      { Text = calendar_icon .. ' ' },
-      { Foreground = { Color = '#9a9eab' } },
-      { Text = wezterm.strftime '%a %b %-d' .. '   ' },
-      { Foreground = { Color = '#8bd5ca' } },
-      { Text = clock_icon .. ' ' },
-      { Foreground = { Color = '#9a9eab' } },
-      { Text = wezterm.strftime '%H:%M' },
-    })
+  wezterm.on('update-right-status', function(window, _pane)
+    local leader = window:leader_is_active() and 'LEADER' or ''
+    window:set_right_status(leader)
   end)
 end
 
