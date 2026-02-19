@@ -1,0 +1,7 @@
+[tools]
+bun = "latest"
+node = "22"
+"npm:tree-sitter-cli" = "latest"
+"npm:typescript" = "latest"
+"npm:typescript-language-server" = "latest"
+pnpm = "latest"
