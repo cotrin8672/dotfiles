@@ -67,41 +67,7 @@ require('lazy').setup({
   },
   {
     'neovim/nvim-lspconfig',
-    dependencies = {
-      {
-        'williamboman/mason.nvim',
-        config = function()
-          require('mason').setup({
-            ui = {
-              check_outdated_packages_on_open = false,
-            },
-          })
-        end,
-      },
-      { 'williamboman/mason-lspconfig.nvim' },
-    },
     config = function()
-      local function ts_root_dir(fname)
-        return vim.fs.root(fname, { 'tsconfig.json', 'package.json', 'jsconfig.json' })
-      end
-
-      require('mason-lspconfig').setup({
-        ensure_installed = {
-          'rust_analyzer',
-          'ts_ls',
-          'html',
-          'cssls',
-          'lua_ls',
-          'kotlin_lsp',
-          'jdtls',
-          'taplo',
-          'jsonls',
-          'marksman',
-          'gradle_ls',
-          'biome',
-        },
-      })
-
       vim.lsp.config('rust_analyzer', {
         settings = {
           ['rust-analyzer'] = {
@@ -109,15 +75,6 @@ require('lazy').setup({
             checkOnSave = { command = 'clippy' },
           },
         },
-      })
-
-      vim.lsp.config('ts_ls', {
-        cmd = { 'pnpm', 'exec', 'typescript-language-server', '--stdio' },
-        root_dir = ts_root_dir,
-        single_file_support = true,
-        on_new_config = function(new_config, root_dir)
-          new_config.cmd_cwd = root_dir
-        end,
       })
 
       vim.lsp.enable({
@@ -159,11 +116,138 @@ require('lazy').setup({
       require('toggleterm').setup({
         direction = 'float',
         close_on_exit = false,
-        shell = 'C:/Users/combl/scoop/shims/nu.exe',
+        shell = 'nu',
       })
       vim.keymap.set('n', '<leader>f', '<cmd>ToggleTerm<cr>', { noremap = true, silent = true })
       vim.keymap.set('t', '<Esc>', [[<C-\><C-n>]], { noremap = true, silent = true })
       vim.keymap.set('t', 'jj', [[<C-\><C-n>]], { noremap = true, silent = true })
+    end,
+  },
+  {
+    'simeji/winresizer',
+    config = function()
+      vim.keymap.set('n', '<leader>wr', '<cmd>WinResizerStartResize<cr>', { noremap = true, silent = true })
+    end,
+  },
+  {
+    'windwp/nvim-autopairs',
+    event = 'InsertEnter',
+    config = function()
+      require('nvim-autopairs').setup({})
+    end,
+  },
+  {
+    'pocco81/auto-save.nvim',
+    config = function()
+      require('auto-save').setup({})
+    end,
+  },
+  {
+    'ray-x/lsp_signature.nvim',
+    event = 'LspAttach',
+    config = function()
+      require('lsp_signature').setup({})
+    end,
+  },
+  {
+    'y3owk1n/undo-glow.nvim',
+    version = '*',
+    event = 'VeryLazy',
+    opts = {
+      animation = {
+        enabled = true,
+        duration = 200,
+        animation_type = 'fade',
+        window_scoped = true,
+      },
+      priority = 2048 * 3,
+    },
+    keys = {
+      {
+        'u',
+        function()
+          require('undo-glow').undo()
+        end,
+        mode = 'n',
+        desc = 'Undo with glow',
+        noremap = true,
+      },
+      {
+        'U',
+        function()
+          require('undo-glow').redo()
+        end,
+        mode = 'n',
+        desc = 'Redo with glow',
+        noremap = true,
+      },
+      {
+        'p',
+        function()
+          require('undo-glow').paste_below()
+        end,
+        mode = 'n',
+        desc = 'Paste below with glow',
+        noremap = true,
+      },
+      {
+        'P',
+        function()
+          require('undo-glow').paste_above()
+        end,
+        mode = 'n',
+        desc = 'Paste above with glow',
+        noremap = true,
+      },
+      {
+        'n',
+        function()
+          require('undo-glow').search_next()
+        end,
+        mode = 'n',
+        desc = 'Search next with glow',
+        noremap = true,
+      },
+      {
+        'N',
+        function()
+          require('undo-glow').search_prev()
+        end,
+        mode = 'n',
+        desc = 'Search prev with glow',
+        noremap = true,
+      },
+      {
+        '*',
+        function()
+          require('undo-glow').search_star()
+        end,
+        mode = 'n',
+        desc = 'Search word with glow',
+        noremap = true,
+      },
+      {
+        '#',
+        function()
+          require('undo-glow').search_hash()
+        end,
+        mode = 'n',
+        desc = 'Search word backward with glow',
+        noremap = true,
+      },
+    },
+  },
+  {
+    'TaDaa/vimade',
+    event = 'VeryLazy',
+    config = function()
+      require('vimade').setup({
+        recipe = { 'default', { animate = false } },
+        ncmode = 'windows',
+        fadelevel = 0.4,
+        tint = {},
+        basebg = '',
+      })
     end,
   },
   {
@@ -325,7 +409,7 @@ require('lazy').setup({
           textobject = "",
           max_file_size = 1024 * 1024,
           error_sign = true,
-          duration = 200,
+          duration = 0,
           delay = 300,
         },
         line_num = {
