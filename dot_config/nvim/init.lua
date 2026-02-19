@@ -298,7 +298,7 @@ require('lazy').setup({
             { fg = "#806d9c" },
             { fg = "#c21f30" },
           },
-          use_treesitter = false,
+          use_treesitter = true,
           chars = {
             horizontal_line = "─",
             vertical_line = "│",
@@ -350,6 +350,83 @@ require('lazy').setup({
         highlight = {
           enable = true,
           additional_vim_regex_highlighting = false,
+        },
+      })
+    end,
+  },
+  {
+    'HiPhish/rainbow-delimiters.nvim',
+    dependencies = { 'nvim-treesitter/nvim-treesitter' },
+    config = function()
+      -- Defaults are sensible; keep explicit config minimal for clarity.
+      local rainbow_delimiters = require('rainbow-delimiters')
+      ---@type rainbow_delimiters.config
+      vim.g.rainbow_delimiters = {
+        strategy = {
+          [''] = rainbow_delimiters.strategy['global'],
+          vim = rainbow_delimiters.strategy['local'],
+        },
+        query = {
+          [''] = 'rainbow-delimiters',
+          lua = 'rainbow-blocks',
+        },
+        highlight = {
+          'RainbowDelimiterRed',
+          'RainbowDelimiterYellow',
+          'RainbowDelimiterBlue',
+          'RainbowDelimiterOrange',
+          'RainbowDelimiterGreen',
+          'RainbowDelimiterViolet',
+          'RainbowDelimiterCyan',
+        },
+      }
+    end,
+  },
+  {
+    'RRethy/vim-illuminate',
+  },
+  {
+    'kevinhwang91/nvim-hlslens',
+    config = function()
+      require('hlslens').setup()
+      local kopts = { noremap = true, silent = true }
+      vim.api.nvim_set_keymap(
+        'n',
+        'n',
+        [[<Cmd>execute('normal! ' . v:count1 . 'n')<CR><Cmd>lua require('hlslens').start()<CR>]],
+        kopts
+      )
+      vim.api.nvim_set_keymap(
+        'n',
+        'N',
+        [[<Cmd>execute('normal! ' . v:count1 . 'N')<CR><Cmd>lua require('hlslens').start()<CR>]],
+        kopts
+      )
+      vim.api.nvim_set_keymap('n', '*', [[*<Cmd>lua require('hlslens').start()<CR>]], kopts)
+      vim.api.nvim_set_keymap('n', '#', [[#<Cmd>lua require('hlslens').start()<CR>]], kopts)
+      vim.api.nvim_set_keymap('n', 'g*', [[g*<Cmd>lua require('hlslens').start()<CR>]], kopts)
+      vim.api.nvim_set_keymap('n', 'g#', [[g#<Cmd>lua require('hlslens').start()<CR>]], kopts)
+      vim.api.nvim_set_keymap('n', '<leader>l', '<Cmd>noh<CR>', kopts)
+    end,
+  },
+  {
+    'haya14busa/vim-edgemotion',
+    config = function()
+      local map = vim.keymap.set
+      local key_opts = { noremap = true, silent = true }
+      map('n', '<C-j>', '<Plug>(edgemotion-j)', key_opts)
+      map('n', '<C-k>', '<Plug>(edgemotion-k)', key_opts)
+    end,
+  },
+  {
+    'windwp/nvim-ts-autotag',
+    dependencies = { 'nvim-treesitter/nvim-treesitter' },
+    config = function()
+      require('nvim-ts-autotag').setup({
+        opts = {
+          enable_close = true,
+          enable_rename = true,
+          enable_close_on_slash = false,
         },
       })
     end,
