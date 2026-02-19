@@ -1,7 +1,16 @@
 [tools]
 bun = "latest"
+lua-language-server = "latest"
 node = "22"
 "npm:tree-sitter-cli" = "latest"
 "npm:typescript" = "latest"
 "npm:typescript-language-server" = "latest"
+"npm:vscode-langservers-extracted" = "latest"
+"npm:yaml-language-server" = "latest"
 pnpm = "latest"
+rust-analyzer = "latest"
+taplo = "latest"
+"http:kotlin-lsp"= { version = "261.13587.0", url = "https://download-cdn.jetbrains.com/kotlin-lsp/261.13587.0/kotlin-lsp-261.13587.0-win-x64.zip", bin_path = "." }
+
+[settings]
+experimental = true
