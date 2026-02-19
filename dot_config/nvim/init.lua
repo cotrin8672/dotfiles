@@ -100,6 +100,9 @@ require('lazy').setup({
           new_config.cmd_cwd = root_dir
         end,
       })
+      vim.lsp.config('kotlin_lsp', {
+        cmd = { 'kotlin-lsp' },
+      })
 
       vim.lsp.enable({
         'rust_analyzer',
@@ -320,6 +323,8 @@ require('lazy').setup({
   },
   {
     'nvim-treesitter/nvim-treesitter',
+    branch = 'master',
+    lazy = false,
     build = ':TSUpdate',
     config = function()
       local ok, configs = pcall(require, 'nvim-treesitter.configs')
@@ -369,6 +374,76 @@ require('lazy').setup({
           block = '<leader>b',
         },
       })
+    end,
+  },
+  {
+    'JoosepAlviste/nvim-ts-context-commentstring',
+    config = function()
+      require('ts_context_commentstring').setup({
+        enable_autocmd = false,
+      })
+    end,
+  },
+  {
+    'nvim-treesitter/nvim-treesitter-textobjects',
+    dependencies = { 'nvim-treesitter/nvim-treesitter' },
+    config = function()
+      local ok, configs = pcall(require, 'nvim-treesitter.configs')
+      if not ok then
+        return
+      end
+      configs.setup({
+        textobjects = {
+          select = {
+            enable = true,
+            lookahead = true,
+            keymaps = {
+              ['af'] = '@function.outer',
+              ['if'] = '@function.inner',
+              ['ac'] = '@class.outer',
+              ['ic'] = '@class.inner',
+              ['aa'] = '@parameter.outer',
+              ['ia'] = '@parameter.inner',
+            },
+          },
+          move = {
+            enable = true,
+            set_jumps = true,
+            goto_next_start = {
+              [']m'] = '@function.outer',
+              [']]'] = '@class.outer',
+            },
+            goto_next_end = {
+              [']M'] = '@function.outer',
+              [']['] = '@class.outer',
+            },
+            goto_previous_start = {
+              ['[m'] = '@function.outer',
+              ['[['] = '@class.outer',
+            },
+            goto_previous_end = {
+              ['[M'] = '@function.outer',
+              ['[]'] = '@class.outer',
+            },
+          },
+        },
+      })
+    end,
+  },
+  {
+    'nvim-treesitter/nvim-treesitter-context',
+    dependencies = { 'nvim-treesitter/nvim-treesitter' },
+    opts = {
+      max_lines = 3,
+    },
+  },
+  {
+    'rainbowhxch/accelerated-jk.nvim',
+    config = function()
+      local map = vim.keymap.set
+      local key_opts = { noremap = true, silent = true }
+      map('n', 'j', '<Plug>(accelerated_jk_gj)', key_opts)
+      map('n', 'k', '<Plug>(accelerated_jk_gk)', key_opts)
     end,
   },
   {
