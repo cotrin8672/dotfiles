@@ -22,6 +22,43 @@ vim.opt.signcolumn = 'yes'
 vim.opt.clipboard = 'unnamedplus'
 vim.opt.laststatus = 3
 
+local function run_silent(cmd)
+  if vim.system then
+    vim.system(cmd, { text = false }, function() end)
+    return
+  end
+  vim.fn.jobstart(cmd, { detach = true })
+end
+
+local function ime_off()
+  local is_windows = vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1
+  local is_wsl = vim.fn.has('wsl') == 1
+
+  if is_windows or is_wsl then
+    local zenhan = vim.g.zenhan_exe_path or 'zenhan.exe'
+    if vim.fn.executable(zenhan) == 1 then
+      run_silent({ zenhan, '0' })
+    end
+    return
+  end
+
+  if vim.fn.executable('fcitx5-remote') == 1 then
+    run_silent({ 'fcitx5-remote', '-c' })
+    return
+  end
+  if vim.fn.executable('fcitx-remote') == 1 then
+    run_silent({ 'fcitx-remote', '-c' })
+    return
+  end
+  if vim.fn.executable('ibus') == 1 then
+    run_silent({ 'ibus', 'engine', 'xkb:us::eng' })
+  end
+end
+
+vim.api.nvim_create_autocmd({ 'InsertLeave', 'FocusGained' }, {
+  callback = ime_off,
+})
+
 vim.api.nvim_create_autocmd('FileType', {
   pattern = { 'javascript', 'javascriptreact', 'typescript', 'typescriptreact', 'tsx', 'jsx' },
   callback = function()
