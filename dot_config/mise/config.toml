@@ -11,6 +11,7 @@ pnpm = "latest"
 rust-analyzer = "latest"
 taplo = "latest"
 "http:kotlin-lsp"= { version = "261.13587.0", url = "https://download-cdn.jetbrains.com/kotlin-lsp/261.13587.0/kotlin-lsp-261.13587.0-win-x64.zip", bin_path = "." }
+"npm:@openai/codex" = "latest"
 
 [settings]
 experimental = true

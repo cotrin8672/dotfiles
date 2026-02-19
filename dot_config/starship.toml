@@ -8,25 +8,8 @@ $os\
 $directory\
 $git_branch\
 $git_status\
-[](fg:black)\
-$fill\
-[](fg:black)\
-$cmd_duration\
-$nodejs\
-$deno\
-$bun\
-$lua\
-$rust\
-$java\
-$kotlin\
-$gradle\
 [](fg:black)\
 \n$character\
-"""
-
-# 右：言語/パッケージ/クラウド + メモリ + 実行時間
-right_format = """
-$memory_usage\
 """
 
 # ----------------------
@@ -70,10 +53,6 @@ modified = '!${count}'
 renamed = '»'
 deleted = '✘'
 format = '[\[$all_status$ahead_behind\] ]($style)'
-
-[fill]
-symbol = '─'
-style = "blue"
 
 # ----------------------
 # 言語・ランタイム
@@ -126,12 +105,6 @@ format = "[  ($account@)($project)]($style)"
 # ----------------------
 # 状態・負荷
 # ----------------------
-
-[memory_usage]
-disabled = false
-threshold = 75
-style = "fg:bright_black"
-format = "[  $ram ]($style)"
 
 [cmd_duration]
 min_time = 0
