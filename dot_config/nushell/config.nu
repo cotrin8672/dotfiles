@@ -19,4 +19,15 @@
 source ~/.config/nushell/starship.nu
 
 use ($nu.default-config-dir | path join mise.nu)
-try { ^mise env --json | from json | load-env }
+
+if ('Path' in $env) {
+    # Windows式の ; 区切り文字列をリストに変換
+    $env.PATH = (
+        $env.Path
+        | str replace --all '"' ''
+        | split row ';'
+        | where {|p| $p != ''}
+    )
+    # OS 向けの文字列も同期
+    $env.Path = ($env.PATH | str join ';')
+}

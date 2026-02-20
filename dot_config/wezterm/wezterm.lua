@@ -6,24 +6,21 @@ local status                         = require 'status'
 -- This will hold the configuration.
 local config                         = wezterm.config_builder()
 config.automatically_reload_config   = true
-config.check_for_updates             = false
 config.font                          = wezterm.font_with_fallback({
-    { family = "JetBrainsMono Nerd Font Mono" },
+    "JetBrains Mono",
     "Symbols Nerd Font Mono"
     -- "Nerd Font Symbols",
 })
 config.font_size                     = 10.5
 config.use_ime                       = true
 config.window_background_opacity     = 0.75
-config.front_end                     = "WebGpu"
-if wezterm.target_triple:find("apple") then
-    config.macos_window_background_blur = 20
-end
+config.macos_window_background_blur  = 20
 config.window_decorations            = "RESIZE"
 config.default_cursor_style          = "BlinkingBlock"
 config.cursor_blink_rate             = 500
 config.cursor_blink_ease_in          = "Constant"
 config.cursor_blink_ease_out         = "Constant"
+config.use_ime                       = true
 config.ime_preedit_rendering         = "Builtin"
 config.show_close_tab_button_in_tabs = false
 config.custom_block_glyphs           = false
@@ -175,6 +172,14 @@ wisteria.colors.tab_bar = {
     background = "none",
 }
 config.colors = wisteria.colors
+
+wezterm.on('update-right-status', function(window, pane)
+    local leader = ''
+    if window:leader_is_active() then
+        leader = 'LEADER'
+    end
+    window:set_right_status(leader)
+end)
 
 status.setup()
 

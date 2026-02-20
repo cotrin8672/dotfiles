@@ -40,6 +40,7 @@ powershell_utf8 = true                # UTF-8強制(文字化け対策)
 experimental_windows_sandbox = true
 elevated_windows_sandbox = true
 collab = true
+multi_agent = true
 
 [model_providers.glm]
 name = "GLM"

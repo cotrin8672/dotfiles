@@ -1,4 +1,17 @@
-﻿local lazypath = vim.fn.stdpath('data') .. '/lazy/lazy.nvim'
+-- Disable unused builtin plugins early.
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+vim.g.loaded_matchit = 1
+vim.g.loaded_gzip = 1
+vim.g.loaded_zipPlugin = 1
+vim.g.loaded_tarPlugin = 1
+vim.g.loaded_tutor_mode_plugin = 1
+vim.g.loaded_2html_plugin = 1
+vim.g.loaded_spellfile_plugin = 1
+vim.g.loaded_remote_plugins = 1
+vim.g.loaded_man = 1
+
+local lazypath = vim.fn.stdpath('data') .. '/lazy/lazy.nvim'
 if not vim.loop.fs_stat(lazypath) then
   vim.fn.system({
     'git',
@@ -11,6 +24,10 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
+if vim.loader then
+  vim.loader.enable()
+end
+
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
@@ -21,6 +38,10 @@ vim.opt.updatetime = 300
 vim.opt.signcolumn = 'yes'
 vim.opt.clipboard = 'unnamedplus'
 vim.opt.laststatus = 3
+
+if vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1 then
+  vim.g.sqlite_clib_path = vim.fn.stdpath('data') .. '/sqlite/sqlite3.dll'
+end
 
 local function run_silent(cmd)
   if vim.system then
@@ -74,17 +95,7 @@ vim.keymap.set('n', '<M-h>', '<C-w>h', { noremap = true, silent = true })
 vim.keymap.set('n', '<M-j>', '<C-w>j', { noremap = true, silent = true })
 vim.keymap.set('n', '<M-k>', '<C-w>k', { noremap = true, silent = true })
 vim.keymap.set('n', '<M-l>', '<C-w>l', { noremap = true, silent = true })
-vim.keymap.set('n', 'gd', '<cmd>Lspsaga goto_definition<cr>', { noremap = true, silent = true })
-vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, { noremap = true, silent = true })
-vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, { noremap = true, silent = true })
-vim.keymap.set('n', 'gr', vim.lsp.buf.references, { noremap = true, silent = true })
-vim.keymap.set('n', 'K', vim.lsp.buf.hover, { noremap = true, silent = true })
-vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, { noremap = true, silent = true })
-vim.keymap.set('n', '<leader>ca', '<cmd>Lspsaga code_action<cr>', { noremap = true, silent = true })
-vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { noremap = true, silent = true })
-vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { noremap = true, silent = true })
-vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { noremap = true, silent = true })
-vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { noremap = true, silent = true })
+vim.keymap.set('n', '<leader>x', '<Cmd>BufferClose<CR>', { noremap = true, silent = true })
 
 require('lazy').setup({
   {
@@ -94,16 +105,22 @@ require('lazy').setup({
     'masisz/wisteria.nvim',
     name = 'wisteria',
     priority = 1000,
+    event = 'VimEnter',
     opts = {
       transparent = true,
     },
     config = function(_, opts)
       require('wisteria').setup(opts)
       vim.cmd('colorscheme wisteria')
+      vim.api.nvim_set_hl(0, 'FidgetTitle', { link = 'Title' })
+      vim.api.nvim_set_hl(0, 'FidgetTask', { link = 'Normal' })
+      vim.api.nvim_set_hl(0, 'FidgetProgress', { link = 'Normal' })
+      vim.api.nvim_set_hl(0, 'FidgetIcon', { link = 'Special' })
     end,
   },
   {
     'neovim/nvim-lspconfig',
+    event = 'BufReadPre',
     config = function()
       local function ts_root_dir(bufnr, on_dir)
         local fname = vim.api.nvim_buf_get_name(bufnr)
@@ -158,10 +175,24 @@ require('lazy').setup({
       vim.api.nvim_create_autocmd('LspAttach', {
         callback = function(args)
           local client = vim.lsp.get_client_by_id(args.data.client_id)
-          if not client or client.name ~= 'rust_analyzer' then
+          if not client then
             return
           end
-          if client.supports_method('textDocument/formatting') then
+
+          local key_opts = { noremap = true, silent = true, buffer = args.buf }
+          vim.keymap.set('n', 'gd', '<cmd>Lspsaga goto_definition<cr>', key_opts)
+          vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, key_opts)
+          vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, key_opts)
+          vim.keymap.set('n', 'gr', vim.lsp.buf.references, key_opts)
+          vim.keymap.set('n', 'K', vim.lsp.buf.hover, key_opts)
+          vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, key_opts)
+          vim.keymap.set('n', '<leader>ca', '<cmd>Lspsaga code_action<cr>', key_opts)
+          vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, key_opts)
+          vim.keymap.set('n', ']d', vim.diagnostic.goto_next, key_opts)
+          vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, key_opts)
+          vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, key_opts)
+
+          if client.name == 'rust_analyzer' and client.supports_method('textDocument/formatting') then
             vim.api.nvim_create_autocmd('BufWritePre', {
               buffer = args.buf,
               callback = function()
@@ -176,13 +207,16 @@ require('lazy').setup({
   {
     'akinsho/toggleterm.nvim',
     version = '*',
+    cmd = 'ToggleTerm',
+    keys = {
+      { '<leader>f', '<cmd>ToggleTerm<cr>' },
+    },
     config = function()
       require('toggleterm').setup({
         direction = 'float',
         close_on_exit = false,
         shell = 'C:/Users/combl/scoop/shims/nu.exe',
       })
-      vim.keymap.set('n', '<leader>f', '<cmd>ToggleTerm<cr>', { noremap = true, silent = true })
       vim.keymap.set('t', '<Esc>', [[<C-\><C-n>]], { noremap = true, silent = true })
       vim.keymap.set('t', 'jj', [[<C-\><C-n>]], { noremap = true, silent = true })
     end,
@@ -190,6 +224,10 @@ require('lazy').setup({
   {
     'nvim-neo-tree/neo-tree.nvim',
     branch = 'v3.x',
+    cmd = 'Neotree',
+    keys = {
+      { '<leader>e', '<cmd>Neotree toggle<cr>' },
+    },
     dependencies = {
       'nvim-lua/plenary.nvim',
       'nvim-tree/nvim-web-devicons',
@@ -197,16 +235,11 @@ require('lazy').setup({
     },
     config = function()
       require('neo-tree').setup({})
-      vim.keymap.set('n', '<leader>e', '<cmd>Neotree toggle<cr>', { noremap = true, silent = true })
-      vim.api.nvim_create_autocmd('VimEnter', {
-        callback = function()
-          vim.cmd('Neotree show')
-        end,
-      })
     end,
   },
   {
     'nvim-lualine/lualine.nvim',
+    event = 'VeryLazy',
     dependencies = {
       'nvim-tree/nvim-web-devicons',
     },
@@ -233,7 +266,70 @@ require('lazy').setup({
     end,
   },
   {
+    'nvim-telescope/telescope.nvim',
+    cmd = 'Telescope',
+    keys = {
+      {
+        '<leader>pf',
+        function()
+          require('telescope.builtin').find_files()
+        end,
+      },
+      {
+        '<leader>pg',
+        function()
+          require('telescope.builtin').live_grep()
+        end,
+      },
+      {
+        '<leader>pb',
+        function()
+          require('telescope').extensions.file_browser.file_browser()
+        end,
+      },
+      {
+        '<leader>pr',
+        function()
+          require('telescope.builtin').resume()
+        end,
+      },
+      {
+        '<leader>pa',
+        function()
+          require('telescope.builtin').oldfiles()
+        end,
+      },
+    },
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+      'nvim-telescope/telescope-file-browser.nvim',
+      'nvim-telescope/telescope-ui-select.nvim',
+    },
+    config = function()
+      require('telescope').setup({
+        extensions = {
+          ['ui-select'] = {},
+          file_browser = {},
+        },
+      })
+      require('telescope').load_extension('ui-select')
+      require('telescope').load_extension('file_browser')
+    end,
+  },
+  {
+    'prochri/telescope-all-recent.nvim',
+    cmd = 'Telescope',
+    dependencies = {
+      'nvim-telescope/telescope.nvim',
+      'kkharji/sqlite.lua',
+    },
+    config = function()
+      require('telescope-all-recent').setup({})
+    end,
+  },
+  {
     'romgrk/barbar.nvim',
+    event = 'VeryLazy',
     dependencies = {
       'nvim-tree/nvim-web-devicons',
       'lewis6991/gitsigns.nvim',
@@ -302,6 +398,7 @@ require('lazy').setup({
   },
   {
     'shellRaining/hlchunk.nvim',
+    event = { 'BufReadPost', 'BufNewFile' },
     config = function()
       local ts = require('hlchunk.utils.ts_node_type')
       ts.tsx = {
@@ -361,7 +458,7 @@ require('lazy').setup({
   {
     'nvim-treesitter/nvim-treesitter',
     branch = 'master',
-    lazy = false,
+    event = { 'BufReadPost', 'BufNewFile' },
     build = ':TSUpdate',
     config = function()
       local ok, configs = pcall(require, 'nvim-treesitter.configs')
@@ -393,6 +490,7 @@ require('lazy').setup({
   },
   {
     'HiPhish/rainbow-delimiters.nvim',
+    event = { 'BufReadPost', 'BufNewFile' },
     dependencies = { 'nvim-treesitter/nvim-treesitter' },
     config = function()
       -- Defaults are sensible; keep explicit config minimal for clarity.
@@ -421,9 +519,31 @@ require('lazy').setup({
   },
   {
     'RRethy/vim-illuminate',
+    event = { 'BufReadPost', 'BufNewFile' },
+  },
+  {
+    'jghauser/mkdir.nvim',
+    event = 'BufWritePre',
+  },
+  {
+    'machakann/vim-sandwich',
+    keys = {
+      { 'sa', mode = { 'n', 'x' } },
+      { 'sd', mode = { 'n', 'x' } },
+      { 'sr', mode = { 'n', 'x' } },
+    },
   },
   {
     'kevinhwang91/nvim-hlslens',
+    keys = {
+      { 'n', mode = 'n' },
+      { 'N', mode = 'n' },
+      { '*', mode = 'n' },
+      { '#', mode = 'n' },
+      { 'g*', mode = 'n' },
+      { 'g#', mode = 'n' },
+      { '<leader>l', mode = 'n' },
+    },
     config = function()
       require('hlslens').setup()
       local kopts = { noremap = true, silent = true }
@@ -447,7 +567,67 @@ require('lazy').setup({
     end,
   },
   {
+    'kevinhwang91/nvim-bqf',
+    ft = 'qf',
+    opts = {
+      func_map = {
+        stoggledown = ']s',
+        stoggleup = '[s',
+        stogglevm = 'gs',
+        stogglebuf = 'gS',
+        sclear = 'zS',
+      },
+    },
+  },
+  {
+    'rmagatti/auto-session',
+    lazy = false,
+    opts = {
+      session_lens = {
+        load_on_setup = false,
+      },
+    },
+  },
+  {
+    'mvllow/modes.nvim',
+    event = 'VeryLazy',
+    config = function()
+      require('modes').setup()
+    end,
+  },
+  {
+    'saghen/blink.cmp',
+    event = 'InsertEnter',
+    version = '1.*',
+    dependencies = { 'rafamadriz/friendly-snippets' },
+    opts = {
+      keymap = { preset = 'default' },
+      appearance = { nerd_font_variant = 'mono' },
+      completion = { documentation = { auto_show = false } },
+      sources = { default = { 'lsp', 'path', 'snippets', 'buffer' } },
+      fuzzy = { implementation = 'prefer_rust_with_warning' },
+    },
+    opts_extend = { 'sources.default' },
+  },
+  {
+    'dstein64/vim-startuptime',
+    cmd = 'StartupTime',
+  },
+  {
+    'folke/which-key.nvim',
+    event = 'VeryLazy',
+    init = function()
+      vim.o.timeout = true
+      vim.o.timeoutlen = 300
+    end,
+    opts = {},
+  },
+  {
     'haya14busa/vim-edgemotion',
+    keys = {
+      { '<C-j>', mode = 'n' },
+      { '<C-k>', mode = 'n' },
+    },
     config = function()
       local map = vim.keymap.set
       local key_opts = { noremap = true, silent = true }
@@ -457,6 +637,7 @@ require('lazy').setup({
   },
   {
     'windwp/nvim-ts-autotag',
+    event = { 'BufReadPost', 'BufNewFile' },
     dependencies = { 'nvim-treesitter/nvim-treesitter' },
     config = function()
       require('nvim-ts-autotag').setup({
@@ -470,6 +651,7 @@ require('lazy').setup({
   },
   {
     'numToStr/Comment.nvim',
+    event = 'VeryLazy',
     dependencies = {
       'JoosepAlviste/nvim-ts-context-commentstring',
     },
@@ -492,6 +674,7 @@ require('lazy').setup({
   },
   {
     'JoosepAlviste/nvim-ts-context-commentstring',
+    event = 'VeryLazy',
     config = function()
       require('ts_context_commentstring').setup({
         enable_autocmd = false,
@@ -500,6 +683,7 @@ require('lazy').setup({
   },
   {
     'nvim-treesitter/nvim-treesitter-textobjects',
+    event = { 'BufReadPost', 'BufNewFile' },
     dependencies = { 'nvim-treesitter/nvim-treesitter' },
     config = function()
       local ok, configs = pcall(require, 'nvim-treesitter.configs')
@@ -546,6 +730,7 @@ require('lazy').setup({
   },
   {
     'nvim-treesitter/nvim-treesitter-context',
+    event = { 'BufReadPost', 'BufNewFile' },
     dependencies = { 'nvim-treesitter/nvim-treesitter' },
     opts = {
       max_lines = 3,
@@ -553,6 +738,10 @@ require('lazy').setup({
   },
   {
     'rainbowhxch/accelerated-jk.nvim',
+    keys = {
+      { 'j', mode = 'n' },
+      { 'k', mode = 'n' },
+    },
     config = function()
       local map = vim.keymap.set
       local key_opts = { noremap = true, silent = true }
@@ -562,6 +751,7 @@ require('lazy').setup({
   },
   {
     'j-hui/fidget.nvim',
+    event = 'LspAttach',
     opts = {
       progress = {
         display = {
@@ -571,11 +761,16 @@ require('lazy').setup({
       },
       notification = {
         override_vim_notify = true,
+        window = {
+          normal_hl = 'Normal',
+          winblend = 0,
+        },
       },
     },
   },
   {
     'nvimdev/lspsaga.nvim',
+    event = 'LspAttach',
     dependencies = {
       'nvim-treesitter/nvim-treesitter',
       'nvim-tree/nvim-web-devicons',
@@ -585,6 +780,9 @@ require('lazy').setup({
   {
     'Wansmer/treesj',
     dependencies = { 'nvim-treesitter/nvim-treesitter' },
+    keys = {
+      { '<leader>s', '<Cmd>TSJToggle<CR>' },
+    },
     opts = {
       use_default_keymaps = false,
       check_syntax_error = true,
@@ -595,13 +793,14 @@ require('lazy').setup({
     },
     config = function(_, opts)
       require('treesj').setup(opts)
-      local map = vim.keymap.set
-      local key_opts = { noremap = true, silent = true }
-      map('n', '<leader>s', '<Cmd>TSJToggle<CR>', key_opts)
     end,
   },
   {
     'monaqa/dial.nvim',
+    keys = {
+      { '<C-a>', mode = { 'n', 'x' } },
+      { '<C-x>', mode = { 'n', 'x' } },
+    },
     config = function()
       local augend = require('dial.augend')
       require('dial.config').augends:register_group({
