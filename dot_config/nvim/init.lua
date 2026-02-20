@@ -110,8 +110,36 @@ require('lazy').setup({
       transparent = true,
     },
     config = function(_, opts)
+      local function apply_transparent_bg()
+        local groups = {
+          'Normal',
+          'NormalNC',
+          'NormalFloat',
+          'SignColumn',
+          'FoldColumn',
+          'EndOfBuffer',
+          'LineNr',
+          'CursorLineNr',
+          'StatusLine',
+          'StatusLineNC',
+          'TabLineFill',
+          'FloatBorder',
+          'Pmenu',
+        }
+        for _, group in ipairs(groups) do
+          vim.api.nvim_set_hl(0, group, { bg = 'none' })
+        end
+        vim.api.nvim_set_hl(0, 'WinBar', { bg = 'none', underline = true })
+        vim.api.nvim_set_hl(0, 'WinBarNC', { bg = 'none', underline = true })
+      end
+
       require('wisteria').setup(opts)
       vim.cmd('colorscheme wisteria')
+      apply_transparent_bg()
+      vim.api.nvim_create_autocmd('ColorScheme', {
+        pattern = '*',
+        callback = apply_transparent_bg,
+      })
       vim.api.nvim_set_hl(0, 'FidgetTitle', { link = 'Title' })
       vim.api.nvim_set_hl(0, 'FidgetTask', { link = 'Normal' })
       vim.api.nvim_set_hl(0, 'FidgetProgress', { link = 'Normal' })
@@ -189,7 +217,7 @@ require('lazy').setup({
           vim.keymap.set('n', '<leader>ca', '<cmd>Lspsaga code_action<cr>', key_opts)
           vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, key_opts)
           vim.keymap.set('n', ']d', vim.diagnostic.goto_next, key_opts)
-          vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, key_opts)
+          vim.keymap.set('n', '<leader>de', vim.diagnostic.open_float, key_opts)
           vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, key_opts)
 
           if client.name == 'rust_analyzer' and client.supports_method('textDocument/formatting') then
@@ -345,17 +373,17 @@ require('lazy').setup({
       focus_on_close = 'left',
       hide = { extensions = false, inactive = false },
       highlight_alternate = false,
-      highlight_inactive_file_icons = false,
+      highlight_inactive_file_icons = true,
       highlight_visible = true,
       icons = {
         buffer_index = false,
         buffer_number = false,
         button = '',
         diagnostics = {
-          [vim.diagnostic.severity.ERROR] = { enabled = true, icon = 'ﬀ' },
-          [vim.diagnostic.severity.WARN] = { enabled = true },
+          [vim.diagnostic.severity.ERROR] = { enabled = true, icon = 'E' },
+          [vim.diagnostic.severity.WARN] = { enabled = true, icon = 'W' },
           [vim.diagnostic.severity.INFO] = { enabled = false },
-          [vim.diagnostic.severity.HINT] = { enabled = true },
+          [vim.diagnostic.severity.HINT] = { enabled = true, icon = 'H' },
         },
         gitsigns = {
           added = { enabled = true, icon = '+' },
@@ -366,13 +394,13 @@ require('lazy').setup({
           custom_colors = false,
           enabled = true,
         },
-        separator = { left = '▎', right = '' },
+        separator = { left = '|', right = '' },
         separator_at_end = true,
-        modified = { button = '' },
-        pinned = { button = '', filename = true },
+        modified = { button = '*' },
+        pinned = { button = 'P', filename = true },
         preset = 'default',
         alternate = { filetype = { enabled = false } },
-        current = { buffer_index = true },
+        current = { buffer_index = false },
         inactive = { button = '' },
         visible = { modified = { buffer_number = false } },
       },
@@ -401,6 +429,22 @@ require('lazy').setup({
     event = { 'BufReadPost', 'BufNewFile' },
     config = function()
       local ts = require('hlchunk.utils.ts_node_type')
+      local function hl_fg(names)
+        if type(names) == 'string' then
+          names = { names }
+        end
+        for _, name in ipairs(names) do
+          local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = name, link = true })
+          if ok and hl and hl.fg then
+            return string.format('#%06x', hl.fg)
+          end
+        end
+        return nil
+      end
+      local has_wisteria, wisteria = pcall(require, 'wisteria.lib.base_color')
+      local wst = has_wisteria and wisteria.wst or nil
+      local chunk_fg_1 = (wst and wst.gray) or hl_fg({ 'IblScope', 'NonText', 'LineNr', 'Comment' })
+      local chunk_fg_2 = (wst and wst.light_gray) or hl_fg({ 'IblScope', 'NonText', 'LineNr', 'Comment' })
       ts.tsx = {
         'jsx_element',
         'jsx_fragment',
@@ -421,7 +465,7 @@ require('lazy').setup({
         indent = {
           enable = true,
           chars = {
-            '│',
+            '|',
           },
         },
         chunk = {
@@ -429,22 +473,22 @@ require('lazy').setup({
           priority = 50,
           notify = true,
           style = {
-            { fg = "#806d9c" },
-            { fg = "#c21f30" },
+            { fg = chunk_fg_1 },
+            { fg = chunk_fg_2 },
           },
           use_treesitter = true,
           chars = {
-            horizontal_line = "─",
-            vertical_line = "│",
-            left_top = "╭",
-            left_bottom = "╰",
-            right_arrow = ">",
+            horizontal_line = '-',
+            vertical_line = '|',
+            left_top = '+',
+            left_bottom = '+',
+            right_arrow = '>',
           },
           textobject = "",
           max_file_size = 1024 * 1024,
           error_sign = true,
           duration = 200,
-          delay = 300,
+          delay = 50,
         },
         line_num = {
           enable = false,
@@ -587,13 +631,6 @@ require('lazy').setup({
         load_on_setup = false,
       },
     },
-  },
-  {
-    'mvllow/modes.nvim',
-    event = 'VeryLazy',
-    config = function()
-      require('modes').setup()
-    end,
   },
   {
     'saghen/blink.cmp',

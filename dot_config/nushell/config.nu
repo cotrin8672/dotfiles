@@ -16,18 +16,21 @@
 #
 # You can remove these comments if you want or leave
 # them for future reference.
-source ~/.config/nushell/starship.nu
 
 use ($nu.default-config-dir | path join mise.nu)
+source ($nu.default-config-dir | path join prompt.nu)
 
 if ('Path' in $env) {
-    # Windows式の ; 区切り文字列をリストに変換
+    # Convert Windows ';' PATH string to Nushell PATH list.
     $env.PATH = (
         $env.Path
         | str replace --all '"' ''
         | split row ';'
-        | where {|p| $p != ''}
+        | where { |p| $p != '' }
     )
-    # OS 向けの文字列も同期
+    # Keep OS-style Path in sync.
     $env.Path = ($env.PATH | str join ';')
 }
+
+$env.config.show_banner = false
+

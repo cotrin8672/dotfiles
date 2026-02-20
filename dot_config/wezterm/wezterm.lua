@@ -6,10 +6,8 @@ local status                         = require 'status'
 -- This will hold the configuration.
 local config                         = wezterm.config_builder()
 config.automatically_reload_config   = true
-config.font                          = wezterm.font_with_fallback({
-    "JetBrains Mono",
-    "Symbols Nerd Font Mono"
-    -- "Nerd Font Symbols",
+config.font                          = wezterm.font("JetBrainsMono Nerd Font Mono", {
+    weight = "Bold",
 })
 config.font_size                     = 10.5
 config.use_ime                       = true

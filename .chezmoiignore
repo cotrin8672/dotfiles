@@ -1,2 +1,2 @@
-dot_config/starship/starship.toml
-dot_config/nushell/mise.nu
+.config/starship/starship.toml
+.config/nushell/mise.nu
