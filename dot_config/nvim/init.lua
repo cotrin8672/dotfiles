@@ -104,8 +104,27 @@ vim.keymap.set('n', '<M-k>', '<C-w>k', { noremap = true, silent = true })
 vim.keymap.set('n', '<M-l>', '<C-w>l', { noremap = true, silent = true })
 vim.keymap.set('n', '<leader>x', '<Cmd>BufferClose<CR>', { noremap = true, silent = true })
 
+local function load_plugin_specs()
+  local init_source = debug.getinfo(1, 'S').source
+  local init_path = vim.fn.fnamemodify(init_source:sub(2), ':p')
+  local real_init = (vim.uv or vim.loop).fs_realpath(init_path) or init_path
+  local config_dir = vim.fn.fnamemodify(real_init, ':h')
+  local plugin_dir = config_dir .. '/plugins'
+  local files = vim.fn.glob(plugin_dir .. '/*.lua', false, true)
+  table.sort(files)
+
+  local specs = {}
+  for _, file in ipairs(files) do
+    local ok, spec = pcall(dofile, file)
+    if ok and spec ~= nil then
+      table.insert(specs, spec)
+    else
+      vim.notify('Failed to load plugin spec: ' .. file, vim.log.levels.ERROR)
+    end
+  end
+  return specs
+end
+
 require('lazy').setup({
-  spec = {
-    { import = 'plugins' },
-  },
+  spec = load_plugin_specs(),
 })
