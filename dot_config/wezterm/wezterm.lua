@@ -6,7 +6,7 @@ local status                         = require 'status'
 -- This will hold the configuration.
 local config                         = wezterm.config_builder()
 config.automatically_reload_config   = true
-config.font                          = wezterm.font("UDEV Gothic 35LG", { weight = "Bold" })
+config.font                          = wezterm.font("UDEV Gothic 35NFLG")
 config.font_size                     = 11
 config.use_ime                       = true
 config.window_background_opacity     = 0.75
