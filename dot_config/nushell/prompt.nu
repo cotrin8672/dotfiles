@@ -22,8 +22,9 @@ def git_status_summary [] {
 
     let entries = $result.stdout | lines
     let entry_count = ($entries | length)
+    let glyph_git_clean = '✓'
     if $entry_count == 0 {
-        '[' + (char -u 2713) + '] '
+        '[' + $glyph_git_clean + '] '
     } else {
         let modified_count = ($entries | where { |x| not ($x | str starts-with '??') } | length)
         let untracked_count = ($entries | where { |x| $x | str starts-with '??' } | length)
@@ -34,13 +35,13 @@ def git_status_summary [] {
 }
 
 $env.PROMPT_COMMAND = {||
-    let left_cap = (char -u e0b6)
-    let os_sep = (char -u e0b0)
-    let right_cap = (char -u e0b4)
-    let os_icon = (char -u f17a)
-    let folder_icon = (char -u f07c)
-    let branch_icon = (char -u f126)
-    let branch_sep = (char -u '27e9')
+    let left_cap = ''
+    let os_sep = ''
+    let right_cap = ''
+    let os_icon = ''
+    let folder_icon = ''
+    let branch_icon = ''
+    let branch_sep = '⟩'
 
     let left_cap_seg = (ansi { fg: '#8fadce' }) + $left_cap + (ansi reset)
     let os_block = (ansi { fg: '#001217' bg: '#8fadce' }) + $"($os_icon) " + (ansi reset)
@@ -66,6 +67,5 @@ $env.PROMPT_COMMAND = {||
     "\n" + $left_cap_seg + $os_block + $os_sep_seg + $dir_block + $git_block + $right_cap_seg + "\n"
 }
 
-$env.PROMPT_INDICATOR = {|| (ansi { fg: '#8fadce' attr: 'b' }) + ' ' + (char -u 276f) + ' ' + (ansi reset) }
+$env.PROMPT_INDICATOR = {|| (ansi { fg: '#8fadce' attr: 'b' }) + ' ❯ ' + (ansi reset) }
 $env.PROMPT_COMMAND_RIGHT = {|| '' }
-
