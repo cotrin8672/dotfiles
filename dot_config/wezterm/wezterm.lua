@@ -8,6 +8,7 @@ local config                         = wezterm.config_builder()
 config.automatically_reload_config   = true
 config.font                          = wezterm.font("UDEV Gothic 35NFLG")
 config.font_size                     = 11
+config.adjust_window_size_when_changing_font_size = false
 config.use_ime                       = true
 config.window_background_opacity     = 0.75
 config.macos_window_background_blur  = 20
@@ -19,7 +20,8 @@ config.cursor_blink_ease_out         = "Constant"
 config.use_ime                       = true
 config.ime_preedit_rendering         = "Builtin"
 config.show_close_tab_button_in_tabs = false
-config.custom_block_glyphs           = false
+config.custom_block_glyphs           = true
+config.use_cap_height_to_scale_fallback_fonts = true
 
 local mux                            = wezterm.mux
 local ICONS                          = {

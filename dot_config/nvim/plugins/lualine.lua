@@ -1,4 +1,4 @@
-return {
+﻿return {
   'nvim-lualine/lualine.nvim',
   event = 'VeryLazy',
   dependencies = {
@@ -19,6 +19,7 @@ return {
     require('lualine').setup({
       options = {
         theme = 'wisteria',
+        component_separators = { left = vim.fn.nr2char(0x27E9), right = vim.fn.nr2char(0x27E8) },
       },
       sections = {
         lualine_x = { 'encoding', 'fileformat', short_ft },
@@ -26,3 +27,5 @@ return {
     })
   end,
 }
+
+
