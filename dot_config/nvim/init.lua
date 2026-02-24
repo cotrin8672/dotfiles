@@ -10,6 +10,10 @@ vim.g.loaded_2html_plugin = 1
 vim.g.loaded_spellfile_plugin = 1
 vim.g.loaded_remote_plugins = 1
 vim.g.loaded_man = 1
+vim.g.loaded_node_provider = 0
+vim.g.loaded_python3_provider = 0
+vim.g.loaded_ruby_provider = 0
+vim.g.loaded_perl_provider = 0
 
 local lazypath = vim.fn.stdpath('data') .. '/lazy/lazy.nvim'
 if not vim.loop.fs_stat(lazypath) then
