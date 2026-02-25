@@ -102,6 +102,7 @@ vim.api.nvim_create_autocmd('FileType', {
 })
 
 vim.keymap.set('i', 'jj', '<Esc>', { noremap = true, silent = true })
+vim.keymap.set('t', 'jj', [[<C-\><C-n>]], { noremap = true, silent = true })
 vim.keymap.set('n', '<M-h>', '<C-w>h', { noremap = true, silent = true })
 vim.keymap.set('n', '<M-j>', '<C-w>j', { noremap = true, silent = true })
 vim.keymap.set('n', '<M-k>', '<C-w>k', { noremap = true, silent = true })

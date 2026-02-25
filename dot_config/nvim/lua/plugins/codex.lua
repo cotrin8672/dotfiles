@@ -19,17 +19,9 @@ return {
     { '<leader>as', '<cmd>CodexSend<cr>', mode = 'v', desc = 'Codex: Send selection' },
     { '<leader>as', '<cmd>CodexTreeAdd<cr>', mode = 'n', ft = { 'neo-tree', 'oil' }, desc = 'Codex: Add file' },
   },
-  dependencies = {
-    'folke/snacks.nvim',
-  },
   opts = {
     keymaps = {
       enabled = false,
-    },
-    terminal = {
-      provider = 'snacks',
-      unfocus_key = '<C-w>',
-      unfocus_mapping = [[<C-\><C-n><C-w>p]],
     },
   },
 }
