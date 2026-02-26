@@ -9,7 +9,7 @@ return {
       },
     },
     notification = {
-      override_vim_notify = true,
+      override_vim_notify = false,
       window = {
         normal_hl = 'Normal',
         winblend = 0,

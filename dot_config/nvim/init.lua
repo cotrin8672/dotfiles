@@ -43,7 +43,9 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 vim.opt.number = true
-vim.opt.relativenumber = false
+vim.opt.relativenumber = true
+vim.opt.cursorline = true
+vim.opt.cursorcolumn = true
 vim.opt.termguicolors = true
 vim.opt.updatetime = 300
 vim.opt.signcolumn = 'yes'
@@ -87,17 +89,16 @@ local function ime_off()
   end
 end
 
-vim.api.nvim_create_autocmd({ 'InsertLeave', 'FocusGained' }, {
+vim.api.nvim_create_autocmd('FocusGained', {
   callback = ime_off,
 })
-
-vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'javascript', 'javascriptreact', 'typescript', 'typescriptreact', 'tsx', 'jsx' },
+vim.api.nvim_create_autocmd('User', {
+  pattern = 'VeryLazy',
+  once = true,
   callback = function()
-    vim.opt_local.shiftwidth = 2
-    vim.opt_local.tabstop = 2
-    vim.opt_local.softtabstop = 2
-    vim.opt_local.expandtab = true
+    vim.api.nvim_create_autocmd('InsertLeave', {
+      callback = ime_off,
+    })
   end,
 })
 
@@ -108,6 +109,13 @@ vim.keymap.set('n', '<M-j>', '<C-w>j', { noremap = true, silent = true })
 vim.keymap.set('n', '<M-k>', '<C-w>k', { noremap = true, silent = true })
 vim.keymap.set('n', '<M-l>', '<C-w>l', { noremap = true, silent = true })
 vim.keymap.set('n', '<leader>x', '<Cmd>BufferClose<CR>', { noremap = true, silent = true })
+
+vim.api.nvim_create_autocmd('VimEnter', {
+  once = true,
+  callback = function()
+    require('ui.cursor_mode').setup()
+  end,
+})
 
 require('lazy').setup({
   spec = {

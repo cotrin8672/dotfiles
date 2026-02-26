@@ -15,8 +15,6 @@ return {
         'SignColumn',
         'FoldColumn',
         'EndOfBuffer',
-        'LineNr',
-        'CursorLineNr',
         'StatusLine',
         'StatusLineNC',
         'FloatBorder',
@@ -25,8 +23,22 @@ return {
       for _, group in ipairs(groups) do
         vim.api.nvim_set_hl(0, group, { bg = 'none' })
       end
-      vim.api.nvim_set_hl(0, 'WinBar', { bg = 'none', underline = true })
-      vim.api.nvim_set_hl(0, 'WinBarNC', { bg = 'none', underline = true })
+      vim.api.nvim_set_hl(0, 'WinBar', { bg = 'none', underline = true, italic = false })
+      vim.api.nvim_set_hl(0, 'WinBarNC', { bg = 'none', underline = true, italic = false })
+    end
+    local function apply_line_number_column()
+      local ok, base_color = pcall(require, 'wisteria.lib.base_color')
+      local bg = '#1E2224'
+      local fg = '#BABABA'
+      local fg_cursor = '#EFEDE7'
+      if ok and base_color and base_color.wst then
+        local wst = base_color.wst
+        bg = wst.hanabi_night or bg
+        fg = wst.gray or fg
+        fg_cursor = wst.white or fg_cursor
+      end
+      vim.api.nvim_set_hl(0, 'LineNr', { fg = fg, bg = bg })
+      vim.api.nvim_set_hl(0, 'CursorLineNr', { fg = fg_cursor, bg = bg, bold = true })
     end
     local function apply_wisteria_tabline()
       local ok, base_color = pcall(require, 'wisteria.lib.base_color')
@@ -54,11 +66,13 @@ return {
     require('wisteria').setup(opts)
     vim.cmd('colorscheme wisteria')
     apply_transparent_bg()
+    apply_line_number_column()
     apply_wisteria_tabline()
     vim.api.nvim_create_autocmd('ColorScheme', {
       pattern = '*',
       callback = function()
         apply_transparent_bg()
+        apply_line_number_column()
         apply_wisteria_tabline()
       end,
     })
