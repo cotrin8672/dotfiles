@@ -14,8 +14,8 @@ return {
     'CodexSelectModel',
   },
   keys = {
-    { '<leader>ac', '<cmd>Codex<cr>', mode = { 'n', 'i' }, desc = 'Codex: Toggle' },
-    { '<leader>af', '<cmd>CodexFocus<cr>', mode = { 'n', 'i' }, desc = 'Codex: Focus' },
+    { '<leader>ac', '<cmd>Codex<cr>', mode = 'n', desc = 'Codex: Toggle' },
+    { '<leader>af', '<cmd>CodexFocus<cr>', mode = 'n', desc = 'Codex: Focus' },
     { '<leader>as', '<cmd>CodexSend<cr>', mode = 'v', desc = 'Codex: Send selection' },
     { '<leader>as', '<cmd>CodexTreeAdd<cr>', mode = 'n', ft = { 'neo-tree', 'oil' }, desc = 'Codex: Add file' },
   },

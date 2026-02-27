@@ -2,7 +2,7 @@ model = "gpt-5.3-codex"
 approval_policy = "never"             # 承認をスキップ
 windows_wsl_setup_acknowledged = true
 hide_agent_reasoning = false # TUI（テキストユーザーインターフェース）とcodex execの出力において、推論イベントを表示するようにする
-model_reasoning_effort = "medium"
+model_reasoning_effort = "low"
 web_search = "live"             # モデルによるウェブ検索の実行を許可
 personality = "pragmatic"
 
@@ -40,6 +40,8 @@ powershell_utf8 = true                # UTF-8強制(文字化け対策)
 experimental_windows_sandbox = true
 elevated_windows_sandbox = true
 multi_agent = true
+use_linux_sandbox_bwrap = true
+voice_transcription = true
 
 [model_providers.glm]
 name = "GLM"

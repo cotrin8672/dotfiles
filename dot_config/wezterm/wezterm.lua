@@ -1,37 +1,35 @@
 -- Pull in the wezterm API
-local wezterm                        = require 'wezterm'
-local wisteria                       = require 'wisteria'
-local status                         = require 'status'
--- local session_manager                = require("wezterm-session-manager/session-manager")
--- This will hold the configuration.
-local config                         = wezterm.config_builder()
-config.automatically_reload_config   = true
-config.font                          = wezterm.font("UDEV Gothic 35NFLG")
-config.font_size                     = 11
+local wezterm                                     = require 'wezterm'
+local wisteria                                    = require 'wisteria'
+local status                                      = require 'status'
+local config                                      = wezterm.config_builder()
+config.automatically_reload_config                = true
+config.font                                       = wezterm.font("UDEV Gothic 35NFLG")
+config.font_size                                  = 11
 config.adjust_window_size_when_changing_font_size = false
-config.use_ime                       = true
-config.window_background_opacity     = 0.75
-config.macos_window_background_blur  = 20
-config.window_decorations            = "RESIZE"
-config.default_cursor_style          = "BlinkingBlock"
-config.cursor_blink_rate             = 500
-config.cursor_blink_ease_in          = "Constant"
-config.cursor_blink_ease_out         = "Constant"
-config.use_ime                       = true
-config.ime_preedit_rendering         = "Builtin"
-config.show_close_tab_button_in_tabs = false
-config.custom_block_glyphs           = true
-config.use_cap_height_to_scale_fallback_fonts = true
+config.use_ime                                    = true
+config.window_background_opacity                  = 0.75
+config.macos_window_background_blur               = 20
+config.window_decorations                         = "RESIZE"
+config.default_cursor_style                       = "BlinkingBlock"
+config.cursor_blink_rate                          = 500
+config.cursor_blink_ease_in                       = "Constant"
+config.cursor_blink_ease_out                      = "Constant"
+config.use_ime                                    = true
+config.ime_preedit_rendering                      = "Builtin"
+config.show_close_tab_button_in_tabs              = false
+config.custom_block_glyphs                        = true
+config.use_cap_height_to_scale_fallback_fonts     = true
 
 local mux                            = wezterm.mux
 local ICONS                          = {
-    wsl = wezterm.nerdfonts.cod_terminal_ubuntu,
-    cmd = wezterm.nerdfonts.oct_terminal,
+    wsl      = wezterm.nerdfonts.cod_terminal_ubuntu,
+    cmd      = wezterm.nerdfonts.oct_terminal,
     fallback = wezterm.nerdfonts.fa_terminal,
 }
 local ICON_COLORS                    = {
-    wsl = "#DF4E1C",
-    cmd = "#CCCCCC",
+    wsl      = "#DF4E1C",
+    cmd      = "#CCCCCC",
     fallback = "#FFFFFF",
 }
 -- wezterm.on("save_session", function(window) session_manager.save_state(window) end)
@@ -46,8 +44,8 @@ end)
 
 config.window_frame = {
     inactive_titlebar_bg = "none",
-    active_titlebar_bg = "none",
-    font_size = 14.0,
+    active_titlebar_bg   = "none",
+    font_size            = 14.0,
 }
 config.window_background_gradient = {
     colors = { wisteria.colors.background },
@@ -88,16 +86,16 @@ wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_wid
     return {
         { Background = { Color = edge_background } },
         { Foreground = { Color = edge_foreground } },
-        { Text = SOLID_LEFT_ARROW },
+        { Text       = SOLID_LEFT_ARROW },
         { Background = { Color = background } },
         { Foreground = { Color = icon_color } },
-        { Text = icon .. "  " },
+        { Text       = icon .. "  " },
         { Background = { Color = background } },
         { Foreground = { Color = foreground } },
-        { Text = title },
+        { Text       = title },
         { Background = { Color = edge_background } },
         { Foreground = { Color = edge_foreground } },
-        { Text = SOLID_RIGHT_ARROW },
+        { Text       = SOLID_RIGHT_ARROW },
     }
 end)
 -- This is where you actually apply your config choices

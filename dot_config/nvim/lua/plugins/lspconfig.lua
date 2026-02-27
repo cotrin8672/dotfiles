@@ -2,6 +2,22 @@ return {
   'neovim/nvim-lspconfig',
   event = 'BufReadPre',
   config = function()
+    local ok, icons = pcall(require, 'ui.diagnostic_icons')
+    if not ok then
+      icons = require('shared.diagnostic_icons')
+    end
+
+    vim.diagnostic.config({
+      signs = {
+        text = {
+          [vim.diagnostic.severity.ERROR] = icons.error_icon,
+          [vim.diagnostic.severity.WARN] = icons.warn_icon,
+          [vim.diagnostic.severity.HINT] = icons.hint_icon,
+          [vim.diagnostic.severity.INFO] = icons.info_icon,
+        },
+      },
+    })
+
     local function ts_root_dir(bufnr, on_dir)
       local fname = vim.api.nvim_buf_get_name(bufnr)
       on_dir(vim.fs.root(fname, { 'tsconfig.json', 'package.json', 'jsconfig.json' }))

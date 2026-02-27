@@ -8,61 +8,67 @@ return {
   init = function()
     vim.g.barbar_auto_setup = false
   end,
-  opts = {
-    animation = true,
-    auto_hide = false,
-    tabpages = true,
-    clickable = true,
-    focus_on_close = 'left',
-    hide = { extensions = false, inactive = false },
-    highlight_alternate = false,
-    highlight_inactive_file_icons = false,
-    highlight_visible = true,
-    icons = {
-      buffer_index = false,
-      buffer_number = false,
-      button = '',
-      diagnostics = {
-        [vim.diagnostic.severity.ERROR] = { enabled = true, icon = 'ﬀ' },
-        [vim.diagnostic.severity.WARN] = { enabled = false },
-        [vim.diagnostic.severity.INFO] = { enabled = false },
-        [vim.diagnostic.severity.HINT] = { enabled = true },
-      },
-      gitsigns = {
-        added = { enabled = true, icon = '+' },
-        changed = { enabled = true, icon = '~' },
-        deleted = { enabled = true, icon = '-' },
-      },
-      filetype = {
-        custom_colors = false,
-        enabled = true,
-      },
-      separator = { left = '', right = ' ' },
-      separator_at_end = false,
-      modified = { button = '●' },
-      pinned = { button = '', filename = true },
-      preset = 'default',
-      alternate = { filetype = { enabled = false } },
-      current = { buffer_index = false },
-      inactive = {
+  opts = function()
+    local ok, icons = pcall(require, 'ui.diagnostic_icons')
+    if not ok then
+      icons = require('shared.diagnostic_icons')
+    end
+    return {
+      animation = true,
+      auto_hide = false,
+      tabpages = true,
+      clickable = true,
+      focus_on_close = 'left',
+      hide = { extensions = false, inactive = false },
+      highlight_alternate = false,
+      highlight_inactive_file_icons = false,
+      highlight_visible = true,
+      icons = {
+        buffer_index = false,
+        buffer_number = false,
         button = '',
+        diagnostics = {
+          [vim.diagnostic.severity.ERROR] = { enabled = true, icon = icons.error_icon },
+          [vim.diagnostic.severity.WARN] = { enabled = false, icon = icons.warn_icon },
+          [vim.diagnostic.severity.INFO] = { enabled = false, icon = icons.info_icon },
+          [vim.diagnostic.severity.HINT] = { enabled = true, icon = icons.hint_icon },
+        },
+        gitsigns = {
+          added = { enabled = false, icon = '+' },
+          changed = { enabled = false, icon = '~' },
+          deleted = { enabled = false, icon = '-' },
+        },
+        filetype = {
+          custom_colors = false,
+          enabled = true,
+        },
         separator = { left = '', right = ' ' },
+        separator_at_end = false,
+        modified = { button = '●' },
+        pinned = { button = '', filename = true },
+        preset = 'default',
+        alternate = { filetype = { enabled = false } },
+        current = { buffer_index = false },
+        inactive = {
+          button = '',
+          separator = { left = '', right = ' ' },
+        },
+        visible = { modified = { buffer_number = false } },
       },
-      visible = { modified = { buffer_number = false } },
-    },
-    insert_at_end = false,
-    insert_at_start = false,
-    maximum_padding = 1,
-    minimum_padding = 1,
-    maximum_length = 30,
-    minimum_length = 0,
-    semantic_letters = true,
-    letters = 'asdfjkl;ghnmxcvbziowerutyqpASDFJKLGHNMXCVBZIOWERUTYQP',
-    no_name_title = nil,
-    sort = {
-      ignore_case = true,
-    },
-  },
+      insert_at_end = false,
+      insert_at_start = false,
+      maximum_padding = 1,
+      minimum_padding = 1,
+      maximum_length = 30,
+      minimum_length = 0,
+      semantic_letters = true,
+      letters = 'asdfjkl;ghnmxcvbziowerutyqpASDFJKLGHNMXCVBZIOWERUTYQP',
+      no_name_title = nil,
+      sort = {
+        ignore_case = true,
+      },
+    }
+  end,
   config = function(_, opts)
     require('barbar').setup(opts)
     local function apply_barbar_colors()
