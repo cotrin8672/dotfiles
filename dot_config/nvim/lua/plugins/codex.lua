@@ -20,6 +20,7 @@ return {
     { '<leader>as', '<cmd>CodexTreeAdd<cr>', mode = 'n', ft = { 'neo-tree', 'oil' }, desc = 'Codex: Add file' },
   },
   opts = {
+    terminal_cmd = 'codex',
     keymaps = {
       enabled = false,
     },

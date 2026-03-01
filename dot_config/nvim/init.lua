@@ -1,4 +1,5 @@
 -- Disable unused builtin plugins early.
+
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
 vim.g.loaded_matchit = 1
@@ -110,7 +111,8 @@ vim.keymap.set('n', '<M-k>', '<C-w>k', { noremap = true, silent = true })
 vim.keymap.set('n', '<M-l>', '<C-w>l', { noremap = true, silent = true })
 vim.keymap.set('n', '<leader>x', '<Cmd>BufferClose<CR>', { noremap = true, silent = true })
 
-vim.api.nvim_create_autocmd('VimEnter', {
+vim.api.nvim_create_autocmd('User', {
+  pattern = 'VeryLazy',
   once = true,
   callback = function()
     require('ui.cursor_mode').setup()
