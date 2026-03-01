@@ -196,6 +196,7 @@ return {
     local key_opts = { noremap = true, silent = true }
     map('n', '<Tab>', '<Cmd>BufferNext<CR>', key_opts)
     map('n', '<S-Tab>', '<Cmd>BufferPrevious<CR>', key_opts)
+    map('n', '<leader>x', '<Cmd>BufferClose<CR>', key_opts)
   end,
   version = '^1.0.0',
 }

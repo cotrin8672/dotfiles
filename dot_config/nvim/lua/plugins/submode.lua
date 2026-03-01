@@ -76,12 +76,13 @@ return {
       close_lsp_hint()
 
       local lines = {
-        ' r │ Next reference',
-        ' R │ Prev reference',
-        ' d │ Next diagnostic',
-        ' D │ Prev diagnostic',
-        ' a │ Code action',
-        ' q │ Exit LSP mode',
+        ' r   │ Next reference',
+        ' R   │ Prev reference',
+        ' d   │ Next diagnostic',
+        ' D   │ Prev diagnostic',
+        ' a   │ Open code actions',
+        ' 1-9 │ Apply code action by number',
+        ' q   │ Exit LSP mode',
       }
 
       lsp_hint_buf = vim.api.nvim_create_buf(false, true)
@@ -95,8 +96,7 @@ return {
         vim.api.nvim_buf_add_highlight(lsp_hint_buf, lsp_hint_ns, 'MiniClueSeparator', i - 1, 3, 6)
       end
       vim.bo[lsp_hint_buf].modifiable = false
-
-      local width = 34
+      local width = 40
       local height = #lines
       local col = math.max(vim.o.columns - width - 2, 0)
       lsp_hint_win = vim.api.nvim_open_win(lsp_hint_buf, false, {
@@ -138,6 +138,17 @@ return {
           vim.cmd([[normal \<CR>]])
         end
       end)
+    end
+
+    local function open_lsp_trouble(mode, direction)
+      local close_cmd = mode == 'references' and 'Trouble lsp_submode_diagnostics close'
+        or 'Trouble lsp_submode_references close'
+      local open_cmd = mode == 'references' and 'Trouble lsp_submode_references open focus=false'
+        or 'Trouble lsp_submode_diagnostics open focus=false'
+
+      pcall(vim.cmd, close_cmd)
+      vim.cmd(open_cmd)
+      vim.cmd('Trouble ' .. direction .. ' jump=true skip_groups=true')
     end
 
     local submode_color = '#1E50A2' -- 瑠璃色
@@ -187,8 +198,8 @@ return {
         refresh_lualine()
       end,
       after_leave = function()
-        pcall(vim.cmd, 'Trouble diagnostics close')
-        pcall(vim.cmd, 'Trouble lsp_references close')
+        pcall(vim.cmd, 'Trouble lsp_submode_diagnostics close')
+        pcall(vim.cmd, 'Trouble lsp_submode_references close')
         pcall(function()
           require('lspsaga.codeaction'):close_action_window()
         end)
@@ -199,45 +210,30 @@ return {
       {
         'r',
         function()
-          vim.cmd('Trouble lsp_references open focus=false')
-          vim.cmd('Trouble next jump=true skip_groups=true')
+          open_lsp_trouble('references', 'next')
         end,
       },
       {
         'R',
         function()
-          vim.cmd('Trouble lsp_references open focus=false')
-          vim.cmd('Trouble prev jump=true skip_groups=true')
+          open_lsp_trouble('references', 'prev')
         end,
       },
       {
         'd',
         function()
-          vim.cmd('Trouble diagnostics open focus=false')
-          vim.cmd('Trouble next jump=true skip_groups=true')
+          open_lsp_trouble('diagnostics', 'next')
         end,
       },
       {
         'D',
         function()
-          vim.cmd('Trouble diagnostics open focus=false')
-          vim.cmd('Trouble prev jump=true skip_groups=true')
+          open_lsp_trouble('diagnostics', 'prev')
         end,
       },
       {
         'a',
         '<Cmd>Lspsaga code_action<CR>',
-      },
-      { 'h', 'h' },
-      { 'j', 'j' },
-      { 'k', 'k' },
-      { 'l', 'l' },
-      {
-        '<CR>',
-        function()
-          apply_lspsaga_code_action(nil)
-          return ''
-        end,
       },
       { '1', function() apply_lspsaga_code_action(1) return '' end },
       { '2', function() apply_lspsaga_code_action(2) return '' end },
@@ -248,6 +244,17 @@ return {
       { '7', function() apply_lspsaga_code_action(7) return '' end },
       { '8', function() apply_lspsaga_code_action(8) return '' end },
       { '9', function() apply_lspsaga_code_action(9) return '' end },
+      { 'j', 'j' },
+      { 'k', 'k' },
+      { 'h', 'h' },
+      { 'l', 'l' },
+      {
+        '<CR>',
+        function()
+          apply_lspsaga_code_action(nil)
+          return ''
+        end,
+      },
       { '<Tab>', '<Cmd>BufferNext<CR>' },
       { '<S-Tab>', '<Cmd>BufferPrevious<CR>' },
       {
