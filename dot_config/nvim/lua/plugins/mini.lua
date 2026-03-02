@@ -71,6 +71,7 @@ return {
     local function setup_non_starter()
       local MiniClue = require('mini.clue')
       local MiniMisc = require('mini.misc')
+      local MiniPick = require('mini.pick')
 
       MiniMisc.setup_restore_cursor()
       require('mini.extra').setup()
@@ -110,13 +111,29 @@ return {
       })
       require('mini.surround').setup()
       require('mini.pairs').setup()
-      require('mini.pick').setup()
+      MiniPick.setup()
       require('mini.visits').setup()
       require('mini.trailspace').setup()
 
-      vim.keymap.set('n', '<leader>pf', function()
-        require('mini.pick').builtin.files()
-      end, vim.tbl_extend('force', map_opts, { desc = 'Find Files' }))
+      local function pick_files_with_hidden()
+        if vim.fn.executable('rg') == 1 then
+          return MiniPick.builtin.cli({
+            command = { 'rg', '--files', '--hidden', '--glob', '!.git', '--color=never' },
+          }, {
+            source = { name = 'Files (rg, hidden)' },
+          })
+        end
+        if vim.fn.executable('fd') == 1 then
+          return MiniPick.builtin.cli({
+            command = { 'fd', '--type=f', '--hidden', '--exclude', '.git', '--color=never' },
+          }, {
+            source = { name = 'Files (fd, hidden)' },
+          })
+        end
+        return MiniPick.builtin.files()
+      end
+
+      vim.keymap.set('n', '<leader>pf', pick_files_with_hidden, vim.tbl_extend('force', map_opts, { desc = 'Find Files' }))
 
       vim.keymap.set('n', '<leader>pg', function()
         require('mini.pick').builtin.grep_live()
@@ -332,16 +349,12 @@ return {
         end,
       },
       footer = function()
-        local ms = 0
-        local ok_lazy, lazy = pcall(require, 'lazy')
-        if ok_lazy and type(lazy.stats) == 'function' then
-          local stats = lazy.stats()
-          ms = stats.startuptime or 0
-          if ms == 0 and type(stats.times) == 'table' then
-            ms = stats.times.LazyDone or stats.times.LazyStart or 0
-          end
+        local stats = require('lazy').stats()
+        local ms = stats.startuptime
+        if ms == 0 and type(stats.times) == 'table' then
+          ms = stats.times.LazyDone or stats.times.LazyStart or 0
         end
-        return string.format('󰓅  Neovim loaded in %.2f ms', ms)
+        return string.format('󰓅  Neovim loaded (%d / %d) plugins in %.2f ms', stats.loaded, stats.count, ms)
       end,
     })
 
@@ -425,7 +438,7 @@ return {
       local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
       for i, line in ipairs(lines) do
         local s, e = line:find('%d+%.%d+ ms')
-        if line:find('Neovim loaded in', 1, true) and s and e then
+        if line:find('Neovim loaded (', 1, true) and s and e then
           local is, ie = line:find('󰓅', 1, true)
           if is and ie then
             vim.api.nvim_buf_add_highlight(buf, starter_footer_ns, 'MiniStarterFooterIcon', i - 1, is - 1, ie)
