@@ -154,11 +154,12 @@ return {
 
     local function shorten_path(path)
       local p = vim.fn.fnamemodify(path, ':~')
-      local parts = vim.split(p, '/', { plain = true, trimempty = true })
+      local sep = package.config:sub(1, 1)
+      local parts = vim.split(p, '[/\\]', { trimempty = true })
       if #parts <= 3 then
         return p
       end
-      return string.format('%s/.../%s/%s', parts[1], parts[#parts - 1], parts[#parts])
+      return string.format('%s%s...%s%s%s%s', parts[1], sep, sep, parts[#parts - 1], sep, parts[#parts])
     end
 
     local function section_auto_sessions(limit)

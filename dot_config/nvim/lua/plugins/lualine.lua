@@ -49,6 +49,9 @@ return {
         theme = 'wisteria',
         component_separators = '',
         section_separators = { left = '', right = '' },
+        disabled_filetypes = {
+          statusline = { 'ministarter' },
+        },
       },
       sections = {
         lualine_a = {
