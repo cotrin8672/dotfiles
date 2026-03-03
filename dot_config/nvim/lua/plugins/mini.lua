@@ -8,7 +8,6 @@ return {
     local has_devicons, devicons = pcall(require, 'nvim-web-devicons')
     local starter_icon_ns = vim.api.nvim_create_namespace('starter_icon_colors')
     local starter_footer_ns = vim.api.nvim_create_namespace('starter_footer_colors')
-    local starter_header_ns = vim.api.nvim_create_namespace('starter_header_colors')
     local starter_emphasis_ns = vim.api.nvim_create_namespace('starter_emphasis_colors')
     local starter_path_ns = vim.api.nvim_create_namespace('starter_path_colors')
     local header_hl_cache = {}
@@ -32,40 +31,6 @@ return {
         vim.api.nvim_set_hl(0, hl, { fg = string.format('#%02x%02x%02x', r, g, b), bold = true })
       end
       return hl
-    end
-
-    local function apply_header_gradient(buf)
-      if not vim.api.nvim_buf_is_valid(buf) then
-        return
-      end
-
-      vim.api.nvim_buf_clear_namespace(buf, starter_header_ns, 0, -1)
-      local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-      local header_idx = 1
-
-      for lnum, line in ipairs(lines) do
-        if header_idx > #starter_header_lines then
-          break
-        end
-        local raw = starter_header_lines[header_idx]
-        local pad = line:match('^(%s*)' .. vim.pesc(raw))
-        if pad then
-          local total_chars = vim.fn.strchars(raw)
-          for i = 0, total_chars - 1 do
-            local start_col = #pad + vim.str_byteindex(raw, i)
-            local end_col = #pad + vim.str_byteindex(raw, i + 1)
-            vim.api.nvim_buf_add_highlight(
-              buf,
-              starter_header_ns,
-              header_gradient_hl(i, total_chars),
-              lnum - 1,
-              start_col,
-              end_col
-            )
-          end
-          header_idx = header_idx + 1
-        end
-      end
     end
 
     local function setup_non_starter()
@@ -147,10 +112,11 @@ return {
           local dir_name = vim.fn.fnamemodify(repo_path, ':t')
           local display = string.format('%s (%s)', dir_name, full_path)
           table.insert(items, {
-            name = string.format('  󰆓  %s', display),
+            name = display,
             section = '󰆓  Sessions',
             _icon = '󰆓',
             _icon_hl = 'MiniStarterProjectIcon',
+            _icon_virtual = true,
             _emph_text = dir_name,
             _path_text = string.format('(%s)', full_path),
             action = function()
@@ -187,10 +153,11 @@ return {
             end
 
             table.insert(items, {
-              name = string.format('  %s  %s (%s)', icon, basename, shorten_path(rel)),
+              name = string.format('%s (%s)', basename, shorten_path(rel)),
               section = '  Recent files (current directory)',
               _icon = icon,
               _icon_hl = icon_hl,
+              _icon_virtual = true,
               _emph_text = basename,
               _path_text = string.format('(%s)', shorten_path(rel)),
               action = function()
@@ -212,20 +179,49 @@ return {
 
     local function section_builtin_actions_with_icon()
       local actions = MiniStarter.sections.builtin_actions()
+      table.insert(actions, 1, {
+        name = 'Lazy',
+        action = 'Lazy',
+        section = 'Builtin actions',
+      })
+      table.insert(actions, 2, {
+        name = 'Mason',
+        action = 'Mason',
+        section = 'Builtin actions',
+      })
+      table.insert(actions, 3, {
+        name = 'Oil',
+        action = 'Oil --float',
+        section = 'Builtin actions',
+      })
       for _, item in ipairs(actions) do
         item.section = '  Keymaps'
-        if item.name == 'Edit new buffer' then
-          item.name = '    Edit new buffer'
+        if item.name == 'Lazy' then
+          item._icon = '󰒲'
+          item._icon_hl = 'MiniStarterKeymapIcon'
+          item._icon_virtual = true
+        elseif item.name == 'Mason' then
+          item._icon = '󱌣'
+          item._icon_hl = 'MiniStarterKeymapIcon'
+          item._icon_virtual = true
+        elseif item.name == 'Oil' then
+          item._icon = '󱧶'
+          item._icon_hl = 'MiniStarterKeymapIcon'
+          item._icon_virtual = true
+        elseif item.name == 'Edit new buffer' then
+          item.name = 'New file'
           item._icon = ''
           item._icon_hl = 'MiniStarterFileIcon'
+          item._icon_virtual = true
         elseif item.name == 'Quit Neovim' then
-          item.name = '    Quit Neovim'
+          item.name = 'Quit'
           item._icon = ''
           item._icon_hl = 'MiniStarterQuitIcon'
+          item._icon_virtual = true
         else
-          item.name = string.format('    %s', item.name)
           item._icon = ''
           item._icon_hl = 'MiniStarterKeymapIcon'
+          item._icon_virtual = true
         end
       end
       return actions
@@ -259,6 +255,66 @@ return {
                   unit.hl = 'MiniStarterSectionKeymaps'
                 end
               end
+            end
+          end
+          return content
+        end,
+        function(content)
+          local header_idx = 1
+          for line_i, line in ipairs(content) do
+            local is_header_line = false
+            for _, unit in ipairs(line) do
+              if unit.type == 'header' then
+                is_header_line = true
+                break
+              end
+            end
+            if not is_header_line then
+              goto continue
+            end
+
+            local raw = starter_header_lines[header_idx]
+            if not raw then
+              goto continue
+            end
+
+            local new_line = {}
+            for _, unit in ipairs(line) do
+              if unit.type ~= 'header' then
+                table.insert(new_line, unit)
+              else
+                local total_chars = vim.fn.strchars(raw)
+                for ci = 0, total_chars - 1 do
+                  local s = vim.str_byteindex(raw, ci)
+                  local e = vim.str_byteindex(raw, ci + 1)
+                  table.insert(new_line, {
+                    string = raw:sub(s + 1, e),
+                    type = 'header',
+                    hl = header_gradient_hl(ci, total_chars),
+                  })
+                end
+              end
+            end
+            content[line_i] = new_line
+            header_idx = header_idx + 1
+            ::continue::
+          end
+          return content
+        end,
+        function(content)
+          local coords = MiniStarter.content_coords(content, 'item')
+          for i = #coords, 1, -1 do
+            local l_num, u_num = coords[i].line, coords[i].unit
+            local unit = content[l_num][u_num]
+            local item = unit and unit.item or nil
+            if item and item._icon_virtual and item._icon and item._icon_hl then
+              table.insert(content[l_num], u_num, {
+                string = string.format('  %s  ', item._icon),
+                type = 'item_bullet',
+                hl = item._icon_hl,
+                _item = item,
+                _place_cursor = false,
+              })
             end
           end
           return content
@@ -330,11 +386,12 @@ return {
       vim.api.nvim_set_hl(0, 'MiniStarterSectionRecent', { fg = (wst and wst.icho_green) or nil, bold = true })
       vim.api.nvim_set_hl(0, 'MiniStarterSectionKeymaps', { fg = (wst and wst.omugi_gold) or nil, bold = true })
       vim.api.nvim_set_hl(0, 'MiniStarterProjectIcon', { link = 'Directory' })
-      vim.api.nvim_set_hl(0, 'MiniStarterKeymapIcon', { link = 'Special' })
-      vim.api.nvim_set_hl(0, 'MiniStarterFileIcon', { link = 'Directory' })
-      vim.api.nvim_set_hl(0, 'MiniStarterQuitIcon', { link = 'ErrorMsg' })
+      vim.api.nvim_set_hl(0, 'MiniStarterKeymapIcon', { fg = '#8491c3', bold = true })
+      vim.api.nvim_set_hl(0, 'MiniStarterFileIcon', { fg = '#8491c3', bold = true })
+      vim.api.nvim_set_hl(0, 'MiniStarterQuitIcon', { fg = '#8491c3', bold = true })
       vim.api.nvim_set_hl(0, 'MiniStarterItemEmphasis', { bold = true })
       vim.api.nvim_set_hl(0, 'MiniStarterItemPath', { fg = '#6b7280', italic = false })
+      vim.api.nvim_set_hl(0, 'MiniStarterQuery', { italic = false })
       vim.api.nvim_set_hl(0, 'MiniStarterFooter', { fg = (wst and wst.sky) or nil, bold = true })
       vim.api.nvim_set_hl(0, 'MiniStarterFooterIcon', { fg = (wst and wst.omugi_gold) or nil, bold = true })
       vim.api.nvim_set_hl(0, 'MiniStarterFooterNumber', { fg = (wst and wst.flower_fuji) or nil, bold = true })
@@ -345,7 +402,6 @@ return {
         return
       end
 
-      apply_header_gradient(buf)
       vim.api.nvim_buf_clear_namespace(buf, starter_icon_ns, 0, -1)
       vim.api.nvim_buf_clear_namespace(buf, starter_footer_ns, 0, -1)
       vim.api.nvim_buf_clear_namespace(buf, starter_emphasis_ns, 0, -1)
@@ -353,7 +409,7 @@ return {
 
       local items = MiniStarter.content_to_items(MiniStarter.get_content(buf))
       for _, item in ipairs(items) do
-        if item._icon and item._icon_hl and item._line ~= nil and item._start_col ~= nil then
+        if (not item._icon_virtual) and item._icon and item._icon_hl and item._line ~= nil and item._start_col ~= nil then
           local icon_col = item._start_col + 2
           local icon_width = vim.fn.strchars(item._icon)
           vim.api.nvim_buf_add_highlight(
@@ -439,6 +495,7 @@ return {
           MiniStarter.update_current_item('prev', buf)
         end, opts)
 
+        repaint_starter_buffer(buf)
         vim.schedule(function()
           repaint_starter_buffer(buf)
         end)
@@ -451,9 +508,7 @@ return {
         if not vim.api.nvim_buf_is_valid(buf) or vim.bo[buf].filetype ~= 'ministarter' then
           return
         end
-        vim.schedule(function()
-          repaint_starter_buffer(buf)
-        end)
+        repaint_starter_buffer(buf)
       end,
     })
 
