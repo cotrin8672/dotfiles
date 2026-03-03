@@ -4,16 +4,21 @@ return {
   config = function()
     require('colorizer').setup({
       filetypes = { '*' },
-      user_default_options = {
-        RGB = true,
-        RRGGBB = true,
-        names = false,
-        RRGGBBAA = true,
-        AARRGGBB = true,
-        rgb_fn = true,
-        hsl_fn = true,
-        css = true,
-        css_fn = true,
+      options = {
+        parsers = {
+          css = true,
+          css_fn = true,
+          names = { enable = false },
+          hex = {
+            rgb = true,
+            rgba = true,
+            rrggbb = true,
+            rrggbbaa = true,
+            aarrggbb = true,
+          },
+          rgb = { enable = true },
+          hsl = { enable = true },
+        },
       },
     })
   end,

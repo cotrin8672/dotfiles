@@ -5,10 +5,13 @@ return {
     local sm = require('nvim-submode')
     local hint_ns = vim.api.nvim_create_namespace('window_submode_hint')
     local lsp_hint_ns = vim.api.nvim_create_namespace('lsp_submode_hint')
+    local debug_hint_ns = vim.api.nvim_create_namespace('debug_submode_hint')
     local hint_buf = nil
     local hint_win = nil
     local lsp_hint_buf = nil
     local lsp_hint_win = nil
+    local debug_hint_buf = nil
+    local debug_hint_win = nil
 
     local function close_window_hint()
       if hint_win and vim.api.nvim_win_is_valid(hint_win) then
@@ -108,6 +111,58 @@ return {
         style = 'minimal',
         border = 'rounded',
         title = ' LSP Mode ',
+        title_pos = 'center',
+      })
+    end
+
+    local function close_debug_hint()
+      if debug_hint_win and vim.api.nvim_win_is_valid(debug_hint_win) then
+        vim.api.nvim_win_close(debug_hint_win, true)
+      end
+      debug_hint_win = nil
+      debug_hint_buf = nil
+    end
+
+    local function open_debug_hint()
+      close_debug_hint()
+
+      local lines = {
+        ' c │ Continue / Start',
+        ' n │ Step over',
+        ' i │ Step into',
+        ' o │ Step out',
+        ' b │ Toggle breakpoint',
+        ' B │ Conditional breakpoint',
+        ' l │ Run last',
+        ' r │ Toggle REPL',
+        ' t │ Terminate session',
+        ' u │ Toggle DAP UI',
+        ' q │ Exit DEBUG mode',
+      }
+
+      debug_hint_buf = vim.api.nvim_create_buf(false, true)
+      vim.bo[debug_hint_buf].buftype = 'nofile'
+      vim.bo[debug_hint_buf].bufhidden = 'wipe'
+      vim.bo[debug_hint_buf].swapfile = false
+      vim.bo[debug_hint_buf].modifiable = true
+      vim.api.nvim_buf_set_lines(debug_hint_buf, 0, -1, false, lines)
+      for i = 1, #lines do
+        vim.api.nvim_buf_add_highlight(debug_hint_buf, debug_hint_ns, 'MiniClueNextKey', i - 1, 1, 2)
+        vim.api.nvim_buf_add_highlight(debug_hint_buf, debug_hint_ns, 'MiniClueSeparator', i - 1, 3, 6)
+      end
+      vim.bo[debug_hint_buf].modifiable = false
+      local width = 38
+      local height = #lines
+      local col = math.max(vim.o.columns - width - 2, 0)
+      debug_hint_win = vim.api.nvim_open_win(debug_hint_buf, false, {
+        relative = 'editor',
+        row = 3,
+        col = col,
+        width = width,
+        height = height,
+        style = 'minimal',
+        border = 'rounded',
+        title = ' DEBUG Mode ',
         title_pos = 'center',
       })
     end
@@ -268,5 +323,155 @@ return {
     vim.keymap.set('n', '<leader>l', function()
       sm.enable(lsp_sm)
     end, { desc = 'LSP submode' })
+
+    local debug_sm = sm.build_submode({
+      name = 'DEBUG',
+      display_name = 'DEBUG',
+      color = '#d66a35', -- 黄櫨染
+      timeoutlen = vim.o.timeoutlen,
+      is_count_enable = false,
+      after_enter = function()
+        local ok_dapui, dapui = pcall(require, 'dapui')
+        if ok_dapui then
+          dapui.open()
+        end
+        open_debug_hint()
+        refresh_lualine()
+      end,
+      after_leave = function()
+        local ok_dapui, dapui = pcall(require, 'dapui')
+        if ok_dapui then
+          dapui.close()
+        end
+        close_debug_hint()
+        refresh_lualine()
+      end,
+    }, {
+      {
+        'c',
+        function()
+          local ok, dap = pcall(require, 'dap')
+          if ok then
+            dap.continue()
+          end
+          return ''
+        end,
+      },
+      {
+        'n',
+        function()
+          local ok, dap = pcall(require, 'dap')
+          if ok then
+            dap.step_over()
+          end
+          return ''
+        end,
+      },
+      {
+        'i',
+        function()
+          local ok, dap = pcall(require, 'dap')
+          if ok then
+            dap.step_into()
+          end
+          return ''
+        end,
+      },
+      {
+        'o',
+        function()
+          local ok, dap = pcall(require, 'dap')
+          if ok then
+            dap.step_out()
+          end
+          return ''
+        end,
+      },
+      {
+        'b',
+        function()
+          local ok, dap = pcall(require, 'dap')
+          if ok then
+            dap.toggle_breakpoint()
+          end
+          return ''
+        end,
+      },
+      {
+        'B',
+        function()
+          local ok, dap = pcall(require, 'dap')
+          if ok then
+            local condition = vim.fn.input('Breakpoint condition: ')
+            if condition ~= nil and condition ~= '' then
+              dap.set_breakpoint(condition)
+            end
+          end
+          return ''
+        end,
+      },
+      {
+        'l',
+        function()
+          local ok, dap = pcall(require, 'dap')
+          if ok then
+            dap.run_last()
+          end
+          return ''
+        end,
+      },
+      {
+        'r',
+        function()
+          local ok, dap = pcall(require, 'dap')
+          if ok then
+            dap.repl.toggle()
+          end
+          return ''
+        end,
+      },
+      {
+        't',
+        function()
+          local ok, dap = pcall(require, 'dap')
+          if ok then
+            dap.terminate()
+          end
+          return ''
+        end,
+      },
+      {
+        'u',
+        function()
+          local ok, dapui = pcall(require, 'dapui')
+          if ok then
+            dapui.toggle()
+          end
+          return ''
+        end,
+      },
+      { 'j', 'j' },
+      { 'k', 'k' },
+      { 'h', 'h' },
+      { 'l', 'l' },
+      { '<Tab>', '<Cmd>BufferNext<CR>' },
+      { '<S-Tab>', '<Cmd>BufferPrevious<CR>' },
+      {
+        'q',
+        function()
+          return '', sm.EXIT_SUBMODE
+        end,
+      },
+      {
+        '<Esc>',
+        function()
+          return '', sm.EXIT_SUBMODE
+        end,
+      },
+    })
+
+    vim.keymap.set('n', '<leader>d', function()
+      sm.enable(debug_sm)
+    end, { desc = 'DEBUG submode' })
   end,
 }

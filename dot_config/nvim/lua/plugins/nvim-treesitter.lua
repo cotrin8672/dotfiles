@@ -8,21 +8,9 @@ return {
     if not ok then
       return
     end
+    local languages = require('shared.languages')
     configs.setup({
-      ensure_installed = {
-        'bash',
-        'css',
-        'html',
-        'java',
-        'javascript',
-        'json',
-        'kotlin',
-        'lua',
-        'rust',
-        'toml',
-        'tsx',
-        'typescript',
-      },
+      ensure_installed = languages.treesitter_parsers,
       auto_install = true,
       highlight = {
         enable = true,

@@ -2,6 +2,7 @@ return {
   'neovim/nvim-lspconfig',
   event = 'BufReadPre',
   config = function()
+    local languages = require('shared.languages')
     local ok, icons = pcall(require, 'ui.diagnostic_icons')
     if not ok then
       icons = require('shared.diagnostic_icons')
@@ -130,24 +131,19 @@ return {
         end,
       },
     })
-    vim.lsp.config('kotlin_lsp', {
-      cmd = { 'kotlin-lsp' },
-    })
+    local servers = {}
+    for _, parser in ipairs(languages.treesitter_parsers) do
+      local server = languages.lsp_from_treesitter[parser]
+      if server then
+        servers[server] = true
+      end
+    end
+    servers.marksman = true
+    servers.gradle_ls = true
+    servers.biome = true
+    servers.matlab_ls = true
 
-    vim.lsp.enable({
-      'rust_analyzer',
-      'ts_ls',
-      'html',
-      'cssls',
-      'lua_ls',
-      'kotlin_lsp',
-      'jdtls',
-      'taplo',
-      'jsonls',
-      'marksman',
-      'gradle_ls',
-      'biome',
-    })
+    vim.lsp.enable(vim.tbl_keys(servers))
     vim.api.nvim_create_autocmd('LspAttach', {
       callback = function(args)
         local client = vim.lsp.get_client_by_id(args.data.client_id)
@@ -174,8 +170,7 @@ return {
         vim.keymap.set('n', '<leader>ca', '<cmd>Lspsaga code_action<cr>', key_opts)
         vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, key_opts)
         vim.keymap.set('n', ']d', vim.diagnostic.goto_next, key_opts)
-        vim.keymap.set('n', '<leader>de', vim.diagnostic.open_float, key_opts)
-        vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, key_opts)
+                vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, key_opts)
 
         if client.name == 'rust_analyzer' and client.supports_method('textDocument/formatting') then
           vim.api.nvim_create_autocmd('BufWritePre', {
