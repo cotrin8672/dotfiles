@@ -71,10 +71,8 @@ return {
     local function setup_non_starter()
       local MiniClue = require('mini.clue')
       local MiniMisc = require('mini.misc')
-      local MiniPick = require('mini.pick')
 
       MiniMisc.setup_restore_cursor()
-      require('mini.extra').setup()
 
       MiniClue.setup({
         triggers = {
@@ -111,45 +109,8 @@ return {
       })
       require('mini.surround').setup()
       require('mini.pairs').setup()
-      MiniPick.setup()
       require('mini.visits').setup()
       require('mini.trailspace').setup()
-
-      local function pick_files_with_hidden()
-        if vim.fn.executable('rg') == 1 then
-          return MiniPick.builtin.cli({
-            command = { 'rg', '--files', '--hidden', '--glob', '!.git', '--color=never' },
-          }, {
-            source = { name = 'Files (rg, hidden)' },
-          })
-        end
-        if vim.fn.executable('fd') == 1 then
-          return MiniPick.builtin.cli({
-            command = { 'fd', '--type=f', '--hidden', '--exclude', '.git', '--color=never' },
-          }, {
-            source = { name = 'Files (fd, hidden)' },
-          })
-        end
-        return MiniPick.builtin.files()
-      end
-
-      vim.keymap.set('n', '<leader>pf', pick_files_with_hidden, vim.tbl_extend('force', map_opts, { desc = 'Find Files' }))
-
-      vim.keymap.set('n', '<leader>pg', function()
-        require('mini.pick').builtin.grep_live()
-      end, vim.tbl_extend('force', map_opts, { desc = 'Live Grep' }))
-
-      vim.keymap.set('n', '<leader>pb', function()
-        require('mini.pick').builtin.buffers()
-      end, vim.tbl_extend('force', map_opts, { desc = 'Search Buffers' }))
-
-      vim.keymap.set('n', '<leader>pr', function()
-        require('mini.extra').pickers.visit_paths()
-      end, vim.tbl_extend('force', map_opts, { desc = 'Recent Files' }))
-
-      vim.keymap.set('n', '<leader>ps', function()
-        require('mini.extra').pickers.lsp({ scope = 'workspace_symbol' })
-      end, vim.tbl_extend('force', map_opts, { desc = 'LSP Workspace Symbols' }))
     end
 
     local function shorten_path(path)
