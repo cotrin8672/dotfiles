@@ -131,6 +131,9 @@ return {
         end,
       },
     })
+    vim.lsp.config('matlab_ls', {
+      single_file_support = true,
+    })
     local servers = {}
     for _, parser in ipairs(languages.treesitter_parsers) do
       local server = languages.lsp_from_treesitter[parser]
