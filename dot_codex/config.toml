@@ -2,7 +2,7 @@ model = "gpt-5.3-codex"
 approval_policy = "never"             # 承認をスキップ
 windows_wsl_setup_acknowledged = true
 hide_agent_reasoning = false # TUI（テキストユーザーインターフェース）とcodex execの出力において、推論イベントを表示するようにする
-model_reasoning_effort = "low"
+model_reasoning_effort = "medium"
 web_search = "live"             # モデルによるウェブ検索の実行を許可
 personality = "pragmatic"
 

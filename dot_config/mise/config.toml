@@ -18,6 +18,7 @@ taplo = "latest"
 "npm:@dotenvx/dotenvx" = "latest"
 "npm:@playwright/cli" = "latest"
 zoxide = "latest"
+ghq = "latest"
 
 [tasks.nvim-startuptime-install]
 description = "Install vim-startuptime via go install"

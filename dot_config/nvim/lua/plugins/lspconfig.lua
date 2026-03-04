@@ -141,6 +141,9 @@ return {
         servers[server] = true
       end
     end
+    -- kotlin.nvim manages Kotlin LSP lifecycle itself.
+    servers.kotlin_lsp = nil
+    servers.kotlin_ls = nil
     servers.marksman = true
     servers.gradle_ls = true
     servers.biome = true
