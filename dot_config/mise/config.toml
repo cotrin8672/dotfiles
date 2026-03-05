@@ -19,6 +19,7 @@ taplo = "latest"
 "npm:@playwright/cli" = "latest"
 zoxide = "latest"
 ghq = "latest"
+claude-code = "latest"
 
 [tasks.nvim-startuptime-install]
 description = "Install vim-startuptime via go install"
