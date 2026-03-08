@@ -1,11 +1,26 @@
 return {
   'echasnovski/mini.nvim',
   version = false,
-  event = 'VimEnter',
+  event = 'VeryLazy',
+  init = function()
+    vim.api.nvim_create_autocmd('VimEnter', {
+      once = true,
+      callback = function()
+        if vim.fn.argc() > 0 then
+          return
+        end
+        if vim.bo.filetype ~= '' or vim.api.nvim_buf_get_name(0) ~= '' then
+          return
+        end
+
+        vim.g.mini_starter_requested = true
+        require('lazy').load({ plugins = { 'mini.nvim' } })
+        require('mini.starter').open()
+      end,
+    })
+  end,
   config = function()
     local map_opts = { noremap = true, silent = true }
-    local MiniStarter = require('mini.starter')
-    local has_devicons, devicons = pcall(require, 'nvim-web-devicons')
     local starter_icon_ns = vim.api.nvim_create_namespace('starter_icon_colors')
     local starter_footer_ns = vim.api.nvim_create_namespace('starter_footer_colors')
     local starter_emphasis_ns = vim.api.nvim_create_namespace('starter_emphasis_colors')
@@ -135,6 +150,7 @@ return {
         local sep = package.config:sub(1, 1)
         local cwd_prefix = cwd .. sep
         local items = {}
+        local has_devicons, devicons = pcall(require, 'nvim-web-devicons')
 
         for _, f in ipairs(vim.v.oldfiles or {}) do
           if vim.fn.filereadable(f) == 1 and vim.startswith(f, cwd_prefix) then
@@ -178,6 +194,7 @@ return {
     end
 
     local function section_builtin_actions_with_icon()
+      local MiniStarter = require('mini.starter')
       local actions = MiniStarter.sections.builtin_actions()
       table.insert(actions, 1, {
         name = 'Lazy',
@@ -227,154 +244,165 @@ return {
       return actions
     end
 
-    MiniStarter.setup({
-      evaluate_single = true,
-      header = table.concat({
-        '███╗   ██╗ ███████╗  ██████╗  ██╗   ██╗ ██╗ ███╗   ███╗',
-        '████╗  ██║ ██╔════╝ ██╔═══██╗ ██║   ██║ ██║ ████╗ ████║',
-        '██╔██╗ ██║ █████╗   ██║   ██║ ██║   ██║ ██║ ██╔████╔██║',
-        '██║╚██╗██║ ██╔══╝   ██║   ██║ ╚██╗ ██╔╝ ██║ ██║╚██╔╝██║',
-        '██║ ╚████║ ███████╗ ╚██████╔╝  ╚████╔╝  ██║ ██║ ╚═╝ ██║',
-        '╚═╝  ╚═══╝ ╚══════╝  ╚═════╝    ╚═══╝   ╚═╝ ╚═╝     ╚═╝',
-      }, '\n'),
-      items = {
-        section_auto_sessions(10),
-        section_recent_files(8),
-        section_builtin_actions_with_icon,
-      },
-      content_hooks = {
-        function(content)
-          for _, line in ipairs(content) do
-            for _, unit in ipairs(line) do
-              if unit.type == 'section' then
-                if unit.string:find('Sessions', 1, true) then
-                  unit.hl = 'MiniStarterSectionProjects'
-                elseif unit.string:find('Recent files', 1, true) then
-                  unit.hl = 'MiniStarterSectionRecent'
-                elseif unit.string:find('Keymaps', 1, true) then
-                  unit.hl = 'MiniStarterSectionKeymaps'
+    local starter_setup_done = false
+
+    local function setup_starter()
+      if starter_setup_done then
+        return
+      end
+      starter_setup_done = true
+
+      local MiniStarter = require('mini.starter')
+
+      MiniStarter.setup({
+        evaluate_single = true,
+        header = table.concat({
+          '███╗   ██╗ ███████╗  ██████╗  ██╗   ██╗ ██╗ ███╗   ███╗',
+          '████╗  ██║ ██╔════╝ ██╔═══██╗ ██║   ██║ ██║ ████╗ ████║',
+          '██╔██╗ ██║ █████╗   ██║   ██║ ██║   ██║ ██║ ██╔████╔██║',
+          '██║╚██╗██║ ██╔══╝   ██║   ██║ ╚██╗ ██╔╝ ██║ ██║╚██╔╝██║',
+          '██║ ╚████║ ███████╗ ╚██████╔╝  ╚████╔╝  ██║ ██║ ╚═╝ ██║',
+          '╚═╝  ╚═══╝ ╚══════╝  ╚═════╝    ╚═══╝   ╚═╝ ╚═╝     ╚═╝',
+        }, '\n'),
+        items = {
+          section_auto_sessions(10),
+          section_recent_files(8),
+          section_builtin_actions_with_icon,
+        },
+        content_hooks = {
+          function(content)
+            for _, line in ipairs(content) do
+              for _, unit in ipairs(line) do
+                if unit.type == 'section' then
+                  if unit.string:find('Sessions', 1, true) then
+                    unit.hl = 'MiniStarterSectionProjects'
+                  elseif unit.string:find('Recent files', 1, true) then
+                    unit.hl = 'MiniStarterSectionRecent'
+                  elseif unit.string:find('Keymaps', 1, true) then
+                    unit.hl = 'MiniStarterSectionKeymaps'
+                  end
                 end
               end
             end
-          end
-          return content
-        end,
-        function(content)
-          local header_idx = 1
-          for line_i, line in ipairs(content) do
-            local is_header_line = false
-            for _, unit in ipairs(line) do
-              if unit.type == 'header' then
-                is_header_line = true
-                break
+            return content
+          end,
+          function(content)
+            local header_idx = 1
+            for line_i, line in ipairs(content) do
+              local is_header_line = false
+              for _, unit in ipairs(line) do
+                if unit.type == 'header' then
+                  is_header_line = true
+                  break
+                end
+              end
+              if not is_header_line then
+                goto continue
+              end
+
+              local raw = starter_header_lines[header_idx]
+              if not raw then
+                goto continue
+              end
+
+              local new_line = {}
+              for _, unit in ipairs(line) do
+                if unit.type ~= 'header' then
+                  table.insert(new_line, unit)
+                else
+                  local total_chars = vim.fn.strchars(raw)
+                  for ci = 0, total_chars - 1 do
+                    local s = vim.str_byteindex(raw, ci)
+                    local e = vim.str_byteindex(raw, ci + 1)
+                    table.insert(new_line, {
+                      string = raw:sub(s + 1, e),
+                      type = 'header',
+                      hl = header_gradient_hl(ci, total_chars),
+                    })
+                  end
+                end
+              end
+              content[line_i] = new_line
+              header_idx = header_idx + 1
+              ::continue::
+            end
+            return content
+          end,
+          function(content)
+            local coords = MiniStarter.content_coords(content, 'item')
+            for i = #coords, 1, -1 do
+              local l_num, u_num = coords[i].line, coords[i].unit
+              local unit = content[l_num][u_num]
+              local item = unit and unit.item or nil
+              if item and item._icon_virtual and item._icon and item._icon_hl then
+                table.insert(content[l_num], u_num, {
+                  string = string.format('  %s  ', item._icon),
+                  type = 'item_bullet',
+                  hl = item._icon_hl,
+                  _item = item,
+                  _place_cursor = false,
+                })
               end
             end
-            if not is_header_line then
-              goto continue
-            end
-
-            local raw = starter_header_lines[header_idx]
-            if not raw then
-              goto continue
-            end
-
-            local new_line = {}
-            for _, unit in ipairs(line) do
-              if unit.type ~= 'header' then
-                table.insert(new_line, unit)
-              else
-                local total_chars = vim.fn.strchars(raw)
-                for ci = 0, total_chars - 1 do
-                  local s = vim.str_byteindex(raw, ci)
-                  local e = vim.str_byteindex(raw, ci + 1)
-                  table.insert(new_line, {
-                    string = raw:sub(s + 1, e),
-                    type = 'header',
-                    hl = header_gradient_hl(ci, total_chars),
-                  })
+            return content
+          end,
+          MiniStarter.gen_hook.aligning('center', 'center'),
+          function(content)
+            local columns = vim.o.columns
+            for _, line in ipairs(content) do
+              local has_footer = false
+              local has_header = false
+              local line_text = ''
+              for _, unit in ipairs(line) do
+                line_text = line_text .. (unit.string or '')
+                if unit.type == 'footer' then
+                  has_footer = true
+                elseif unit.type == 'header' then
+                  has_header = true
+                end
+              end
+              if has_header then
+                if line[1] and line[1].string then
+                  line[1].string = line[1].string:gsub('^%s+', '')
+                end
+                line_text = ''
+                for _, unit in ipairs(line) do
+                  line_text = line_text .. (unit.string or '')
+                end
+                local width = vim.fn.strdisplaywidth(line_text)
+                local pad = math.max(math.floor((columns - width) / 2), 0)
+                if pad > 0 and line[1] then
+                  line[1].string = string.rep(' ', pad) .. line[1].string
+                end
+              end
+              if has_footer then
+                if line[1] and line[1].string then
+                  line[1].string = line[1].string:gsub('^%s+', '')
+                end
+                line_text = ''
+                for _, unit in ipairs(line) do
+                  line_text = line_text .. (unit.string or '')
+                end
+                local width = vim.fn.strdisplaywidth(line_text)
+                local pad = math.max(math.floor((columns - width) / 2), 0)
+                if pad > 0 and line[1] then
+                  line[1].string = string.rep(' ', pad) .. line[1].string
                 end
               end
             end
-            content[line_i] = new_line
-            header_idx = header_idx + 1
-            ::continue::
+            return content
+          end,
+        },
+        footer = function()
+          local stats = require('lazy').stats()
+          local ms = stats.startuptime
+          if ms == 0 and type(stats.times) == 'table' then
+            ms = stats.times.LazyDone or stats.times.LazyStart or 0
           end
-          return content
+          return string.format('󰓅  Neovim loaded (%d / %d) plugins in %.2f ms', stats.loaded, stats.count, ms)
         end,
-        function(content)
-          local coords = MiniStarter.content_coords(content, 'item')
-          for i = #coords, 1, -1 do
-            local l_num, u_num = coords[i].line, coords[i].unit
-            local unit = content[l_num][u_num]
-            local item = unit and unit.item or nil
-            if item and item._icon_virtual and item._icon and item._icon_hl then
-              table.insert(content[l_num], u_num, {
-                string = string.format('  %s  ', item._icon),
-                type = 'item_bullet',
-                hl = item._icon_hl,
-                _item = item,
-                _place_cursor = false,
-              })
-            end
-          end
-          return content
-        end,
-        MiniStarter.gen_hook.aligning('center', 'center'),
-        function(content)
-          local columns = vim.o.columns
-          for _, line in ipairs(content) do
-            local has_footer = false
-            local has_header = false
-            local line_text = ''
-            for _, unit in ipairs(line) do
-              line_text = line_text .. (unit.string or '')
-              if unit.type == 'footer' then
-                has_footer = true
-              elseif unit.type == 'header' then
-                has_header = true
-              end
-            end
-            if has_header then
-              if line[1] and line[1].string then
-                line[1].string = line[1].string:gsub('^%s+', '')
-              end
-              line_text = ''
-              for _, unit in ipairs(line) do
-                line_text = line_text .. (unit.string or '')
-              end
-              local width = vim.fn.strdisplaywidth(line_text)
-              local pad = math.max(math.floor((columns - width) / 2), 0)
-              if pad > 0 and line[1] then
-                line[1].string = string.rep(' ', pad) .. line[1].string
-              end
-            end
-            if has_footer then
-              if line[1] and line[1].string then
-                line[1].string = line[1].string:gsub('^%s+', '')
-              end
-              line_text = ''
-              for _, unit in ipairs(line) do
-                line_text = line_text .. (unit.string or '')
-              end
-              local width = vim.fn.strdisplaywidth(line_text)
-              local pad = math.max(math.floor((columns - width) / 2), 0)
-              if pad > 0 and line[1] then
-                line[1].string = string.rep(' ', pad) .. line[1].string
-              end
-            end
-          end
-          return content
-        end,
-      },
-      footer = function()
-        local stats = require('lazy').stats()
-        local ms = stats.startuptime
-        if ms == 0 and type(stats.times) == 'table' then
-          ms = stats.times.LazyDone or stats.times.LazyStart or 0
-        end
-        return string.format('󰓅  Neovim loaded (%d / %d) plugins in %.2f ms', stats.loaded, stats.count, ms)
-      end,
-    })
+      })
+    end
 
     local function apply_starter_hl()
       local ok_base, base_color = pcall(require, 'wisteria.lib.base_color')
@@ -471,51 +499,48 @@ return {
       callback = apply_starter_hl,
     })
 
-    vim.api.nvim_create_autocmd('VimEnter', {
-      callback = function()
-        if vim.fn.argc() > 0 then
-          return
-        end
-        if vim.bo.filetype ~= '' or vim.api.nvim_buf_get_name(0) ~= '' then
-          return
-        end
-        MiniStarter.open()
-      end,
-    })
+    if vim.g.mini_starter_requested then
+      setup_starter()
 
-    vim.api.nvim_create_autocmd('User', {
-      pattern = 'MiniStarterOpened',
-      callback = function()
-        local buf = vim.api.nvim_get_current_buf()
-        local opts = { noremap = true, silent = true, buffer = buf }
-        vim.keymap.set('n', 'j', function()
-          MiniStarter.update_current_item('next', buf)
-        end, opts)
-        vim.keymap.set('n', 'k', function()
-          MiniStarter.update_current_item('prev', buf)
-        end, opts)
+      vim.api.nvim_create_autocmd('User', {
+        pattern = 'MiniStarterOpened',
+        callback = function()
+          local MiniStarter = require('mini.starter')
+          local buf = vim.api.nvim_get_current_buf()
+          local opts = { noremap = true, silent = true, buffer = buf }
+          vim.keymap.set('n', 'j', function()
+            MiniStarter.update_current_item('next', buf)
+          end, opts)
+          vim.keymap.set('n', 'k', function()
+            MiniStarter.update_current_item('prev', buf)
+          end, opts)
 
-        repaint_starter_buffer(buf)
-        vim.schedule(function()
           repaint_starter_buffer(buf)
-        end)
-      end,
-    })
+          vim.schedule(function()
+            repaint_starter_buffer(buf)
+          end)
+        end,
+      })
 
-    vim.api.nvim_create_autocmd({ 'BufEnter', 'VimResized' }, {
-      callback = function(args)
-        local buf = args.buf or vim.api.nvim_get_current_buf()
-        if not vim.api.nvim_buf_is_valid(buf) or vim.bo[buf].filetype ~= 'ministarter' then
-          return
-        end
-        repaint_starter_buffer(buf)
-      end,
-    })
+      vim.api.nvim_create_autocmd({ 'BufEnter', 'VimResized' }, {
+        callback = function(args)
+          local buf = args.buf or vim.api.nvim_get_current_buf()
+          if not vim.api.nvim_buf_is_valid(buf) or vim.bo[buf].filetype ~= 'ministarter' then
+            return
+          end
+          repaint_starter_buffer(buf)
+        end,
+      })
+    end
 
-    vim.api.nvim_create_autocmd('User', {
-      pattern = 'VeryLazy',
-      once = true,
-      callback = setup_non_starter,
-    })
+    if vim.g.mini_starter_requested then
+      vim.api.nvim_create_autocmd('User', {
+        pattern = 'VeryLazy',
+        once = true,
+        callback = setup_non_starter,
+      })
+    else
+      setup_non_starter()
+    end
   end,
 }

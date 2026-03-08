@@ -27,7 +27,7 @@ run = "go install github.com/rhysd/vim-startuptime@latest"
 
 [tasks.nvim-startuptime]
 description = "Measure Neovim startup time with vim-startuptime"
-run = "vim-startuptime +qall"
+run = "vim-startuptime -vimpath nvim +qall"
 
 [settings]
 experimental = true
