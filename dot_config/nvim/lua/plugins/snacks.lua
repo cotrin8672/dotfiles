@@ -19,7 +19,10 @@ return {
     {
       '<leader>pf',
       function()
-        require('snacks').picker.smart({ multi = { 'buffers', 'recent', 'git_files' } })
+        local cwd = vim.fn.getcwd()
+        local in_git_repo = vim.fs.find('.git', { path = cwd, upward = true })[1] ~= nil
+        local sources = in_git_repo and { 'buffers', 'recent', 'git_files' } or { 'buffers', 'recent', 'files' }
+        require('snacks').picker.smart({ multi = sources })
       end,
       desc = 'Smart Picker (Buffers/Recent/Git Files)',
     },
