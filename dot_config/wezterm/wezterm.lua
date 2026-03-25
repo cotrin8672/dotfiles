@@ -1,6 +1,5 @@
 -- Pull in the wezterm API
 local wezterm                                     = require 'wezterm'
-local wisteria                                    = require 'wisteria'
 local status                                      = require 'status'
 local config                                      = wezterm.config_builder()
 config.automatically_reload_config                = true
@@ -20,6 +19,7 @@ config.ime_preedit_rendering                      = "Builtin"
 config.show_close_tab_button_in_tabs              = false
 config.custom_block_glyphs                        = true
 config.use_cap_height_to_scale_fallback_fonts     = true
+config.color_scheme                               = "Everforest Dark Medium (Gogh)"
 
 local mux                            = wezterm.mux
 local ICONS                          = {
@@ -47,20 +47,25 @@ config.window_frame = {
     active_titlebar_bg   = "none",
     font_size            = 14.0,
 }
+local scheme = wezterm.color.get_builtin_schemes()[config.color_scheme]
 config.window_background_gradient = {
-    colors = { wisteria.colors.background },
+    colors = { scheme.background },
 }
 config.show_new_tab_button_in_tab_bar = false
+local TAB_COLORS = {
+    active_bg = "#a7c080",
+    inactive_bg = "#3a454a",
+}
 local SOLID_LEFT_ARROW = wezterm.nerdfonts.ple_lower_right_triangle
 local SOLID_RIGHT_ARROW = wezterm.nerdfonts.ple_upper_left_triangle
 local ZOOM_ICON = wezterm.nerdfonts.md_magnify
 local ZOOM_ICON_COLOR = "#F1C40F"
 wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_width)
-    local background = wisteria.tab_colors.inactive_bg
+    local background = TAB_COLORS.inactive_bg
     local foreground = "#FFFFFF"
     local edge_background = "none"
     if tab.is_active then
-        background = wisteria.tab_colors.active_bg
+        background = TAB_COLORS.active_bg
         foreground = "#FFFFFF"
     end
     local edge_foreground = background
@@ -100,7 +105,6 @@ wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_wid
 end)
 -- This is where you actually apply your config choices
 -- For example, changing the color scheme:
--- config.color_scheme = "Nord"
 config.leader = { key = "q", mods = "CTRL", timeout_milliseconds = 1000 }
 config.keys = {
     { key = "h", mods = "CTRL",   action = wezterm.action.ActivatePaneDirection "Left" },
@@ -160,15 +164,11 @@ config.key_tables = {
         { key = 'Enter',  action = 'PopKeyTable' },
     }
 }
-config.inactive_pane_hsb = {
-    saturation = 0.5,
-    brightness = 0.2,
+config.colors = {
+    tab_bar = {
+        background = "none",
+    },
 }
-wisteria.colors.tab_bar = {
-    background = "none",
-}
-config.colors = wisteria.colors
-
 wezterm.on('update-right-status', function(window, pane)
     local leader = ''
     if window:leader_is_active() then
