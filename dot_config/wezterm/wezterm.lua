@@ -7,7 +7,7 @@ config.font                                       = wezterm.font("UDEV Gothic 35
 config.font_size                                  = 11
 config.adjust_window_size_when_changing_font_size = false
 config.use_ime                                    = true
-config.window_background_opacity                  = 0.75
+config.window_background_opacity                  = 0.8
 config.macos_window_background_blur               = 20
 config.window_decorations                         = "RESIZE"
 config.default_cursor_style                       = "BlinkingBlock"
@@ -19,7 +19,7 @@ config.ime_preedit_rendering                      = "Builtin"
 config.show_close_tab_button_in_tabs              = false
 config.custom_block_glyphs                        = true
 config.use_cap_height_to_scale_fallback_fonts     = true
-config.color_scheme                               = "Everforest Dark Medium (Gogh)"
+config.color_scheme                               = "Everforest Dark Hard (Gogh)"
 
 local mux                            = wezterm.mux
 local ICONS                          = {
