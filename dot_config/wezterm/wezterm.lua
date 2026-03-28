@@ -32,6 +32,37 @@ local ICON_COLORS                    = {
     cmd      = "#CCCCCC",
     fallback = "#FFFFFF",
 }
+
+local function is_vim(pane)
+    return pane:get_user_vars().IS_NVIM == "true"
+end
+
+local direction_keys = {
+    h = "Left",
+    j = "Down",
+    k = "Up",
+    l = "Right",
+}
+
+local function split_nav(key)
+    return {
+        key = key,
+        mods = "CTRL",
+        action = wezterm.action_callback(function(window, pane)
+            if is_vim(pane) then
+                window:perform_action({
+                    SendKey = { key = key, mods = "CTRL" },
+                }, pane)
+                return
+            end
+
+            window:perform_action({
+                ActivatePaneDirection = direction_keys[key],
+            }, pane)
+        end),
+    }
+end
+
 -- wezterm.on("save_session", function(window) session_manager.save_state(window) end)
 -- wezterm.on("load_session", function(window) session_manager.load_state(window) end)
 -- wezterm.on("restore_session", function(window) session_manager.restore_state(window) end)
@@ -107,10 +138,10 @@ end)
 -- For example, changing the color scheme:
 config.leader = { key = "q", mods = "CTRL", timeout_milliseconds = 1000 }
 config.keys = {
-    { key = "h", mods = "CTRL",   action = wezterm.action.ActivatePaneDirection "Left" },
-    { key = "l", mods = "CTRL",   action = wezterm.action.ActivatePaneDirection "Right" },
-    { key = "k", mods = "CTRL",   action = wezterm.action.ActivatePaneDirection "Up" },
-    { key = "j", mods = "CTRL",   action = wezterm.action.ActivatePaneDirection "Down" },
+    split_nav("h"),
+    split_nav("j"),
+    split_nav("k"),
+    split_nav("l"),
     { key = "r", mods = "LEADER", action = wezterm.action.SplitHorizontal { domain = "CurrentPaneDomain" } },
     { key = "d", mods = "LEADER", action = wezterm.action.SplitVertical { domain = "CurrentPaneDomain" } },
     {
