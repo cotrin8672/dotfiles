@@ -2,7 +2,7 @@
 local wezterm = require("wezterm")
 local tabline = require("tabline")
 local config = wezterm.config_builder()
-local blur_off_window_background_opacity = 0.5
+local blur_off_window_background_opacity = 0.7
 config.automatically_reload_config = true
 config.font = wezterm.font("UDEV Gothic 35NFLG")
 config.font_size = 11
