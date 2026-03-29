@@ -1,8 +1,8 @@
 -- Pull in the wezterm API
 local wezterm = require("wezterm")
-local status = require("status")
+local tabline = require("tabline")
 local config = wezterm.config_builder()
-local blur_off_window_background_opacity = 0.8
+local blur_off_window_background_opacity = 0.5
 config.automatically_reload_config = true
 config.font = wezterm.font("UDEV Gothic 35NFLG")
 config.font_size = 11
@@ -25,16 +25,6 @@ config.anti_alias_custom_block_glyphs = true
 config.color_scheme = "Everforest Dark Hard (Gogh)"
 
 local mux = wezterm.mux
-local ICONS = {
-	wsl = wezterm.nerdfonts.cod_terminal_ubuntu,
-	cmd = wezterm.nerdfonts.oct_terminal,
-	fallback = wezterm.nerdfonts.fa_terminal,
-}
-local ICON_COLORS = {
-	wsl = "#DF4E1C",
-	cmd = "#CCCCCC",
-	fallback = "#FFFFFF",
-}
 local BLUR_ON_OPACITY = config.window_background_opacity
 local BLUR_ON_BACKDROP = config.win32_system_backdrop
 local BLUR_OFF_OPACITY = blur_off_window_background_opacity
@@ -112,57 +102,6 @@ config.window_background_gradient = {
 	colors = { scheme.background },
 }
 config.show_new_tab_button_in_tab_bar = false
-local TAB_COLORS = {
-	active_bg = "#a7c080",
-	inactive_bg = "#3a454a",
-}
-local SOLID_LEFT_ARROW = wezterm.nerdfonts.ple_lower_right_triangle
-local SOLID_RIGHT_ARROW = wezterm.nerdfonts.ple_upper_left_triangle
-local ZOOM_ICON = wezterm.nerdfonts.md_magnify
-local ZOOM_ICON_COLOR = "#F1C40F"
-wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_width)
-	local background = TAB_COLORS.inactive_bg
-	local foreground = "#FFFFFF"
-	local edge_background = "none"
-	if tab.is_active then
-		background = TAB_COLORS.active_bg
-		foreground = "#FFFFFF"
-	end
-	local edge_foreground = background
-	local domain_name = tab.active_pane.domain_name or "default"
-	local title = domain_name:gsub("^WSL:", "")
-	local icon
-	local icon_color
-	if tab.active_pane.is_zoomed then
-		icon = ZOOM_ICON
-		icon_color = ZOOM_ICON_COLOR
-	else
-		if string.match(domain_name, "^WSL") then
-			icon = ICONS.wsl
-			icon_color = ICON_COLORS.wsl
-		elseif string.match(domain_name, "^local") then
-			icon = ICONS.cmd
-			icon_color = ICON_COLORS.cmd
-		else
-			icon = ICONS.fallback
-			icon_color = ICON_COLORS.fallback
-		end
-	end
-	return {
-		{ Background = { Color = edge_background } },
-		{ Foreground = { Color = edge_foreground } },
-		{ Text = SOLID_LEFT_ARROW },
-		{ Background = { Color = background } },
-		{ Foreground = { Color = icon_color } },
-		{ Text = icon .. "  " },
-		{ Background = { Color = background } },
-		{ Foreground = { Color = foreground } },
-		{ Text = title },
-		{ Background = { Color = edge_background } },
-		{ Foreground = { Color = edge_foreground } },
-		{ Text = SOLID_RIGHT_ARROW },
-	}
-end)
 -- This is where you actually apply your config choices
 -- For example, changing the color scheme:
 config.leader = { key = "q", mods = "CTRL", timeout_milliseconds = 1000 }
@@ -240,14 +179,7 @@ config.colors = {
 		background = "none",
 	},
 }
-wezterm.on("update-right-status", function(window, pane)
-	local leader = ""
-	if window:leader_is_active() then
-		leader = "LEADER"
-	end
-	window:set_right_status(leader)
-end)
 
-status.setup()
+tabline.setup(config)
 
 return config
