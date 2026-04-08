@@ -211,7 +211,7 @@ $env.PROMPT_COMMAND = {||
         (ansi { fg: $dir_bg }) + '' + (ansi reset)
     } else {
         let dir_sep = (ansi { fg: $dir_bg bg: $git_bg }) + ''
-        let git_end = (ansi { fg: $git_bg }) + ''
+        let git_end = (ansi { fg: $git_bg bg: 'default' }) + ''
         $dir_sep + $git + $git_end + (ansi reset)
     }
 
