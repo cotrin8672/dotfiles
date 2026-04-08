@@ -15,10 +15,9 @@ return {
       "mason.nvim",
       "neovim/nvim-lspconfig",
     },
-    opts = {
-      ensure_installed = {
+    opts = function()
+      local ensure_installed = {
         "lua_ls",
-        "nixd",
         "bashls",
         "jsonls",
         "html",
@@ -27,9 +26,17 @@ return {
         "rust_analyzer",
         "taplo",
         "marksman",
-      },
-      automatic_enable = true,
-    },
+      }
+
+      if vim.fn.has("win32") == 0 then
+        table.insert(ensure_installed, "nixd")
+      end
+
+      return {
+        ensure_installed = ensure_installed,
+        automatic_enable = true,
+      }
+    end,
   },
   {
     name = "mason-tool-installer.nvim",
@@ -48,7 +55,6 @@ return {
         "stylua",
         "alejandra",
         "shfmt",
-        "rustfmt",
       },
       auto_update = false,
       run_on_start = true,

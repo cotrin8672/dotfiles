@@ -16,15 +16,7 @@ return {
   opts = {
     cmdline = {
       enabled = true,
-      view = "cmdline_popup",
-    },
-    views = {
-      cmdline_popup = {
-        position = {
-          row = "50%",
-          col = "50%",
-        },
-      },
+      view = "cmdline",
     },
     lsp = {
       override = {
@@ -35,7 +27,7 @@ return {
     },
     presets = {
       bottom_search = true,
-      command_palette = true,
+      command_palette = false,
       long_message_to_split = true,
       inc_rename = false,
       lsp_doc_border = true,
