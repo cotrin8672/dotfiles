@@ -25,7 +25,15 @@ return {
   priority = 1000,
   build = ":TSUpdate",
   config = function()
+    local install = require("nvim-treesitter.install")
     local treesitter = require("nvim-treesitter")
+
+    install.compilers = {
+      "zig",
+      "clang",
+      "gcc",
+      "cc",
+    }
 
     treesitter.setup({
       ensure_installed = parsers,

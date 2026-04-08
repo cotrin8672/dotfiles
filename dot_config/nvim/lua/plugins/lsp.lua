@@ -3,6 +3,9 @@ return {
   name = "nvim-lspconfig",
   "neovim/nvim-lspconfig",
   event = { "BufReadPre", "BufNewFile" },
+  dependencies = {
+    "mason-org/mason-lspconfig.nvim",
+  },
   config = function()
     local capabilities = vim.lsp.protocol.make_client_capabilities()
     local diagnostic_icons = require("shared.diagnostic_icons")
@@ -87,17 +90,5 @@ return {
       capabilities = capabilities,
     })
 
-    vim.lsp.enable({
-      "lua_ls",
-      "nixd",
-      "bashls",
-      "jsonls",
-      "html",
-      "cssls",
-      "ts_ls",
-      "rust_analyzer",
-      "taplo",
-      "marksman",
-    })
   end,
 }
