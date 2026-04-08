@@ -1,17 +1,29 @@
+
 return {
-  'nvimdev/lspsaga.nvim',
-  event = 'LspAttach',
+  name = "lspsaga.nvim",
+  "nvimdev/lspsaga.nvim",
+  event = "LspAttach",
   keys = {
     {
-      '<leader>ca',
-      '<cmd>Lspsaga code_action<cr>',
-      mode = 'n',
-      desc = 'LSP Code Action',
+      "<leader>ca",
+      "<cmd>Lspsaga code_action<cr>",
+      mode = "n",
+      desc = "LSP Code Action",
     },
   },
   dependencies = {
-    'nvim-treesitter/nvim-treesitter',
-    'nvim-tree/nvim-web-devicons',
+    {
+      name = "nvim-treesitter",
+      "nvim-treesitter/nvim-treesitter",
+    },
+    {
+      name = "nvim-web-devicons",
+      "nvim-tree/nvim-web-devicons",
+    },
   },
-  opts = {},
+  opts = {
+    lightbulb = {
+      enable = false,
+    },
+  },
 }

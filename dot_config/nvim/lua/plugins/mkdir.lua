@@ -1,4 +1,6 @@
+
 return {
-  'jghauser/mkdir.nvim',
-  event = 'BufWritePre',
+  name = "mkdir.nvim",
+  "jghauser/mkdir.nvim",
+  event = "BufWritePre",
 }

@@ -1,5 +1,3 @@
--- Disable unused builtin plugins early.
-
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
 vim.g.loaded_matchit = 1
@@ -11,120 +9,128 @@ vim.g.loaded_2html_plugin = 1
 vim.g.loaded_spellfile_plugin = 1
 vim.g.loaded_remote_plugins = 1
 vim.g.loaded_man = 1
-vim.g.loaded_node_provider = 0
-vim.g.loaded_python3_provider = 0
-vim.g.loaded_ruby_provider = 0
-vim.g.loaded_perl_provider = 0
-
-local lazypath = vim.fn.stdpath('data') .. '/lazy/lazy.nvim'
-if not vim.loop.fs_stat(lazypath) then
-  vim.fn.system({
-    'git',
-    'clone',
-    '--filter=blob:none',
-    'https://github.com/folke/lazy.nvim.git',
-    '--branch=stable',
-    lazypath,
-  })
-end
-vim.opt.rtp:prepend(lazypath)
-local init_source = debug.getinfo(1, 'S').source
-if type(init_source) == 'string' and init_source:sub(1, 1) == '@' then
-  local init_path = vim.fn.fnamemodify(init_source:sub(2), ':p')
-  local real_init = (vim.uv or vim.loop).fs_realpath(init_path) or init_path
-  local config_dir = vim.fn.fnamemodify(real_init, ':h')
-  vim.opt.rtp:prepend(config_dir)
-end
+vim.g.loaded_node_provider = 1
+vim.g.loaded_python3_provider = 1
+vim.g.loaded_ruby_provider = 1
+vim.g.loaded_perl_provider = 1
 
 if vim.loader then
-  vim.loader.enable()
+	vim.loader.enable()
 end
 
-vim.g.mapleader = ' '
-vim.g.maplocalleader = ' '
+vim.g.mapleader = " "
+vim.g.maplocalleader = " "
+
+if vim.env.WSL_DISTRO_NAME then
+	vim.g.clipboard = {
+		name = "wsl-clip",
+		copy = {
+			["+"] = { "clip.exe" },
+			["*"] = { "clip.exe" },
+		},
+		paste = {
+			["+"] = {
+				"powershell.exe",
+				"-NoProfile",
+				"-NoLogo",
+				"-Command",
+				"[Console]::Out.Write((Get-Clipboard -Raw).Replace(\"`r\", \"\"))",
+			},
+			["*"] = {
+				"powershell.exe",
+				"-NoProfile",
+				"-NoLogo",
+				"-Command",
+				"[Console]::Out.Write((Get-Clipboard -Raw).Replace(\"`r\", \"\"))",
+			},
+		},
+		cache_enabled = 0,
+	}
+end
 
 vim.opt.number = true
 vim.opt.relativenumber = true
-vim.opt.cursorline = true
-vim.opt.cursorcolumn = true
 vim.opt.termguicolors = true
-vim.opt.updatetime = 300
-vim.opt.signcolumn = 'yes'
-vim.opt.clipboard = 'unnamedplus'
+vim.opt.signcolumn = "yes"
+vim.opt.clipboard = "unnamedplus"
 vim.opt.laststatus = 3
+vim.opt.expandtab = true
+vim.opt.tabstop = 4
+vim.opt.softtabstop = 4
+vim.opt.shiftwidth = 4
+vim.opt.list = true
+vim.opt.listchars:append("space:·")
 
-if vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1 then
-  vim.g.sqlite_clib_path = vim.fn.stdpath('data') .. '/sqlite/sqlite3.dll'
+local indent_group = vim.api.nvim_create_augroup("IndentDefaults", { clear = true })
+
+local function set_indent(width)
+	return function()
+		vim.bo.expandtab = true
+		vim.bo.tabstop = width
+		vim.bo.softtabstop = width
+		vim.bo.shiftwidth = width
+	end
 end
 
-local function run_silent(cmd)
-  if vim.system then
-    vim.system(cmd, { text = false }, function() end)
-    return
-  end
-  vim.fn.jobstart(cmd, { detach = true })
+vim.api.nvim_create_autocmd("FileType", {
+	group = indent_group,
+	pattern = {
+		"bash",
+		"css",
+		"html",
+		"javascript",
+		"javascriptreact",
+		"json",
+		"jsonc",
+		"lua",
+		"markdown",
+		"nix",
+		"sh",
+		"toml",
+		"typescript",
+		"typescriptreact",
+		"zsh",
+	},
+	callback = set_indent(2),
+})
+
+vim.api.nvim_create_autocmd("FileType", {
+	group = indent_group,
+	pattern = {
+		"java",
+		"kotlin",
+		"rust",
+	},
+	callback = set_indent(4),
+})
+
+vim.api.nvim_create_autocmd({ "WinEnter", "FocusGained", "BufEnter" }, {
+	pattern = "*",
+	command = "checktime",
+})
+
+require("shared.java_kotlin_package").setup()
+
+local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
+
+if not vim.uv.fs_stat(lazypath) then
+	local result = vim.fn.system({
+		"git",
+		"clone",
+		"--filter=blob:none",
+		"https://github.com/folke/lazy.nvim.git",
+		"--branch=stable",
+		lazypath,
+	})
+	if vim.v.shell_error ~= 0 then
+		error("Failed to bootstrap lazy.nvim:\n" .. result)
+	end
 end
 
-local function ime_off()
-  local is_windows = vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1
-  local is_wsl = vim.fn.has('wsl') == 1
+vim.opt.rtp:prepend(lazypath)
 
-  if is_windows or is_wsl then
-    local zenhan = vim.g.zenhan_exe_path or 'zenhan.exe'
-    if vim.fn.executable(zenhan) == 1 then
-      run_silent({ zenhan, '0' })
-    end
-    return
-  end
-
-  if vim.fn.executable('fcitx5-remote') == 1 then
-    run_silent({ 'fcitx5-remote', '-c' })
-    return
-  end
-  if vim.fn.executable('fcitx-remote') == 1 then
-    run_silent({ 'fcitx-remote', '-c' })
-    return
-  end
-  if vim.fn.executable('ibus') == 1 then
-    run_silent({ 'ibus', 'engine', 'xkb:us::eng' })
-  end
-end
-
-vim.api.nvim_create_autocmd('FocusGained', {
-  callback = ime_off,
-})
-vim.api.nvim_create_autocmd('User', {
-  pattern = 'VeryLazy',
-  once = true,
-  callback = function()
-    vim.api.nvim_create_autocmd('InsertLeave', {
-      callback = ime_off,
-    })
-  end,
-})
-
-vim.keymap.set('i', 'jj', '<Esc>', { noremap = true, silent = true })
-vim.keymap.set('t', 'jj', [[<C-\><C-n>]], { noremap = true, silent = true })
-vim.keymap.set('n', '<M-h>', '<C-w>h', { noremap = true, silent = true })
-vim.keymap.set('n', '<M-j>', '<C-w>j', { noremap = true, silent = true })
-vim.keymap.set('n', '<M-k>', '<C-w>k', { noremap = true, silent = true })
-vim.keymap.set('n', '<M-l>', '<C-w>l', { noremap = true, silent = true })
-vim.keymap.set('n', '<leader>x', '<Cmd>BufferClose<CR>', { noremap = true, silent = true })
-
-vim.api.nvim_create_autocmd('User', {
-  pattern = 'VeryLazy',
-  once = true,
-  callback = function()
-    require('ui.cursor_mode').setup()
-  end,
-})
-
-require('lazy').setup({
-  spec = {
-    { import = 'plugins' },
-  },
-  change_detection = {
-    enabled = false,
-    notify = false,
-  },
+require("lazy").setup("plugins", {
+	install = { missing = true },
+	checker = { enabled = false },
+	change_detection = { enabled = false },
 })

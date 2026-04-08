@@ -1,6 +1,8 @@
+
 return {
-  'j-hui/fidget.nvim',
-  event = 'LspAttach',
+  name = "fidget.nvim",
+  "j-hui/fidget.nvim",
+  event = "LspAttach",
   opts = {
     progress = {
       display = {
@@ -11,7 +13,7 @@ return {
     notification = {
       override_vim_notify = false,
       window = {
-        normal_hl = 'Normal',
+        normal_hl = "Normal",
         winblend = 0,
       },
     },

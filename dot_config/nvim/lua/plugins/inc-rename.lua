@@ -1,5 +1,7 @@
+
 return {
-  'smjonas/inc-rename.nvim',
-  event = 'LspAttach',
+  name = "inc-rename.nvim",
+  "smjonas/inc-rename.nvim",
+  event = "LspAttach",
   opts = {},
 }

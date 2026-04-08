@@ -1,8 +1,10 @@
+
 return {
-  'rachartier/tiny-inline-diagnostic.nvim',
-  event = 'VeryLazy',
+  name = "tiny-inline-diagnostic.nvim",
+  "rachartier/tiny-inline-diagnostic.nvim",
+  event = "VeryLazy",
   opts = {
-    preset = 'modern',
+    preset = "modern",
     options = {
       severity = {
         vim.diagnostic.severity.ERROR,
@@ -20,7 +22,7 @@ return {
     },
   },
   config = function(_, opts)
-    require('tiny-inline-diagnostic').setup(opts)
+    require("tiny-inline-diagnostic").setup(opts)
     vim.diagnostic.config({ virtual_text = false })
   end,
 }

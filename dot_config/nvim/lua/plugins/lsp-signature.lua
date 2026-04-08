@@ -1,11 +1,13 @@
+
 return {
-  'ray-x/lsp_signature.nvim',
-  event = 'LspAttach',
+  name = "lsp_signature.nvim",
+  "ray-x/lsp_signature.nvim",
+  event = "LspAttach",
   opts = {
     hint_enable = false,
     floating_window = true,
     handler_opts = {
-      border = 'rounded',
+      border = "rounded",
     },
   },
 }

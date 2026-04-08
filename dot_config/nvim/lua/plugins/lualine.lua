@@ -1,100 +1,257 @@
+
 return {
-  'nvim-lualine/lualine.nvim',
-  event = 'VeryLazy',
+  name = "lualine.nvim",
+  "nvim-lualine/lualine.nvim",
+  event = "VeryLazy",
   dependencies = {
-    'nvim-tree/nvim-web-devicons',
+    "mini.icons",
   },
   config = function()
-    local sm = require('nvim-submode')
-    local mode = require('lualine.utils.mode')
-    local ok, icons = pcall(require, 'ui.diagnostic_icons')
-    if not ok then
-      icons = require('shared.diagnostic_icons')
-    end
+    local everforest = require("everforest")
+    local colours = require("everforest.colours")
+    local diagnostic_icons = require("ui.diagnostic_icons")
+    local sm = require("nvim-submode")
+    local mode = require("lualine.utils.mode")
+    local palette = colours.generate_palette(everforest.config, vim.o.background)
+
+    local theme = {
+      normal = {
+        a = { bg = palette.green, fg = palette.bg0, gui = "bold" },
+        b = { bg = palette.bg3, fg = palette.fg },
+        c = { bg = palette.bg5, fg = palette.fg },
+      },
+      insert = {
+        a = { bg = palette.fg, fg = palette.bg0, gui = "bold" },
+        b = { bg = palette.bg3, fg = palette.fg },
+        c = { bg = palette.bg5, fg = palette.fg },
+      },
+      visual = {
+        a = { bg = palette.red, fg = palette.bg0, gui = "bold" },
+        b = { bg = palette.bg3, fg = palette.fg },
+        c = { bg = palette.bg5, fg = palette.fg },
+      },
+      replace = {
+        a = { bg = palette.orange, fg = palette.bg0, gui = "bold" },
+        b = { bg = palette.bg3, fg = palette.fg },
+        c = { bg = palette.bg5, fg = palette.fg },
+      },
+      command = {
+        a = { bg = palette.aqua, fg = palette.bg0, gui = "bold" },
+        b = { bg = palette.bg3, fg = palette.fg },
+        c = { bg = palette.bg5, fg = palette.fg },
+      },
+      terminal = {
+        a = { bg = palette.purple, fg = palette.bg0, gui = "bold" },
+        b = { bg = palette.bg3, fg = palette.fg },
+        c = { bg = palette.bg5, fg = palette.fg },
+      },
+      inactive = {
+        a = { bg = palette.bg5, fg = palette.grey1, gui = "bold" },
+        b = { bg = palette.bg5, fg = palette.grey1 },
+        c = { bg = palette.bg5, fg = palette.grey1 },
+      },
+    }
+
+    vim.api.nvim_set_hl(0, "LualineLspDiag", { fg = palette.fg, bg = palette.bg5 })
+    vim.api.nvim_set_hl(0, "LualineLspDiagError", { fg = palette.red, bg = palette.bg5 })
+    vim.api.nvim_set_hl(0, "LualineLspDiagWarn", { fg = palette.orange, bg = palette.bg5 })
+    vim.api.nvim_set_hl(0, "LualineLspDiagHint", { fg = palette.aqua, bg = palette.bg5 })
+    vim.api.nvim_set_hl(0, "LualineLspDiagInfo", { fg = palette.green, bg = palette.bg5 })
 
     local function submode_label()
       local name = sm.get_submode_name()
-      if name and name ~= '' then
+      if name and name ~= "" then
         return name
       end
       return mode.get_mode()
     end
 
+    local function repo_name()
+      local path = vim.api.nvim_buf_get_name(0)
+      if path == "" then
+        path = vim.loop.cwd()
+      else
+        path = vim.fs.dirname(path)
+      end
+
+      local git_dir = vim.fs.find(".git", { path = path, upward = true })[1]
+      if not git_dir then
+        return ""
+      end
+
+      return vim.fs.basename(vim.fs.dirname(git_dir))
+    end
+
     local function submode_bg()
-      return { bg = sm.get_submode_color() }
+      local color = sm.get_submode_color()
+      if color and color ~= "" then
+        return { bg = color }
+      end
+      return nil
     end
 
     local function submode_fg()
-      return { fg = sm.get_submode_color() }
+      local color = sm.get_submode_color()
+      if color and color ~= "" then
+        return { fg = color }
+      end
+      return nil
     end
 
-    local function lsp_status()
+    local function diagnostics_summary()
+      local diagnostics = vim.diagnostic.get(0)
+      local total = #diagnostics
+      if total == 0 then
+        return nil
+      end
+
+      local has_error = false
+      local has_warn = false
+      local has_hint = false
+
+      for _, diagnostic in ipairs(diagnostics) do
+        if diagnostic.severity == vim.diagnostic.severity.ERROR then
+          has_error = true
+          break
+        elseif diagnostic.severity == vim.diagnostic.severity.WARN then
+          has_warn = true
+        elseif diagnostic.severity == vim.diagnostic.severity.HINT then
+          has_hint = true
+        end
+      end
+
+      if has_error then
+        return total, vim.diagnostic.severity.ERROR
+      end
+      if has_warn then
+        return total, vim.diagnostic.severity.WARN
+      end
+      if has_hint then
+        return total, vim.diagnostic.severity.HINT
+      end
+      return total, vim.diagnostic.severity.INFO
+    end
+
+    local function lsp_client_names()
       local clients = vim.lsp.get_clients({ bufnr = 0 })
       if #clients == 0 then
-        return 'no-lsp'
+        return ""
       end
-      local status = vim.lsp.status()
-      if status and status ~= '' then
-        return status
-      end
+
       local names = {}
       for _, client in ipairs(clients) do
         names[#names + 1] = client.name
       end
-      return table.concat(names, ',')
+
+      table.sort(names)
+      return table.concat(names, ", ")
     end
 
-    require('lualine').setup({
+    local function lsp_diagnostics()
+      local base_hl = "%#LualineLspDiag#"
+      local lsp_status = vim.lsp.status()
+      local total, severity = diagnostics_summary()
+
+      if lsp_status == "" then
+        lsp_status = lsp_client_names()
+      end
+
+      if lsp_status == "" then
+        return ""
+      end
+
+      if not total then
+        return table.concat({
+          base_hl,
+          "",
+          " ",
+          lsp_status,
+          " ",
+          "%#LualineLspDiagInfo#",
+          "",
+          " ",
+          base_hl,
+        })
+      end
+
+      local icon = diagnostic_icons.info_icon
+      local icon_hl = "%#LualineLspDiagInfo#"
+      if severity == vim.diagnostic.severity.ERROR then
+        icon = diagnostic_icons.error_icon
+        icon_hl = "%#LualineLspDiagError#"
+      elseif severity == vim.diagnostic.severity.WARN then
+        icon = diagnostic_icons.warn_icon
+        icon_hl = "%#LualineLspDiagWarn#"
+      elseif severity == vim.diagnostic.severity.HINT then
+        icon = diagnostic_icons.hint_icon
+        icon_hl = "%#LualineLspDiagHint#"
+      end
+
+      return table.concat({
+        base_hl,
+        "",
+        " ",
+        lsp_status,
+        " ",
+        icon_hl,
+        icon,
+        base_hl,
+        tostring(total),
+      })
+    end
+
+    require("lualine").setup({
       options = {
-        theme = 'wisteria',
-        component_separators = '',
-        section_separators = { left = '', right = '' },
+        theme = theme,
+        section_separators = { left = "", right = "" },
+        component_separators = { left = "╲", right = "╲" },
         disabled_filetypes = {
-          statusline = { 'ministarter' },
+          statusline = { "ministarter" },
+          winbar = { "ministarter" },
         },
       },
       sections = {
         lualine_a = {
-          { submode_label, color = submode_bg, separator = { left = '', right = '' }, padding = { left = 1, right = 1 } },
+          {
+            submode_label,
+            color = submode_bg,
+            separator = { left = "", right = "" },
+            padding = { left = 1, right = 1 },
+          },
         },
         lualine_b = {
-          { 'branch', icon = '', color = submode_fg, separator = '', padding = { left = 1, right = 1 } },
-          { function() return '' end, color = submode_fg, separator = '', padding = { left = 0, right = 0 } },
           {
-            function()
-              return vim.fn.fnamemodify(vim.fn.getcwd(), ':t')
-            end,
-            icon = '󰉋',
-            color = submode_fg,
-            separator = { left = '', right = '' },
-            padding = { left = 1, right = 1 },
+            repo_name,
+            icon = "󰉋",
+            separator = { left = "", right = "" },
+          },
+          {
+            "branch",
+            icon = "",
+            color = { bg = palette.bg5, fg = palette.fg },
           },
         },
         lualine_c = {},
-        lualine_x = {},
-        lualine_y = {
+        lualine_x = {
           {
-            'diagnostics',
-            sources = { 'nvim_diagnostic' },
-            symbols = {
-              error = icons.error_icon,
-              warn = icons.warn_icon,
-              info = icons.info_icon,
-              hint = icons.hint_icon,
-            },
-            color = submode_fg,
-            separator = '',
+            lsp_diagnostics,
+            color = { bg = palette.bg5, fg = palette.fg },
             padding = { left = 1, right = 1 },
           },
-          { function() return '' end, color = submode_fg, separator = '', padding = { left = 0, right = 0 } },
-          { lsp_status, icon = '', color = submode_fg, separator = '', padding = { left = 1, right = 1 } },
-          { function() return '' end, color = submode_fg, separator = '', padding = { left = 0, right = 0 } },
-          { 'filetype', icon_only = false, icon = { align = 'left' }, color = submode_fg, separator = '', padding = { left = 1, right = 1 } },
-          { function() return '' end, color = submode_fg, separator = '', padding = { left = 0, right = 0 } },
-          { 'progress', color = submode_fg, separator = '', padding = { left = 1, right = 1 } },
+        },
+        lualine_y = {
+          {
+            "filetype",
+            color = { bg = palette.bg3, fg = palette.fg },
+          },
         },
         lualine_z = {
-          { 'location', color = submode_bg, separator = { left = '', right = '' }, padding = { left = 1, right = 1 } },
+          {
+            "location",
+            color = submode_bg,
+            separator = { left = "", right = "" },
+            padding = { left = 1, right = 1 },
+          },
         },
       },
     })
