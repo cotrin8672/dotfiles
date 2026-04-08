@@ -3,7 +3,7 @@ local float = require("shared.float")
 return {
   name = "blink.cmp",
   "Saghen/blink.cmp",
-  version = "1.*",
+  build = "cargo build --release",
   event = "InsertEnter",
   config = function()
     require("blink.cmp").setup({
