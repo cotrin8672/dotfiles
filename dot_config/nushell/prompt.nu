@@ -198,25 +198,21 @@ $env.PROMPT_COMMAND = {||
     let dir_bg = '#272e33'
     let git_bg = '#2e383c'
 
-    let os = (
-        (ansi { fg: $os_bg }) + ''
-        + (ansi { fg: '#272e33' bg: $os_bg }) + $"(os_icon) "
-        + (ansi { fg: $os_bg bg: $dir_bg }) + ''
-    )
+    let os_start = (ansi { fg: $os_bg }) + ''
+    let os_body = (ansi { fg: '#272e33' bg: $os_bg }) + $"(os_icon) "
+    let os_sep = (ansi { fg: $os_bg bg: $dir_bg }) + ''
+    let os = $os_start + $os_body + $os_sep
 
-    let dir = (
-        (ansi { fg: '#7fbbb3' bg: $dir_bg }) + ' 󰉋 ' + $"(prompt_dir_name) "
-    )
+    let dir = (ansi { fg: '#7fbbb3' bg: $dir_bg }) + ' 󰉋 ' + $"(prompt_dir_name) "
 
     let git = (git_block)
 
     let tail = if $git == '' {
         (ansi { fg: $dir_bg }) + '' + (ansi reset)
     } else {
-        (ansi { fg: $dir_bg bg: $git_bg }) + ''
-        + $git
-        + (ansi { fg: $git_bg }) + ''
-        + (ansi reset)
+        let dir_sep = (ansi { fg: $dir_bg bg: $git_bg }) + ''
+        let git_end = (ansi { fg: $git_bg }) + ''
+        $dir_sep + $git + $git_end + (ansi reset)
     }
 
     "\n" + $os + $dir + $tail + "\n"
