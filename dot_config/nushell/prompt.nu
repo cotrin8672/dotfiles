@@ -157,7 +157,7 @@ def git_block [] {
         $branch_part + ' ' + ($details | str join ' ')
     }
 
-    (ansi { fg: '#7fbbb3' bg: '#2e383c' }) + '  ' + $body + (ansi reset) + (ansi { fg: '#2e383c' }) + '' + (ansi reset)
+    (ansi { fg: '#7fbbb3' bg: '#2e383c' }) + '  ' + $body
 }
 
 def format_duration [ms: int] {
@@ -194,11 +194,32 @@ def prompt_indicator [symbol: string] {
 }
 
 $env.PROMPT_COMMAND = {||
-    let os = (ansi { fg: '#a7c080' }) + '' + (ansi { fg: '#272e33' bg: '#a7c080' }) + $"(os_icon) " + (ansi reset)
-    let dir = (ansi { fg: '#272e33' }) + '' + (ansi { fg: '#7fbbb3' bg: '#272e33' }) + ' 󰉋 ' + $"(prompt_dir_name) " + (ansi reset)
+    let os_bg = '#a7c080'
+    let dir_bg = '#272e33'
+    let git_bg = '#2e383c'
+
+    let os = (
+        (ansi { fg: $os_bg }) + ''
+        + (ansi { fg: '#272e33' bg: $os_bg }) + $"(os_icon) "
+        + (ansi { fg: $os_bg bg: $dir_bg }) + ''
+    )
+
+    let dir = (
+        (ansi { fg: '#7fbbb3' bg: $dir_bg }) + ' 󰉋 ' + $"(prompt_dir_name) "
+    )
+
     let git = (git_block)
 
-    "\n" + $os + $dir + $git + "\n"
+    let tail = if $git == '' {
+        (ansi { fg: $dir_bg }) + '' + (ansi reset)
+    } else {
+        (ansi { fg: $dir_bg bg: $git_bg }) + ''
+        + $git
+        + (ansi { fg: $git_bg }) + ''
+        + (ansi reset)
+    }
+
+    "\n" + $os + $dir + $tail + "\n"
 }
 
 $env.PROMPT_COMMAND_RIGHT = {||
