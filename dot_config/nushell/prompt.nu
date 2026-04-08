@@ -23,9 +23,14 @@ def os_icon [] {
 
 def prompt_dir_name [] {
     let cwd = (pwd)
-    let home = ($nu.home-dir | path expand)
+    let home = (
+        $env.HOME?
+        | default $env.USERPROFILE?
+        | default ''
+        | path expand
+    )
 
-    if $cwd == $home {
+    if ($home != '') and ($cwd == $home) {
         '~'
     } else {
         let base = ($cwd | path basename)
@@ -197,7 +202,11 @@ $env.PROMPT_COMMAND = {||
 }
 
 $env.PROMPT_COMMAND_RIGHT = {||
-    let duration_ms = ($env.CMD_DURATION_MS? | default 0)
+    let duration_ms = (
+        $env.CMD_DURATION_MS?
+        | default '0'
+        | into int
+    )
     let duration = (format_duration $duration_ms)
     if $duration == '' {
         ''
