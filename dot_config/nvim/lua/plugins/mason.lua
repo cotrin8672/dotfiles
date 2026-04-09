@@ -34,7 +34,12 @@ return {
 
       return {
         ensure_installed = ensure_installed,
-        automatic_enable = true,
+        automatic_enable = {
+          exclude = {
+            -- kotlin.nvim manages the official kotlin-lsp itself as `kotlin_ls`.
+            "kotlin_lsp",
+          },
+        },
       }
     end,
   },
