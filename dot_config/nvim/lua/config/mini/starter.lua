@@ -7,12 +7,12 @@ return function()
   local starter_path_ns = vim.api.nvim_create_namespace("starter_path_colors")
   local header_hl_cache = {}
   local starter_header_lines = {
-    "███╗   ██╗ ███████╗  ██████╗  ██╗   ██╗ ██╗ ███╗   ███╗",
-    "████╗  ██║ ██╔════╝ ██╔═══██╗ ██║   ██║ ██║ ████╗ ████║",
-    "██╔██╗ ██║ █████╗   ██║   ██║ ██║   ██║ ██║ ██╔████╔██║",
-    "██║╚██╗██║ ██╔══╝   ██║   ██║ ╚██╗ ██╔╝ ██║ ██║╚██╔╝██║",
-    "██║ ╚████║ ███████╗ ╚██████╔╝  ╚████╔╝  ██║ ██║ ╚═╝ ██║",
-    "╚═╝  ╚═══╝ ╚══════╝  ╚═════╝    ╚═══╝   ╚═╝ ╚═╝     ╚═╝",
+    "███╗   ██╁E███████╗  ██████╁E ██╁E  ██╁E██╁E███╗   ███╗",
+    "████╁E ██╁E██╔════╝ ██╔═══██╁E██╁E  ██╁E██╁E████╁E████╁E,
+    "██╔██╗ ██╁E█████╗   ██╁E  ██╁E██╁E  ██╁E██╁E██╔████╔██╁E,
+    "██║╚██╗██║ ██╔══╝   ██╁E  ██╁E╚██╗ ██╔╝ ██╁E██║╚██╔╝██╁E,
+    "██╁E╚████║ ███████╗ ╚██████╔╁E ╚████╔╁E ██╁E██╁E╚═╁E██╁E,
+    "╚═╁E ╚═══╁E╚══════╝  ╚═════╁E   ╚═══╁E  ╚═╁E╚═╁E    ╚═╁E,
   }
 
   local function header_gradient_hl(char_idx, total_chars)
@@ -56,7 +56,7 @@ return function()
 
     return function()
       if _G.MiniSessions == nil then
-        return { { name = [["mini.sessions" is not set up]], action = "", section = "󰆓  Sessions" } }
+        return { { name = [["mini.sessions" is not set up]], action = "", section = "�E  Sessions" } }
       end
 
       local items = {}
@@ -68,8 +68,8 @@ return function()
             local full_path = shorten_path(root)
             table.insert(items, {
               name = string.format("%s (%s)", dir_name, full_path),
-              section = "󰆓  Sessions",
-              _icon = "󰆓",
+              section = "�E  Sessions",
+              _icon = "�E",
               _icon_hl = "MiniStarterProjectIcon",
               _icon_virtual = true,
               _emph_text = dir_name,
@@ -88,7 +88,7 @@ return function()
       end)
 
       if #items == 0 then
-        return { { name = "No sessions yet", action = "", section = "󰆓  Sessions" } }
+        return { { name = "No sessions yet", action = "", section = "�E  Sessions" } }
       end
 
       return vim.tbl_map(function(item)
@@ -103,30 +103,20 @@ return function()
 
     return function()
       local cwd = vim.fn.getcwd()
+      local icons = require("mini.icons")
       local sep = package.config:sub(1, 1)
       local cwd_prefix = cwd .. sep
       local items = {}
-      local has_devicons, devicons = pcall(require, "nvim-web-devicons")
 
       for _, f in ipairs(vim.v.oldfiles or {}) do
         if vim.fn.filereadable(f) == 1 and vim.startswith(f, cwd_prefix) then
           local basename = vim.fn.fnamemodify(f, ":t")
           local rel = vim.fn.fnamemodify(f, ":.")
-          local icon = "󰈙"
-          local icon_hl = "MiniStarterItem"
-          if has_devicons then
-            local found_icon, found_hl = devicons.get_icon(basename, nil, { default = true })
-            if found_icon and found_icon ~= "" then
-              icon = found_icon
-            end
-            if found_hl and found_hl ~= "" then
-              icon_hl = found_hl
-            end
-          end
+          local icon, icon_hl = icons.get("file", f)
 
           table.insert(items, {
             name = string.format("%s (%s)", basename, shorten_path(rel)),
-            section = "  Recent files (current directory)",
+            section = "�E�E Recent files (current directory)",
             _icon = icon,
             _icon_hl = icon_hl,
             _icon_virtual = true,
@@ -143,7 +133,7 @@ return function()
       end
 
       if #items == 0 then
-        return { { name = "No recent files in current directory", action = "", section = "  Recent files (current directory)" } }
+        return { { name = "No recent files in current directory", action = "", section = "�E�E Recent files (current directory)" } }
       end
 
       return items
@@ -159,7 +149,7 @@ return function()
     }
 
     for _, item in ipairs(actions) do
-      item.section = "  Keymaps"
+      item.section = "�E�E Keymaps"
       if item.name == "Lazy" then
         item._icon = "󰒲"
         item._icon_hl = "MiniStarterKeymapIcon"
@@ -168,14 +158,14 @@ return function()
         item._icon_hl = "MiniStarterKeymapIcon"
       elseif item.name == "Edit new buffer" then
         item.name = "New file"
-        item._icon = ""
+        item._icon = "�E�E
         item._icon_hl = "MiniStarterFileIcon"
       elseif item.name == "Quit Neovim" then
         item.name = "Quit"
-        item._icon = ""
+        item._icon = "�E�"
         item._icon_hl = "MiniStarterQuitIcon"
       else
-        item._icon = ""
+        item._icon = "�E�E
         item._icon_hl = "MiniStarterKeymapIcon"
       end
       item._icon_virtual = true

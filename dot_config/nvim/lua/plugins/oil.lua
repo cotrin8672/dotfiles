@@ -34,10 +34,4 @@ return {
       ["g."] = "actions.toggle_hidden",
     },
   },
-  dependencies = {
-    {
-      name = "nvim-web-devicons",
-      "nvim-tree/nvim-web-devicons",
-    },
-  },
 }

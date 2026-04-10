@@ -16,10 +16,6 @@ return {
       name = "nvim-treesitter",
       "nvim-treesitter/nvim-treesitter",
     },
-    {
-      name = "nvim-web-devicons",
-      "nvim-tree/nvim-web-devicons",
-    },
   },
   opts = {
     lightbulb = {
