@@ -1,5 +1,8 @@
-﻿return function()
+return function()
   local MiniStarter = require("mini.starter")
+  local SECTION_SESSIONS = "󰉋  Sessions"
+  local SECTION_RECENT = "󰈔  Recent files (current directory)"
+  local SECTION_KEYMAPS = "󰘳  Keymaps"
 
   local starter_icon_ns = vim.api.nvim_create_namespace("starter_icon_colors")
   local starter_footer_ns = vim.api.nvim_create_namespace("starter_footer_colors")
@@ -54,8 +57,19 @@
     limit = limit or 8
 
     return function()
+      local icons = require("mini.icons")
       if _G.MiniSessions == nil then
-        return { { name = [["mini.sessions" is not set up]], action = "", section = "Sessions" } }
+        local icon, icon_hl = icons.get("default", "directory")
+        return {
+          {
+            name = [["mini.sessions" is not set up]],
+            action = "",
+            section = SECTION_SESSIONS,
+            _icon = icon,
+            _icon_hl = icon_hl,
+            _icon_virtual = true,
+          },
+        }
       end
 
       local items = {}
@@ -65,11 +79,12 @@
           if root ~= nil then
             local dir_name = vim.fn.fnamemodify(root, ":t")
             local full_path = shorten_path(root)
+            local icon, icon_hl = icons.get("default", "directory")
             table.insert(items, {
               name = string.format("%s (%s)", dir_name, full_path),
-              section = "Sessions",
-              _icon = "S",
-              _icon_hl = "MiniStarterProjectIcon",
+              section = SECTION_SESSIONS,
+              _icon = icon,
+              _icon_hl = icon_hl,
               _icon_virtual = true,
               _emph_text = dir_name,
               _path_text = string.format("(%s)", full_path),
@@ -87,7 +102,17 @@
       end)
 
       if #items == 0 then
-        return { { name = "No sessions yet", action = "", section = "Sessions" } }
+        local icon, icon_hl = icons.get("default", "directory")
+        return {
+          {
+            name = "No sessions yet",
+            action = "",
+            section = SECTION_SESSIONS,
+            _icon = icon,
+            _icon_hl = icon_hl,
+            _icon_virtual = true,
+          },
+        }
       end
 
       return vim.tbl_map(function(item)
@@ -115,7 +140,7 @@
 
           table.insert(items, {
             name = string.format("%s (%s)", basename, shorten_path(rel)),
-            section = "Recent files (current directory)",
+            section = SECTION_RECENT,
             _icon = icon,
             _icon_hl = icon_hl,
             _icon_virtual = true,
@@ -132,7 +157,17 @@
       end
 
       if #items == 0 then
-        return { { name = "No recent files in current directory", action = "", section = "Recent files (current directory)" } }
+        local icon, icon_hl = icons.get("default", "file")
+        return {
+          {
+            name = "No recent files in current directory",
+            action = "",
+            section = SECTION_RECENT,
+            _icon = icon,
+            _icon_hl = icon_hl,
+            _icon_virtual = true,
+          },
+        }
       end
 
       return items
@@ -140,6 +175,7 @@
   end
 
   local function section_builtin_actions_with_icon()
+    local icons = require("mini.icons")
     local actions = {
       { name = "Lazy", action = "Lazy", section = "Builtin actions" },
       { name = "Oil", action = "Oil --float", section = "Builtin actions" },
@@ -148,20 +184,17 @@
     }
 
     for _, item in ipairs(actions) do
-      item.section = "Keymaps"
+      item.section = SECTION_KEYMAPS
       if item.name == "Lazy" then
-        item._icon = "L"
-        item._icon_hl = "MiniStarterKeymapIcon"
+        item._icon, item._icon_hl = icons.get("filetype", "lazy")
       elseif item.name == "Oil" then
-        item._icon = "O"
-        item._icon_hl = "MiniStarterKeymapIcon"
+        item._icon, item._icon_hl = icons.get("filetype", "oil")
       elseif item.name == "Edit new buffer" then
         item.name = "New file"
-        item._icon = "N"
-        item._icon_hl = "MiniStarterFileIcon"
+        item._icon, item._icon_hl = icons.get("default", "file")
       elseif item.name == "Quit Neovim" then
         item.name = "Quit"
-        item._icon = "Q"
+        item._icon = "󰅖"
         item._icon_hl = "MiniStarterQuitIcon"
       else
         item._icon = "*"
