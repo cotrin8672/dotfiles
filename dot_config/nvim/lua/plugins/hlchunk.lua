@@ -1,23 +1,9 @@
-
-return {
+﻿return {
   name = "hlchunk.nvim",
   "shellRaining/hlchunk.nvim",
   event = { "BufReadPost", "BufNewFile" },
   config = function()
     local ts = require("hlchunk.utils.ts_node_type")
-
-    local function hl_fg(names)
-      if type(names) == "string" then
-        names = { names }
-      end
-      for _, name in ipairs(names) do
-        local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = name, link = true })
-        if ok and hl and hl.fg then
-          return string.format("#%06x", hl.fg)
-        end
-      end
-      return nil
-    end
 
     ts.tsx = {
       "jsx_element",
@@ -53,8 +39,8 @@ return {
         chars = {
           horizontal_line = "─",
           vertical_line = "│",
-          left_top = "╭",
-          left_bottom = "╰",
+          left_top = "┌",
+          left_bottom = "└",
           right_arrow = ">",
         },
         textobject = "",

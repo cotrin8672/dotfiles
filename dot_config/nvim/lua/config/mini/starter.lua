@@ -1,4 +1,4 @@
-return function()
+﻿return function()
   local MiniStarter = require("mini.starter")
 
   local starter_icon_ns = vim.api.nvim_create_namespace("starter_icon_colors")
@@ -7,12 +7,11 @@ return function()
   local starter_path_ns = vim.api.nvim_create_namespace("starter_path_colors")
   local header_hl_cache = {}
   local starter_header_lines = {
-    "███╗   ██╁E███████╗  ██████╁E ██╁E  ██╁E██╁E███╗   ███╗",
-    "████╁E ██╁E██╔════╝ ██╔═══██╁E██╁E  ██╁E██╁E████╁E████╁E,
-    "██╔██╗ ██╁E█████╗   ██╁E  ██╁E██╁E  ██╁E██╁E██╔████╔██╁E,
-    "██║╚██╗██║ ██╔══╝   ██╁E  ██╁E╚██╗ ██╔╝ ██╁E██║╚██╔╝██╁E,
-    "██╁E╚████║ ███████╗ ╚██████╔╁E ╚████╔╁E ██╁E██╁E╚═╁E██╁E,
-    "╚═╁E ╚═══╁E╚══════╝  ╚═════╁E   ╚═══╁E  ╚═╁E╚═╁E    ╚═╁E,
+    " _   _                 _           ",
+    "| \\ | | ___  _____   _(_)_ __ ___  ",
+    "|  \\| |/ _ \\/ _ \\ \\ / / | '_ ` _ \\",
+    "| |\\  |  __/ (_) \\ V /| | | | | | |",
+    "|_| \\_|\\___|\\___/ \\_/ |_|_| |_| |_|",
   }
 
   local function header_gradient_hl(char_idx, total_chars)
@@ -56,7 +55,7 @@ return function()
 
     return function()
       if _G.MiniSessions == nil then
-        return { { name = [["mini.sessions" is not set up]], action = "", section = "�E  Sessions" } }
+        return { { name = [["mini.sessions" is not set up]], action = "", section = "Sessions" } }
       end
 
       local items = {}
@@ -68,8 +67,8 @@ return function()
             local full_path = shorten_path(root)
             table.insert(items, {
               name = string.format("%s (%s)", dir_name, full_path),
-              section = "�E  Sessions",
-              _icon = "�E",
+              section = "Sessions",
+              _icon = "S",
               _icon_hl = "MiniStarterProjectIcon",
               _icon_virtual = true,
               _emph_text = dir_name,
@@ -88,7 +87,7 @@ return function()
       end)
 
       if #items == 0 then
-        return { { name = "No sessions yet", action = "", section = "�E  Sessions" } }
+        return { { name = "No sessions yet", action = "", section = "Sessions" } }
       end
 
       return vim.tbl_map(function(item)
@@ -116,7 +115,7 @@ return function()
 
           table.insert(items, {
             name = string.format("%s (%s)", basename, shorten_path(rel)),
-            section = "�E�E Recent files (current directory)",
+            section = "Recent files (current directory)",
             _icon = icon,
             _icon_hl = icon_hl,
             _icon_virtual = true,
@@ -133,7 +132,7 @@ return function()
       end
 
       if #items == 0 then
-        return { { name = "No recent files in current directory", action = "", section = "�E�E Recent files (current directory)" } }
+        return { { name = "No recent files in current directory", action = "", section = "Recent files (current directory)" } }
       end
 
       return items
@@ -149,23 +148,23 @@ return function()
     }
 
     for _, item in ipairs(actions) do
-      item.section = "�E�E Keymaps"
+      item.section = "Keymaps"
       if item.name == "Lazy" then
-        item._icon = "󰒲"
+        item._icon = "L"
         item._icon_hl = "MiniStarterKeymapIcon"
       elseif item.name == "Oil" then
-        item._icon = "󱧶"
+        item._icon = "O"
         item._icon_hl = "MiniStarterKeymapIcon"
       elseif item.name == "Edit new buffer" then
         item.name = "New file"
-        item._icon = "�E�E
+        item._icon = "N"
         item._icon_hl = "MiniStarterFileIcon"
       elseif item.name == "Quit Neovim" then
         item.name = "Quit"
-        item._icon = "�E�"
+        item._icon = "Q"
         item._icon_hl = "MiniStarterQuitIcon"
       else
-        item._icon = "�E�E
+        item._icon = "*"
         item._icon_hl = "MiniStarterKeymapIcon"
       end
       item._icon_virtual = true
@@ -299,7 +298,7 @@ return function()
       if ms == 0 and type(stats.times) == "table" then
         ms = stats.times.LazyDone or stats.times.LazyStart or 0
       end
-      return string.format("󰓅  Neovim loaded (%d / %d) plugins in %.2f ms", stats.loaded, stats.count, ms)
+      return string.format("Loaded %d / %d plugins in %.2f ms", stats.loaded, stats.count, ms)
     end,
   })
 
@@ -355,11 +354,7 @@ return function()
     local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
     for i, line in ipairs(lines) do
       local s, e = line:find("%d+%.%d+ ms")
-      if line:find("Neovim loaded (", 1, true) and s and e then
-        local is, ie = line:find("󰓅", 1, true)
-        if is and ie then
-          vim.api.nvim_buf_add_highlight(buf, starter_footer_ns, "MiniStarterFooterIcon", i - 1, is - 1, ie)
-        end
+      if line:find("Loaded ", 1, true) and s and e then
         vim.api.nvim_buf_add_highlight(buf, starter_footer_ns, "MiniStarterFooterNumber", i - 1, s - 1, e)
       end
     end

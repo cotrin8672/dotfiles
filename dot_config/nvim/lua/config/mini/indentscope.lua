@@ -1,4 +1,4 @@
-return function()
+﻿return function()
   local indentscope = require("mini.indentscope")
 
   local function apply_hl()
