@@ -30,6 +30,7 @@ return function()
       { mode = "n", keys = "<Leader>tr", desc = "Trouble references" },
       { mode = "n", keys = "<Leader>tq", desc = "Trouble quickfix" },
       { mode = "n", keys = "<Leader>tt", desc = "Trouble diagnostics" },
+      { mode = "n", keys = "<Leader>u", desc = "Undotree" },
       { mode = "n", keys = "<Leader>x", desc = "Delete buffer" },
       miniclue.gen_clues.builtin_completion(),
       miniclue.gen_clues.g(),
