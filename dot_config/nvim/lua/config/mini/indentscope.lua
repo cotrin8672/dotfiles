@@ -8,11 +8,11 @@ return function()
     local ok_theme, theme = pcall(require, "everforest")
     if ok_colours and ok_theme then
       local palette = colours.generate_palette(theme.config, vim.o.background)
-      fg = palette.blue
+      fg = palette.grey1
     end
 
     if not fg then
-      local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = "DiagnosticInfo", link = true })
+      local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = "Whitespace", link = true })
       if ok and hl and hl.fg then
         fg = string.format("#%06x", hl.fg)
       end

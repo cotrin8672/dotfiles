@@ -19,6 +19,6 @@ return {
     vim.api.nvim_set_hl(0, "LineNrBelow", { fg = palette.grey0 })
     vim.api.nvim_set_hl(0, "CursorLineNr", { fg = palette.grey0 })
     vim.api.nvim_set_hl(0, "LspInlayHint", { fg = palette.grey0 })
-    vim.api.nvim_set_hl(0, "Whitespace", { fg = palette.bg3 })
+    vim.api.nvim_set_hl(0, "Whitespace", { fg = palette.grey1 })
   end,
 }
