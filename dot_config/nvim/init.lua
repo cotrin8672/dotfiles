@@ -34,14 +34,14 @@ if vim.env.WSL_DISTRO_NAME then
 				"-NoProfile",
 				"-NoLogo",
 				"-Command",
-				"[Console]::Out.Write((Get-Clipboard -Raw).Replace(\"`r\", \"\"))",
+				'[Console]::Out.Write((Get-Clipboard -Raw).Replace("`r", ""))',
 			},
 			["*"] = {
 				"powershell.exe",
 				"-NoProfile",
 				"-NoLogo",
 				"-Command",
-				"[Console]::Out.Write((Get-Clipboard -Raw).Replace(\"`r\", \"\"))",
+				'[Console]::Out.Write((Get-Clipboard -Raw).Replace("`r", ""))',
 			},
 		},
 		cache_enabled = 0,
@@ -114,6 +114,7 @@ vim.api.nvim_create_autocmd({ "WinEnter", "FocusGained", "BufEnter" }, {
 })
 
 require("shared.java_kotlin_package").setup()
+require("vim._core.ui2").enable({})
 
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 

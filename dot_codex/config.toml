@@ -37,6 +37,9 @@ trust_level = "trusted"
 [projects."/home/cotrin/ghq/github.com/cotrin8672/CreateEnchantableMachinery"]
 trust_level = "trusted"
 
+[projects.'\\?\C:\Users\combl\.local\share\chezmoi']
+trust_level = "trusted"
+
 [notice]
 hide_full_access_warning = true
 hide_rate_limit_model_nudge = true
