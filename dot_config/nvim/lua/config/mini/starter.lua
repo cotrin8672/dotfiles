@@ -1,8 +1,8 @@
 return function()
   local MiniStarter = require("mini.starter")
-  local SECTION_SESSIONS = "󰉋  Sessions"
+  local SECTION_SESSIONS = "󰙰  Sessions"
   local SECTION_RECENT = "󰈔  Recent files (current directory)"
-  local SECTION_KEYMAPS = "󰘳  Keymaps"
+  local SECTION_KEYMAPS = "  Keymaps"
 
   local starter_icon_ns = vim.api.nvim_create_namespace("starter_icon_colors")
   local starter_footer_ns = vim.api.nvim_create_namespace("starter_footer_colors")
@@ -10,11 +10,12 @@ return function()
   local starter_path_ns = vim.api.nvim_create_namespace("starter_path_colors")
   local header_hl_cache = {}
   local starter_header_lines = {
-    " _   _                 _           ",
-    "| \\ | | ___  _____   _(_)_ __ ___  ",
-    "|  \\| |/ _ \\/ _ \\ \\ / / | '_ ` _ \\",
-    "| |\\  |  __/ (_) \\ V /| | | | | | |",
-    "|_| \\_|\\___|\\___/ \\_/ |_|_| |_| |_|",
+    "███╗   ██╗ ███████╗  ██████╗  ██╗   ██╗ ██╗ ███╗   ███╗",
+    "████╗  ██║ ██╔════╝ ██╔═══██╗ ██║   ██║ ██║ ████╗ ████║",
+    "██╔██╗ ██║ █████╗   ██║   ██║ ██║   ██║ ██║ ██╔████╔██║",
+    "██║╚██╗██║ ██╔══╝   ██║   ██║ ╚██╗ ██╔╝ ██║ ██║╚██╔╝██║",
+    "██║ ╚████║ ███████╗ ╚██████╔╝  ╚████╔╝  ██║ ██║ ╚═╝ ██║",
+    "╚═╝  ╚═══╝ ╚══════╝  ╚═════╝    ╚═══╝   ╚═╝ ╚═╝     ╚═╝",
   }
 
   local function header_gradient_hl(char_idx, total_chars)
@@ -28,16 +29,6 @@ return function()
       vim.api.nvim_set_hl(0, hl, { fg = string.format("#%02x%02x%02x", r, g, b), bold = true })
     end
     return hl
-  end
-
-  local function shorten_path(path)
-    local p = vim.fn.fnamemodify(path, ":~")
-    local sep = package.config:sub(1, 1)
-    local parts = vim.split(p, "[/\\]", { trimempty = true })
-    if #parts <= 3 then
-      return p
-    end
-    return string.format("%s%s...%s%s%s%s", parts[1], sep, sep, parts[#parts - 1], sep, parts[#parts])
   end
 
   local function decode_session_root(session_name)
@@ -78,16 +69,13 @@ return function()
           local root = decode_session_root(session_name)
           if root ~= nil then
             local dir_name = vim.fn.fnamemodify(root, ":t")
-            local full_path = shorten_path(root)
-            local icon, icon_hl = icons.get("default", "directory")
             table.insert(items, {
-              name = string.format("%s (%s)", dir_name, full_path),
+              name = dir_name,
               section = SECTION_SESSIONS,
-              _icon = icon,
-              _icon_hl = icon_hl,
+              _icon = "󰙰",
+              _icon_hl = "MiniStarterProjectIcon",
               _icon_virtual = true,
               _emph_text = dir_name,
-              _path_text = string.format("(%s)", full_path),
               _session = session,
               action = function()
                 _G.MiniSessions.read(session_name, { force = true, verbose = false })
@@ -135,17 +123,15 @@ return function()
       for _, f in ipairs(vim.v.oldfiles or {}) do
         if vim.fn.filereadable(f) == 1 and vim.startswith(f, cwd_prefix) then
           local basename = vim.fn.fnamemodify(f, ":t")
-          local rel = vim.fn.fnamemodify(f, ":.")
           local icon, icon_hl = icons.get("file", f)
 
           table.insert(items, {
-            name = string.format("%s (%s)", basename, shorten_path(rel)),
+            name = basename,
             section = SECTION_RECENT,
             _icon = icon,
             _icon_hl = icon_hl,
             _icon_virtual = true,
             _emph_text = basename,
-            _path_text = string.format("(%s)", shorten_path(rel)),
             action = function()
               vim.cmd("edit " .. vim.fn.fnameescape(f))
             end,
@@ -191,10 +177,11 @@ return function()
         item._icon, item._icon_hl = icons.get("filetype", "oil")
       elseif item.name == "Edit new buffer" then
         item.name = "New file"
-        item._icon, item._icon_hl = icons.get("default", "file")
+        item._icon = ""
+        item._icon_hl = "MiniStarterFileIcon"
       elseif item.name == "Quit Neovim" then
         item.name = "Quit"
-        item._icon = "󰅖"
+        item._icon = ""
         item._icon_hl = "MiniStarterQuitIcon"
       else
         item._icon = "*"
