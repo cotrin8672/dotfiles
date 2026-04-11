@@ -1,4 +1,3 @@
-
 return {
   name = "highlight-undo.nvim",
   "tzachar/highlight-undo.nvim",

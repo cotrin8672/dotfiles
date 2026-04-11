@@ -1,4 +1,3 @@
-
 return {
 	name = "undo-glow",
 	"y3owk1n/undo-glow.nvim",
