@@ -64,6 +64,8 @@ vim.opt.copyindent = true
 vim.opt.preserveindent = true
 vim.opt.list = true
 vim.opt.listchars:append("space:·")
+vim.opt.winborder = "rounded"
+vim.opt.pumborder = "rounded"
 
 local indent_group = vim.api.nvim_create_augroup("IndentDefaults", { clear = true })
 
