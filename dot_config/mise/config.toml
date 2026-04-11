@@ -13,6 +13,7 @@ zoxide = "latest"
 ghq = "latest"
 claude-code = "latest"
 zig = "latest"
+"npm:@github/copilot" = "latest"
 
 [tasks.nvim-startuptime-install]
 description = "Install vim-startuptime via go install"
