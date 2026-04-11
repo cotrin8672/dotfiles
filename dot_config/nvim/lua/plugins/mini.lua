@@ -2,7 +2,7 @@
 return {
   name = "mini.nvim",
   "nvim-mini/mini.nvim",
-  event = "VeryLazy",
+  lazy = false,
   init = function()
     vim.api.nvim_create_autocmd("VimEnter", {
       once = true,
@@ -15,8 +15,6 @@ return {
         end
 
         vim.g.mini_starter_requested = true
-        require("lazy").load({ plugins = { "mini.nvim" } })
-        require("mini.starter").open()
       end,
     })
   end,
