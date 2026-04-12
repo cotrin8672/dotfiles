@@ -1,7 +1,6 @@
 local mode_accent = require("ui.mode_accent")
 
 return {
-	name = "lualine.nvim",
 	"nvim-lualine/lualine.nvim",
 	event = "VeryLazy",
 	dependencies = {

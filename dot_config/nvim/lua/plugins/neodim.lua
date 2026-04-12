@@ -1,7 +1,5 @@
-
 return {
-  name = "neodim",
-  "zbirenbaum/neodim",
-  event = "LspAttach",
-  opts = {},
+	"zbirenbaum/neodim",
+	event = "LspAttach",
+	opts = {},
 }

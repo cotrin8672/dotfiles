@@ -1,5 +1,4 @@
 return {
-	name = "nvim-lspconfig",
 	"neovim/nvim-lspconfig",
 	event = { "BufReadPre", "BufNewFile" },
 	dependencies = {

@@ -1,5 +1,4 @@
 return {
-	name = "nvim-submode",
 	"sirasagi62/nvim-submode",
 	event = "VeryLazy",
 	config = function()
