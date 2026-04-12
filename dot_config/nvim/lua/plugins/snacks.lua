@@ -3,9 +3,24 @@ return {
 	priority = 1000,
 	lazy = false,
 	opts = {
+		image = {
+			enabled = true,
+		},
 		picker = {
 			enabled = true,
-			ui_select = false,
+			ui_select = true,
+		},
+		rename = {
+			enabled = true,
+		},
+		bigfile = {
+			enabled = true,
+		},
+		quickfile = {
+			enabled = true,
+		},
+		profiler = {
+			enabled = true,
 		},
 	},
 	keys = {
