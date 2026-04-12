@@ -1,5 +1,5 @@
 return function(sm)
-	local shared = require("config.submode.shared")
+	local shared = require("plugins.submode.shared")
 
 	local debug_sm = sm.build_submode({
 		name = "DEBUG",

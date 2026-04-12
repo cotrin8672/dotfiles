@@ -1,5 +1,5 @@
 return function(sm)
-	local shared = require("config.submode.shared")
+	local shared = require("plugins.submode.shared")
 	local submode_color = "#7DAEA3"
 
 	local window_sm = sm.build_submode({
