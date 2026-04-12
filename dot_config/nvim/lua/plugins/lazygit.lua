@@ -79,19 +79,4 @@ return {
       vim.keymap.set("n", "<leader>g0", "<Plug>(git-conflict-none)", { desc = "Conflict None" })
     end,
   },
-  {
-    name = "octo.nvim",
-    "pwntester/octo.nvim",
-    cmd = "Octo",
-    dependencies = {
-      "plenary.nvim",
-    },
-    opts = {
-      picker = "default",
-      enable_builtin = false,
-    },
-    config = function(_, opts)
-      require("octo").setup(opts)
-    end,
-  },
 }
