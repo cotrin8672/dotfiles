@@ -1,4 +1,4 @@
 return {
-	"nvim-mini/mini.bufremove",
+	"nvim-mini/mini.surround",
 	event = "VeryLazy",
 }

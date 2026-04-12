@@ -164,7 +164,7 @@ return {
     map("n", "<Tab>", "<Cmd>BufferNext<CR>", key_opts)
     map("n", "<S-Tab>", "<Cmd>BufferPrevious<CR>", key_opts)
     map("n", "<leader>x", function()
-      MiniBufremove.delete(0, false)
+      require("mini.bufremove").delete(0, false)
     end, key_opts)
   end,
 }
