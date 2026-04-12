@@ -20,6 +20,7 @@ end
 
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
+local float = require("shared.float")
 
 if vim.env.WSL_DISTRO_NAME then
 	vim.g.clipboard = {
@@ -66,6 +67,8 @@ vim.opt.list = true
 vim.opt.listchars:append("space:·")
 vim.opt.winborder = "rounded"
 vim.opt.pumborder = "rounded"
+vim.opt.cursorline = true
+vim.opt.winblend = float.blend
 
 local indent_group = vim.api.nvim_create_augroup("IndentDefaults", { clear = true })
 
@@ -117,6 +120,7 @@ vim.api.nvim_create_autocmd({ "WinEnter", "FocusGained", "BufEnter" }, {
 
 require("shared.java_kotlin_package").setup()
 require("vim._core.ui2").enable({})
+require("ui.cursor_mode").setup()
 
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 
