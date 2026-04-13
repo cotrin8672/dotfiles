@@ -25,6 +25,7 @@ return {
 				"rust_analyzer",
 				"taplo",
 				"marksman",
+				"matlab_ls",
 			}
 
 			if vim.fn.has("win32") == 0 then

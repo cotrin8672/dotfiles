@@ -14,7 +14,4 @@ return {
 		notify = true,
 		dot_repeat = true,
 	},
-	config = function(_, opts)
-		require("treesj").setup(opts)
-	end,
 }
