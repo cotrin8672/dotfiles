@@ -1,5 +1,4 @@
 return {
-	name = "diffview.nvim",
 	"sindrets/diffview.nvim",
 	cmd = {
 		"DiffviewOpen",

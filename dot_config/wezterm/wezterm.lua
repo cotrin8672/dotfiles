@@ -1,5 +1,6 @@
 -- Pull in the wezterm API
 local wezterm = require("wezterm")
+local smart_splits = wezterm.plugin.require("https://github.com/mrjones2014/smart-splits.nvim")
 local tabline = require("tabline")
 local config = wezterm.config_builder()
 local blur_off_window_background_opacity = 0.7
@@ -52,43 +53,10 @@ local function toggle_blur(window)
 	window:toast_notification("WezTerm", enable_blur and "Blur enabled" or "Blur disabled", nil, 1500)
 end
 
-local function is_vim(pane)
-	return pane:get_user_vars().IS_NVIM == "true"
-end
-
-local direction_keys = {
-	h = "Left",
-	j = "Down",
-	k = "Up",
-	l = "Right",
-}
-
-local function split_nav(key)
-	return {
-		key = key,
-		mods = "CTRL",
-		action = wezterm.action_callback(function(window, pane)
-			if is_vim(pane) then
-				window:perform_action({
-					SendKey = { key = key, mods = "CTRL" },
-				}, pane)
-				return
-			end
-
-			window:perform_action({
-				ActivatePaneDirection = direction_keys[key],
-			}, pane)
-		end),
-	}
-end
-
--- wezterm.on("save_session", function(window) session_manager.save_state(window) end)
--- wezterm.on("load_session", function(window) session_manager.load_state(window) end)
--- wezterm.on("restore_session", function(window) session_manager.restore_state(window) end)
 config.default_prog = { "nu" }
 
 wezterm.on("gui-startup", function(cmd)
-	local tab, pane, window = mux.spawn_window(cmd or {})
+	local _, _, window = mux.spawn_window(cmd or {})
 	window:gui_window():maximize()
 end)
 
@@ -106,10 +74,6 @@ config.show_new_tab_button_in_tab_bar = false
 -- For example, changing the color scheme:
 config.leader = { key = "q", mods = "CTRL", timeout_milliseconds = 1000 }
 config.keys = {
-	split_nav("h"),
-	split_nav("j"),
-	split_nav("k"),
-	split_nav("l"),
 	{ key = "r", mods = "LEADER", action = wezterm.action.SplitHorizontal({ domain = "CurrentPaneDomain" }) },
 	{ key = "d", mods = "LEADER", action = wezterm.action.SplitVertical({ domain = "CurrentPaneDomain" }) },
 	{
@@ -120,7 +84,7 @@ config.keys = {
 	{
 		key = "B",
 		mods = "CTRL|SHIFT",
-		action = wezterm.action_callback(function(window, _pane)
+		action = wezterm.action_callback(function(window, _)
 			toggle_blur(window)
 		end),
 	},
@@ -181,5 +145,12 @@ config.colors = {
 }
 
 tabline.setup(config)
+
+smart_splits.apply_to_config(config, {
+	direction_keys = { "h", "j", "k", "l" },
+	modifiers = {
+		move = "CTRL",
+	},
+})
 
 return config

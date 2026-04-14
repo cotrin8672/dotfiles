@@ -1,13 +1,8 @@
-
 return {
-  name = "nvim-dap-virtual-text",
-  "theHamsta/nvim-dap-virtual-text",
-  event = "VeryLazy",
-  dependencies = {
-    {
-      name = "nvim-dap",
-      "mfussenegger/nvim-dap",
-    },
-  },
-  opts = {},
+	"theHamsta/nvim-dap-virtual-text",
+	event = "VeryLazy",
+	dependencies = {
+		"mfussenegger/nvim-dap",
+	},
+	opts = {},
 }

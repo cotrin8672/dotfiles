@@ -1,5 +1,4 @@
 return {
-	name = "dial.nvim",
 	"monaqa/dial.nvim",
 	keys = {
 		{

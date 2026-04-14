@@ -1,5 +1,4 @@
 return {
-	name = "mini.icons",
 	"nvim-mini/mini.icons",
 	lazy = false,
 	config = function()

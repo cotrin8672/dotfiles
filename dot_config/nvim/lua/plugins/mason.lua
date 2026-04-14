@@ -7,7 +7,6 @@ return {
 		},
 	},
 	{
-		name = "mason-lspconfig.nvim",
 		"mason-org/mason-lspconfig.nvim",
 		lazy = false,
 		dependencies = {

@@ -1,9 +1,9 @@
 return {
 	"mrjones2014/smart-splits.nvim",
+	lazy = false,
 	opts = {
-		default_amount = 3,
 		at_edge = "stop",
-		wezterm_cli_path = "/mnt/c/Users/gummy/scoop/apps/wezterm-nightly/nightly-20260130/wezterm.exe",
+		wezterm_cli_path = "C:\\Users\\gummy\\scoop\\shims\\wezterm.exe",
 	},
 	keys = {
 		{
@@ -11,6 +11,7 @@ return {
 			function()
 				require("smart-splits").move_cursor_left()
 			end,
+			mode = "n",
 			desc = "Move to left split",
 			silent = true,
 		},
@@ -19,6 +20,7 @@ return {
 			function()
 				require("smart-splits").move_cursor_down()
 			end,
+			mode = "n",
 			desc = "Move to lower split",
 			silent = true,
 		},
@@ -27,6 +29,7 @@ return {
 			function()
 				require("smart-splits").move_cursor_up()
 			end,
+			mode = "n",
 			desc = "Move to upper split",
 			silent = true,
 		},
@@ -35,11 +38,9 @@ return {
 			function()
 				require("smart-splits").move_cursor_right()
 			end,
+			mode = "n",
 			desc = "Move to right split",
 			silent = true,
 		},
 	},
-	config = function(_, opts)
-		require("smart-splits").setup(opts)
-	end,
 }

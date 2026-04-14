@@ -6,7 +6,7 @@ return {
 	ft = { "markdown" },
 	keys = {
 		{
-			"<leader>sm",
+			"<leader>tm",
 			":RenderMarkdown toggle<CR>",
 			desc = "Toggle markdown renderer",
 		},

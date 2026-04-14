@@ -1,5 +1,12 @@
 return {
 	"nvim-mini/mini.surround",
 	event = "VeryLazy",
-	opts = {},
+	opts = {
+		custom_surroundings = {
+			l = {
+				input = { "%[%[().-()%]%]" },
+				output = { left = "[[", right = "]]" },
+			},
+		},
+	},
 }
