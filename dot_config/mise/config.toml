@@ -15,6 +15,7 @@ claude-code = "latest"
 zig = "latest"
 "npm:@github/copilot" = "latest"
 rust = "latest"
+java = "openjdk-21"
 
 [tasks.nvim-startuptime-install]
 description = "Install vim-startuptime via go install"

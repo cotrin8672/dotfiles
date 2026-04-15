@@ -36,12 +36,14 @@ return {
 	config = function(_, opts)
 		local ok_notify, notify = pcall(require, "notify")
 		if ok_notify then
-			notify.setup({
-				background_colour = "#000000",
-			})
+			notify.setup()
 			vim.notify = notify
 		end
 
 		require("noice").setup(opts)
+		vim.api.nvim_set_hl(0, "NoiceCmdlinePopup", { link = "NormalFloat" })
+		vim.api.nvim_set_hl(0, "NoiceCmdlinePopupBorder", { link = "FloatBorder" })
+		vim.api.nvim_set_hl(0, "NoicePopup", { link = "NormalFloat" })
+		vim.api.nvim_set_hl(0, "NoicePopupBorder", { link = "FloatBorder" })
 	end,
 }

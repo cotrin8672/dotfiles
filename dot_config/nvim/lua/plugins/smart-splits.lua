@@ -1,9 +1,20 @@
+local wezterm_cli_path = (function()
+	local candidates = vim.env.WSL_DISTRO_NAME and { "wezterm.exe", "wezterm" } or { "wezterm", "wezterm.exe" }
+	for _, command in ipairs(candidates) do
+		if vim.fn.executable(command) == 1 then
+			return command
+		end
+	end
+	return candidates[1]
+end)()
+
 return {
 	"mrjones2014/smart-splits.nvim",
 	lazy = false,
 	opts = {
 		at_edge = "stop",
-		wezterm_cli_path = "C:\\Users\\gummy\\scoop\\shims\\wezterm.exe",
+		multiplexer_integration = "wezterm",
+		wezterm_cli_path = wezterm_cli_path,
 	},
 	keys = {
 		{

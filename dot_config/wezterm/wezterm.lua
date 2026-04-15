@@ -1,6 +1,5 @@
 -- Pull in the wezterm API
 local wezterm = require("wezterm")
-local smart_splits = wezterm.plugin.require("https://github.com/mrjones2014/smart-splits.nvim")
 local tabline = require("tabline")
 local config = wezterm.config_builder()
 local blur_off_window_background_opacity = 0.7
@@ -69,6 +68,61 @@ local scheme = wezterm.color.get_builtin_schemes()[config.color_scheme]
 config.window_background_gradient = {
 	colors = { scheme.background },
 }
+
+local direction_keys = {
+	h = "Left",
+	j = "Down",
+	k = "Up",
+	l = "Right",
+}
+
+local function basename(path)
+	if not path then
+		return nil
+	end
+	return string.gsub(path, "(.*[/\\])(.*)", "%2"):lower()
+end
+
+local function is_vim(pane)
+	local user_vars = pane:get_user_vars()
+	if user_vars and user_vars.IS_NVIM == "true" then
+		return true
+	end
+
+	local process_name = basename(pane:get_foreground_process_name())
+	if process_name == "nvim" or process_name == "nvim.exe" or process_name == "vim" or process_name == "vim.exe" then
+		return true
+	end
+
+	local ok, process_info = pcall(function()
+		return pane:get_foreground_process_info()
+	end)
+	if ok and process_info and process_info.executable then
+		local executable = basename(process_info.executable)
+		if executable == "nvim" or executable == "nvim.exe" or executable == "vim" or executable == "vim.exe" then
+			return true
+		end
+	end
+
+	local title = pane:get_title()
+	if title and title:lower():match("n?vim") then
+		return true
+	end
+
+	return false
+end
+
+local function smart_nav(key)
+	return wezterm.action_callback(function(window, pane)
+		if is_vim(pane) or #window:active_tab():panes() == 1 then
+			window:perform_action(wezterm.action.SendKey({ key = key, mods = "CTRL" }), pane)
+			return
+		end
+
+		window:perform_action(wezterm.action.ActivatePaneDirection(direction_keys[key]), pane)
+	end)
+end
+
 config.show_new_tab_button_in_tab_bar = false
 -- This is where you actually apply your config choices
 -- For example, changing the color scheme:
@@ -126,6 +180,10 @@ config.keys = {
 	{ key = "-", mods = "CTRL", action = wezterm.action.DecreaseFontSize },
 	{ key = "0", mods = "CTRL", action = wezterm.action.ResetFontSize },
 	{ key = "p", mods = "SHIFT|CTRL", action = wezterm.action.ActivateCommandPalette },
+	{ key = "h", mods = "CTRL", action = smart_nav("h") },
+	{ key = "j", mods = "CTRL", action = smart_nav("j") },
+	{ key = "k", mods = "CTRL", action = smart_nav("k") },
+	{ key = "l", mods = "CTRL", action = smart_nav("l") },
 }
 
 config.key_tables = {
@@ -145,12 +203,5 @@ config.colors = {
 }
 
 tabline.setup(config)
-
-smart_splits.apply_to_config(config, {
-	direction_keys = { "h", "j", "k", "l" },
-	modifiers = {
-		move = "CTRL",
-	},
-})
 
 return config

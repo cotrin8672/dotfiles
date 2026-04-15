@@ -13,6 +13,7 @@ vim.g.loaded_node_provider = 1
 vim.g.loaded_python3_provider = 1
 vim.g.loaded_ruby_provider = 1
 vim.g.loaded_perl_provider = 1
+vim.g.smart_splits_multiplexer_integration = "wezterm"
 
 if vim.loader then
 	vim.loader.enable()
@@ -24,7 +25,7 @@ local float = require("shared.float")
 
 if vim.env.WSL_DISTRO_NAME then
 	vim.g.clipboard = {
-		name = "wsl-clip",
+		name = "wsl-clipp",
 		copy = {
 			["+"] = { "clip.exe" },
 			["*"] = { "clip.exe" },
