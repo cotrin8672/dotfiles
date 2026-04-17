@@ -17,7 +17,7 @@ return {
 			enabled = true,
 		},
 		quickfile = {
-			enabled = false,
+			enabled = true,
 		},
 		profiler = {
 			enabled = true,

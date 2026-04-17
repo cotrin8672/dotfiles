@@ -70,6 +70,9 @@ vim.opt.winborder = "rounded"
 vim.opt.pumborder = "rounded"
 vim.opt.cursorline = true
 vim.opt.winblend = float.blend
+vim.opt.belloff = "all"
+vim.opt.errorbells = false
+vim.opt.visualbell = false
 
 local indent_group = vim.api.nvim_create_augroup("IndentDefaults", { clear = true })
 
@@ -120,7 +123,6 @@ vim.api.nvim_create_autocmd({ "WinEnter", "FocusGained", "BufEnter" }, {
 })
 
 require("shared.java_kotlin_package").setup()
-require("vim._core.ui2").enable({})
 require("ui.cursor_mode").setup()
 
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"

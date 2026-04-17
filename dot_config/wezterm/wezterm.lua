@@ -23,6 +23,7 @@ config.show_close_tab_button_in_tabs = false
 config.custom_block_glyphs = true
 config.anti_alias_custom_block_glyphs = true
 config.color_scheme = "Everforest Dark Hard (Gogh)"
+config.audible_bell = "Disabled"
 
 local mux = wezterm.mux
 local BLUR_ON_OPACITY = config.window_background_opacity
