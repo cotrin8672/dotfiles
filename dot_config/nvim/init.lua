@@ -123,7 +123,13 @@ vim.api.nvim_create_autocmd({ "WinEnter", "FocusGained", "BufEnter" }, {
 })
 
 require("shared.java_kotlin_package").setup()
-require("ui.cursor_mode").setup()
+vim.api.nvim_create_autocmd("User", {
+	pattern = "VeryLazy",
+	once = true,
+	callback = function()
+		require("ui.cursor_mode").setup()
+	end,
+})
 
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 

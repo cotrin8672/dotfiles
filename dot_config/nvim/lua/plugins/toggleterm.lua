@@ -1,8 +1,6 @@
-local float = require("shared.float")
-
 return {
 	"akinsho/toggleterm.nvim",
-	version = "*",
+	event = "VeryLazy",
 	config = function()
 		local normal_float = vim.api.nvim_get_hl(0, { name = "NormalFloat", link = false })
 		local float_border = vim.api.nvim_get_hl(0, { name = "FloatBorder", link = false })

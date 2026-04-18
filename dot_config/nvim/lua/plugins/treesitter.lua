@@ -35,7 +35,7 @@ return {
 
 		treesitter.setup({
 			ensure_installed = parsers,
-			auto_install = true,
+			auto_install = false,
 			sync_install = false,
 		})
 

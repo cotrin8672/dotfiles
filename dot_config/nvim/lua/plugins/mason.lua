@@ -1,14 +1,14 @@
 return {
 	{
 		"mason-org/mason.nvim",
-		lazy = false,
+		lazy = true,
 		opts = {
 			PATH = "prepend",
 		},
 	},
 	{
 		"mason-org/mason-lspconfig.nvim",
-		lazy = false,
+		event = { "BufReadPre", "BufNewFile" },
 		dependencies = {
 			"mason.nvim",
 			"neovim/nvim-lspconfig",
@@ -45,7 +45,7 @@ return {
 	{
 		name = "mason-tool-installer.nvim",
 		"WhoIsSethDaniel/mason-tool-installer.nvim",
-		lazy = false,
+		cmd = { "MasonToolsInstall", "MasonToolsUpdate", "MasonToolsClean" },
 		dependencies = {
 			"mason.nvim",
 		},
@@ -61,7 +61,6 @@ return {
 				"shfmt",
 			},
 			auto_update = false,
-			run_on_start = true,
 			start_delay = 0,
 		},
 	},

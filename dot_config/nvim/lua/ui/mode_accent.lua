@@ -60,8 +60,8 @@ function M.get_mode_color()
 end
 
 function M.get_submode_color()
-	local ok, sm = pcall(require, "nvim-submode")
-	if ok and sm and type(sm.get_submode_color) == "function" then
+	local sm = package.loaded["nvim-submode"]
+	if sm and type(sm.get_submode_color) == "function" then
 		local c = sm.get_submode_color()
 		if type(c) == "string" and c ~= "" then
 			return c
