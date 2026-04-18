@@ -73,6 +73,7 @@ vim.opt.winblend = float.blend
 vim.opt.belloff = "all"
 vim.opt.errorbells = false
 vim.opt.visualbell = false
+vim.opt.shada = "'10,<5,s1,h"
 
 local indent_group = vim.api.nvim_create_augroup("IndentDefaults", { clear = true })
 

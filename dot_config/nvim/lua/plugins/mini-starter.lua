@@ -125,7 +125,8 @@ return {
         local items = {}
 
         for _, f in ipairs(vim.v.oldfiles or {}) do
-          if vim.fn.filereadable(f) == 1 and vim.startswith(f, cwd_prefix) then
+          local stat = vim.uv.fs_stat(f)
+          if stat and stat.type == "file" and vim.startswith(f, cwd_prefix) then
             local basename = vim.fn.fnamemodify(f, ":t")
             local icon, icon_hl = icons.get("file", f)
 
@@ -338,6 +339,8 @@ return {
     local starter_footer_ns = vim.api.nvim_create_namespace("starter_footer_colors")
     local starter_emphasis_ns = vim.api.nvim_create_namespace("starter_emphasis_colors")
     local starter_path_ns = vim.api.nvim_create_namespace("starter_path_colors")
+    local repaint_state = {}
+    local pending_repaint = {}
 
     local function apply_starter_hl()
       vim.opt.termguicolors = true
@@ -357,8 +360,17 @@ return {
       vim.api.nvim_set_hl(0, "MiniStarterFooterNumber", { fg = "#d699b6", bold = true })
     end
 
-    local function repaint_starter_buffer(buf)
+    local function repaint_starter_buffer(buf, opts)
       if not vim.api.nvim_buf_is_valid(buf) or vim.bo[buf].filetype ~= "ministarter" then
+        return
+      end
+
+      local force = opts and opts.force or false
+      local state = repaint_state[buf]
+      local tick = vim.api.nvim_buf_get_changedtick(buf)
+      local cols = vim.o.columns
+      local lines_count = vim.o.lines
+      if not force and state and state.tick == tick and state.cols == cols and state.lines == lines_count then
         return
       end
 
@@ -413,6 +425,23 @@ return {
           )
         end
       end
+
+      repaint_state[buf] = {
+        tick = tick,
+        cols = cols,
+        lines = lines_count,
+      }
+    end
+
+    local function queue_repaint(buf, opts)
+      if pending_repaint[buf] then
+        return
+      end
+      pending_repaint[buf] = true
+      vim.schedule(function()
+        pending_repaint[buf] = nil
+        repaint_starter_buffer(buf, opts)
+      end)
     end
 
     MiniStarter.setup(opts)
@@ -441,10 +470,8 @@ return {
           MiniStarter.update_current_item("prev", buf)
         end, map_opts)
 
-        repaint_starter_buffer(buf)
-        vim.schedule(function()
-          repaint_starter_buffer(buf)
-        end)
+        repaint_starter_buffer(buf, { force = true })
+        queue_repaint(buf, { force = true })
       end,
     })
 
@@ -453,8 +480,16 @@ return {
       callback = function(args)
         local buf = args.buf or vim.api.nvim_get_current_buf()
         if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].filetype == "ministarter" then
-          repaint_starter_buffer(buf)
+          queue_repaint(buf)
         end
+      end,
+    })
+
+    vim.api.nvim_create_autocmd("BufWipeout", {
+      group = group,
+      callback = function(args)
+        repaint_state[args.buf] = nil
+        pending_repaint[args.buf] = nil
       end,
     })
   end,
