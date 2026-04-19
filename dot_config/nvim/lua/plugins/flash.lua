@@ -3,7 +3,7 @@ return {
 	event = "VeryLazy",
 	opts = {
 		modes = {
-			char = { enabled = false },
+			char = { enabled = true },
 			search = { enabled = false },
 			treesitter = { enabled = false },
 		},

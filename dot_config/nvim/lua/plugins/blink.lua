@@ -26,7 +26,7 @@ return {
 				winblend = float.blend,
 			},
 			documentation = {
-				auto_show = false,
+				auto_show = true,
 				window = {
 					winblend = float.blend,
 				},
