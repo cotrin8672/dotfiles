@@ -74,7 +74,7 @@ return {
 			desc = "Github issues",
 		},
 		{
-			"<leader>pS",
+			"<leader>pp",
 			function()
 				Snacks.picker.gh_pr()
 			end,

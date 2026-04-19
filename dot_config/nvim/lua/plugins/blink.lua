@@ -12,15 +12,20 @@ return {
 			nerd_font_variant = "mono",
 		},
 		completion = {
+			list = {
+				selection = {
+					preselect = true,
+					auto_insert = false,
+				},
+			},
 			accept = {
 				auto_brackets = {
-					kind_resolution = {
-						blocked_filetypes = { "java", "kotlin" },
-					},
-					semantic_token_resolution = {
-						blocked_filetypes = { "java", "kotlin" },
-					},
+					enabled = false,
 				},
+			},
+			ghost_text = {
+				enabled = true,
+				show_with_menu = true,
 			},
 			menu = {
 				winblend = float.blend,
@@ -35,6 +40,7 @@ return {
 		sources = {
 			default = {
 				"lazydev",
+				"copilot",
 				"buffer",
 				"path",
 				"lsp",
@@ -44,6 +50,12 @@ return {
 					name = "LazyDev",
 					module = "lazydev.integrations.blink",
 					score_offset = 100,
+				},
+				copilot = {
+					name = "copilot",
+					module = "blink-cmp-copilot",
+					score_offset = 100,
+					async = true,
 				},
 			},
 		},
