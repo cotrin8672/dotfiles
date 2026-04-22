@@ -9,6 +9,7 @@ return {
 		picker = {
 			enabled = true,
 			ui_select = true,
+			preview = require("md-render.snacks").preview(),
 		},
 		rename = {
 			enabled = true,

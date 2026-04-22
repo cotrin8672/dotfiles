@@ -1,6 +1,6 @@
 [tools]
-bun = "latest"
 fd = "latest"
+bun = "latest"
 go = "latest"
 node = "22"
 "npm:typescript" = "latest"
@@ -27,4 +27,3 @@ run = "vim-startuptime -vimpath nvim +qall"
 
 [settings]
 experimental = true
-windows_shim_mode = "exe"
