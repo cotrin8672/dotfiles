@@ -22,6 +22,7 @@ end
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 local float = require("shared.float")
+require("config.matlab").setup()
 
 if vim.env.WSL_DISTRO_NAME then
 	vim.g.clipboard = {
@@ -64,8 +65,6 @@ vim.opt.autoindent = true
 vim.opt.smartindent = true
 vim.opt.copyindent = true
 vim.opt.preserveindent = true
-vim.opt.list = true
-vim.opt.listchars:append("space:·")
 vim.opt.winborder = "rounded"
 vim.opt.pumborder = "rounded"
 vim.opt.cursorline = true
