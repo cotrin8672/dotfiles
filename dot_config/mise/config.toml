@@ -2,7 +2,7 @@
 fd = "latest"
 bun = "latest"
 go = "latest"
-node = "22"
+node = "20"
 "npm:typescript" = "latest"
 pnpm = "latest"
 rg = "latest"
@@ -16,6 +16,7 @@ zig = "latest"
 "npm:@github/copilot" = "latest"
 rust = "latest"
 java = "openjdk-21"
+fzf = "latest"
 
 [tasks.nvim-startuptime-install]
 description = "Install vim-startuptime via go install"

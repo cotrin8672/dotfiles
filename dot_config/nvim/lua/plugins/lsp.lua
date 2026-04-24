@@ -103,9 +103,9 @@ return {
 			capabilities = capabilities,
 			settings = {
 				MATLAB = {
-					indexWorkspace = true,
+					indexWorkspace = false,
 					installPath = matlab_install_path,
-					matlabConnectionTiming = "onDemand",
+					matlabConnectionTiming = "onStart",
 					telemetry = true,
 				},
 			},

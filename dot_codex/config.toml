@@ -1,4 +1,4 @@
-model = "gpt-5.4"
+model = "gpt-5.5"
 approval_policy = "never"             # 承認をスキップ
 windows_wsl_setup_acknowledged = true
 hide_agent_reasoning = false # TUI（テキストユーザーインターフェース）とcodex execの出力において、推論イベントを表示するようにする
@@ -52,6 +52,9 @@ trust_level = "trusted"
 [projects.'c:\users\gummy\.local\share\chezmoi']
 trust_level = "trusted"
 
+[projects.'C:\Users\minol\ghq\github.com\cotrin8672\zmk-config-soflechocwireless']
+trust_level = "trusted"
+
 [notice]
 hide_full_access_warning = true
 hide_rate_limit_model_nudge = true
@@ -89,3 +92,6 @@ enabled = true
 
 [plugins."github@openai-curated"]
 enabled = true
+
+[tui.model_availability_nux]
+"gpt-5.5" = 1
