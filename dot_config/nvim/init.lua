@@ -21,6 +21,9 @@ end
 
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
+
+vim.keymap.set("i", "<M-o>", "<C-g>u<C-o>o", { desc = "Open line below" })
+
 local float = require("shared.float")
 require("config.matlab").setup()
 
@@ -73,6 +76,13 @@ vim.opt.belloff = "all"
 vim.opt.errorbells = false
 vim.opt.visualbell = false
 vim.opt.shada = "'10,<5,s1,h"
+vim.opt.scrolloff = 10
+vim.opt.wrap = false
+vim.opt.fillchars.eob = " "
+vim.opt.ignorecase = true
+vim.opt.smartcase = true
+vim.opt.virtualedit = "block"
+vim.opt.autoread = true
 
 local indent_group = vim.api.nvim_create_augroup("IndentDefaults", { clear = true })
 

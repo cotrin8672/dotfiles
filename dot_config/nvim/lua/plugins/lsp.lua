@@ -37,7 +37,6 @@ return {
 				vim.keymap.set("n", "<leader>rn", function()
 					return ":IncRename " .. vim.fn.expand("<cword>")
 				end, { buffer = bufnr, silent = true, expr = true })
-				map("<leader>ca", vim.lsp.buf.code_action)
 				map("[d", function()
 					vim.diagnostic.jump({ count = -1, float = true })
 				end)

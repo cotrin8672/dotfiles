@@ -7,16 +7,6 @@ return {
 			"<cmd>Trouble diagnostics toggle<cr>",
 			desc = "Diagnostics (Trouble)",
 		},
-		{
-			"<leader>tq",
-			"<cmd>Trouble qflist toggle<cr>",
-			desc = "Quickfix (Trouble)",
-		},
-		{
-			"<leader>tr",
-			"<cmd>Trouble lsp_references toggle<cr>",
-			desc = "References (Trouble)",
-		},
 	},
 	opts = {
 		focus = true,

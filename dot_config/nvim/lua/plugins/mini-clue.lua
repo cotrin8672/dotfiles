@@ -30,8 +30,6 @@ return {
 				{ mode = "n", keys = "<Leader>pS", desc = "Pick workspace symbols" },
 				{ mode = "n", keys = "<Leader>r", desc = "+rename" },
 				{ mode = "n", keys = "<Leader>t", desc = "+trouble" },
-				{ mode = "n", keys = "<Leader>tr", desc = "Trouble references" },
-				{ mode = "n", keys = "<Leader>tq", desc = "Trouble quickfix" },
 				{ mode = "n", keys = "<Leader>tt", desc = "Trouble diagnostics" },
 				{ mode = "n", keys = "<Leader>u", desc = "Undotree" },
 				{ mode = "n", keys = "<Leader>x", desc = "Delete buffer" },

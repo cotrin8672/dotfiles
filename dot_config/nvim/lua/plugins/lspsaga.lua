@@ -3,9 +3,9 @@ return {
 	event = "LspAttach",
 	keys = {
 		{
-			"<leader>ca",
+			"gra",
 			"<cmd>Lspsaga code_action<cr>",
-			mode = "n",
+			mode = { "n", "x" },
 			desc = "LSP Code Action",
 		},
 	},
