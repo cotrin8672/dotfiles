@@ -1,11 +1,11 @@
-model = "gpt-5.5"
+model = "gpt-5.4"
 approval_policy = "never"             # 承認をスキップ
 windows_wsl_setup_acknowledged = true
 hide_agent_reasoning = false # TUI（テキストユーザーインターフェース）とcodex execの出力において、推論イベントを表示するようにする
 model_reasoning_effort = "medium"
 web_search = "live"             # モデルによるウェブ検索の実行を許可
 personality = "pragmatic"
-approvals_reviewer = "guardian_subagent"
+approvals_reviewer = "user"
 
 [projects.'\\?\C:\Users\gummy\VSCodeProjects\SalesNetwork']
 trust_level = "trusted"
@@ -94,4 +94,4 @@ enabled = true
 enabled = true
 
 [tui.model_availability_nux]
-"gpt-5.5" = 3
+"gpt-5.5" = 4

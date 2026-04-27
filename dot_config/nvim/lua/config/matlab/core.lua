@@ -31,7 +31,7 @@ function M.setup(user_opts)
 			requested_clients[client.id] = true
 
 			vim.defer_fn(function()
-				local ok, err = M.notify("matlab/request", {}, args.buf)
+				local ok, err = M.notify("matlab/request", {})
 				if not ok then
 					vim.notify(tostring(err), vim.log.levels.ERROR)
 				end
@@ -47,10 +47,8 @@ function M.setup(user_opts)
 	})
 end
 
-function M.get_client(bufnr)
-	bufnr = bufnr or vim.api.nvim_get_current_buf()
-
-	local clients = vim.lsp.get_clients({ bufnr = bufnr })
+function M.get_client()
+	local clients = vim.lsp.get_clients()
 	for _, client in ipairs(clients) do
 		if client.name == "matlab_ls" then
 			return client
@@ -60,8 +58,8 @@ function M.get_client(bufnr)
 	return nil, "matlab_ls client not found"
 end
 
-function M.notify(method, params, bufnr)
-	local client, err = M.get_client(bufnr)
+function M.notify(method, params)
+	local client, err = M.get_client()
 	if not client then
 		return false, err
 	end
@@ -71,7 +69,7 @@ function M.notify(method, params, bufnr)
 end
 
 function M.request(method, params, handler, bufnr)
-	local client, err = M.get_client(bufnr)
+	local client, err = M.get_client()
 	if not client then
 		return nil, err
 	end
@@ -83,6 +81,10 @@ end
 
 function M.new_request_id()
 	return tostring(vim.uv.hrtime())
+end
+
+function M.interrupt()
+	return M.notify("interruptRequest", {})
 end
 
 return M

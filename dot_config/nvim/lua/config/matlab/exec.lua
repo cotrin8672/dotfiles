@@ -19,10 +19,16 @@ local function matlab_command_from_file(path)
 	return name
 end
 
-function M.eval(command)
-	local state = require("config.matlab.command_state")
-	state.input(command)
+function M.command_from_current_file()
+	local path, err = M.current_file()
+	if not path then
+		return nil, err
+	end
 
+	return matlab_command_from_file(path), nil
+end
+
+function M.eval(command)
 	local ok, err = core.notify("evalRequest", {
 		requestId = core.new_request_id(),
 		command = command,
@@ -36,9 +42,19 @@ function M.eval(command)
 	return true, nil
 end
 
+function M.interrupt()
+	local ok, err = core.notify("interruptRequest", {})
+
+	if not ok then
+		return false, err
+	end
+
+	return true, nil
+end
+
 function M.run_file()
-	local path, err = M.current_file()
-	if not path then
+	local command, err = M.command_from_current_file()
+	if not command then
 		return false, err
 	end
 
@@ -46,8 +62,7 @@ function M.run_file()
 		vim.cmd.write()
 	end
 
-	local cmd = matlab_command_from_file(path)
-	return M.eval(cmd)
+	return M.eval(command)
 end
 
 return M

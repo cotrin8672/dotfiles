@@ -56,12 +56,20 @@ vim.api.nvim_create_user_command("MatlabCurrentFile", function()
 end, {})
 
 vim.api.nvim_create_user_command("MatlabRunFile", function()
+	local cmdwin = require("config.matlab.command_window")
 	local exec = require("config.matlab.exec")
 
-	local ok, err = exec.run_file()
-	if not ok then
-		vim.notify(tostring(err), vim.log.levels.ERROR)
+	if vim.bo.modified then
+		vim.cmd.write()
 	end
+
+	local command, err = exec.command_from_current_file()
+	if not command then
+		vim.notify(tostring(err), vim.log.levels.ERROR)
+		return
+	end
+
+	cmdwin.submit(command)
 end, {})
 
 vim.api.nvim_create_user_command("MatlabEval", function(opts)
@@ -76,9 +84,7 @@ end, {
 	nargs = "+",
 })
 
-vim.api.nvim_create_user_command("MatlabCommandLog", function()
-	local state = require("config.matlab.command_state")
-	local entries = state.get_entries()
-
-	vim.notify(vim.inspect(entries))
+vim.api.nvim_create_user_command("MatlabOpenCommandWindow", function()
+	local cmdwin = require("config.matlab.command_window")
+	cmdwin.open()
 end, {})

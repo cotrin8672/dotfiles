@@ -1,42 +1,21 @@
-local state = require("config.matlab.command_state")
+local cmdwin = require("config.matlab.command_window")
 
 local M = {}
 
-local function severity_from_text_event(text, stream)
-	if stream == 0 then
-		if vim.startswith(text, "Warning:") then
-			return "warning"
-		end
-		return "normal"
-	end
-
-	return "error"
-end
-
 function M.setup()
-	rawset(vim.lsp.handlers, "text", function(err, result)
-		if err then
-			state.append({
-				text = "text notification error: " .. vim.inspect(err),
-				severity = "error",
-			})
-		end
-
+	rawset(vim.lsp.handlers, "text", function(_, result)
 		if result and result.text then
-			local severity = severity_from_text_event(result.text, result.stream)
-			state.append({
-				text = result.text,
-				severity = severity,
-			})
+			cmdwin.handle_text(result.text)
 		end
 	end)
 
-	rawset(vim.lsp.handlers, "clc", function(err, _)
-		if err then
-			state.append({
-				text = "clc notification error: " .. vim.inspect(err),
-				severity = "error",
-			})
+	rawset(vim.lsp.handlers, "clc", function()
+		cmdwin.handle_clc()
+	end)
+
+	rawset(vim.lsp.handlers, "mvmPromptChange", function(_, result)
+		if result and result.state then
+			cmdwin.handle_prompt_change(result.state)
 		end
 	end)
 end
