@@ -15,6 +15,7 @@ local parsers = {
 	"tsx",
 	"typescript",
 	"zsh",
+	"latex",
 }
 
 return {
