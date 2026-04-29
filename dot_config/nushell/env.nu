@@ -20,3 +20,4 @@ let mise_path = $nu.default-config-dir | path join mise.nu
 if not ($mise_path | path exists) {
     ^mise activate nu | save $mise_path
 }
+$env.PYTHONUTF8 = "1"

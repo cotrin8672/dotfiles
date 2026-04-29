@@ -5,6 +5,17 @@ return {
 	opts = {
 		image = {
 			enabled = true,
+			doc = {
+				enabled = true,
+				inline = false,
+				float = true,
+				conceal = function(lang, type)
+					return type == "math"
+				end,
+			},
+			math = {
+				enabled = true,
+			},
 		},
 		picker = {
 			enabled = true,

@@ -11,5 +11,9 @@ return {
 			desc = "Toggle markdown renderer",
 		},
 	},
-	opts = {},
+	opts = {
+		latex = {
+			enabled = true,
+		},
+	},
 }
