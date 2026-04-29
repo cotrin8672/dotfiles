@@ -26,6 +26,10 @@ vim.keymap.set("i", "<M-o>", "<C-g>u<C-o>o", { desc = "Open line below" })
 
 local float = require("shared.float")
 require("config.matlab").setup()
+require("config.zenhan").setup({
+	command = "zenhan.exe",
+	off_arg = "0",
+})
 
 if vim.env.WSL_DISTRO_NAME then
 	vim.g.clipboard = {
