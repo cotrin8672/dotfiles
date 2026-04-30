@@ -2,6 +2,9 @@ return {
 	"folke/snacks.nvim",
 	priority = 1000,
 	lazy = false,
+	dependencies = {
+		"lambdalisue/vim-kensaku",
+	},
 	opts = {
 		image = {
 			enabled = true,
@@ -20,7 +23,9 @@ return {
 		picker = {
 			enabled = true,
 			ui_select = true,
-			preview = require("md-render.snacks").preview(),
+			preview = function(ctx)
+				return require("md-render.snacks").preview()(ctx)
+			end,
 		},
 		rename = {
 			enabled = true,
@@ -46,9 +51,10 @@ return {
 		{
 			"<leader>pg",
 			function()
-				Snacks.picker.grep()
+				require("snacks.picker.config.sources").grep_kensaku = require("plugins/snacks-kensaku/grep_kensaku")
+				Snacks.picker.grep_kensaku()
 			end,
-			desc = "Live grep",
+			desc = "Live grep with kensaku.vim",
 		},
 		{
 			"<leader>pb",

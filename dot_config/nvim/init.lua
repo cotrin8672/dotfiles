@@ -25,7 +25,6 @@ vim.g.maplocalleader = " "
 vim.keymap.set("i", "<M-o>", "<C-g>u<C-o>o", { desc = "Open line below" })
 
 local float = require("shared.float")
-require("config.matlab").setup()
 require("config.zenhan").setup({
 	command = "zenhan.exe",
 	off_arg = "0",
@@ -137,6 +136,16 @@ vim.api.nvim_create_autocmd({ "WinEnter", "FocusGained", "BufEnter" }, {
 })
 
 require("shared.java_kotlin_package").setup()
+vim.api.nvim_create_autocmd("LspAttach", {
+	callback = function(args)
+		local client = vim.lsp.get_client_by_id(args.data.client_id)
+		if not client or client.name ~= "matlab_ls" then
+			return
+		end
+
+		require("config.matlab").setup()
+	end,
+})
 vim.api.nvim_create_autocmd("User", {
 	pattern = "VeryLazy",
 	once = true,

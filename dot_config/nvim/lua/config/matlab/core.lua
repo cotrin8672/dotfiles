@@ -12,6 +12,24 @@ function M.setup(user_opts)
 		return
 	end
 
+	local function request_start(client)
+		if not client or client.name ~= "matlab_ls" then
+			return
+		end
+
+		if requested_clients[client.id] then
+			return
+		end
+		requested_clients[client.id] = true
+
+		vim.defer_fn(function()
+			local ok, err = M.notify("matlab/request", {})
+			if not ok then
+				vim.notify(tostring(err), vim.log.levels.ERROR)
+			end
+		end, opts.auto_start_delay)
+	end
+
 	local group = vim.api.nvim_create_augroup("MatlabLspAutoStart", {
 		clear = true,
 	})
@@ -20,22 +38,7 @@ function M.setup(user_opts)
 		group = group,
 		callback = function(args)
 			local client = vim.lsp.get_client_by_id(args.data.client_id)
-
-			if not client or client.name ~= "matlab_ls" then
-				return
-			end
-
-			if requested_clients[client.id] then
-				return
-			end
-			requested_clients[client.id] = true
-
-			vim.defer_fn(function()
-				local ok, err = M.notify("matlab/request", {})
-				if not ok then
-					vim.notify(tostring(err), vim.log.levels.ERROR)
-				end
-			end, opts.auto_start_delay)
+			request_start(client)
 		end,
 	})
 
@@ -45,6 +48,10 @@ function M.setup(user_opts)
 			requested_clients[args.data.client_id] = nil
 		end,
 	})
+
+	for _, client in ipairs(vim.lsp.get_clients({ name = "matlab_ls" })) do
+		request_start(client)
+	end
 end
 
 function M.get_client()
