@@ -3,7 +3,6 @@ dot_config/nushell/history.txt
 dot_config/nvim/lazy-lock.json
 
 # Neovim logs / scratch files
-nvim
 nvim-start
 nvim-v*.txt
 nvim.log
