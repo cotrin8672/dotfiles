@@ -15,6 +15,13 @@ return {
 			function()
 				require("flash").jump({
 					label = { before = true, after = false },
+					search = {
+						mode = function(input)
+							return vim.fn["kensaku#query"](input, {
+								rxop = vim.g["kensaku#rxop#vim"],
+							})
+						end,
+					},
 				})
 			end,
 			desc = "Flash",

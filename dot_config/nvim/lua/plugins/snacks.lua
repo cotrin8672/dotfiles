@@ -51,10 +51,12 @@ return {
 		{
 			"<leader>pg",
 			function()
-				require("snacks.picker.config.sources").grep_kensaku = require("plugins/snacks-kensaku/grep_kensaku")
-				Snacks.picker.grep_kensaku()
+				local sources = require("snacks.picker.config.sources")
+				sources.grep_kensaku = require("plugins.snacks-kensaku.grep_kensaku")
+				sources.grep_merged = require("plugins.snacks-kensaku.grep_merged")
+				Snacks.picker.grep_merged()
 			end,
-			desc = "Live grep with kensaku.vim",
+			desc = "Live grep with grep + kensaku.vim",
 		},
 		{
 			"<leader>pb",
