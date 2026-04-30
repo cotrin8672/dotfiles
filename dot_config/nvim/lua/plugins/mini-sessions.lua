@@ -32,45 +32,9 @@ return {
 			return "git-" .. normalized:gsub("[:/\\]+", "%%")
 		end
 
-		local function ensure_repo_session()
-			local root = git_root()
-			if not root then
-				return
-			end
-
-			local name = session_name(root)
-			if sessions.detected[name] ~= nil then
-				sessions.read(name, { force = true, verbose = false })
-				managed_session_name = name
-				return
-			end
-
-			sessions.write(name, { force = true, verbose = false })
-			managed_session_name = name
-		end
-
-		local function should_autoread()
-			if vim.fn.argc() > 0 then
-				return false
-			end
-
-			return vim.api.nvim_buf_get_name(0) == "" and vim.bo.filetype == ""
-		end
-
 		sessions.setup(opts)
 
 		local group = vim.api.nvim_create_augroup("MiniSessionsRepoAutoload", { clear = true })
-
-		vim.api.nvim_create_autocmd("VimEnter", {
-			group = group,
-			callback = function()
-				if not should_autoread() then
-					return
-				end
-
-				ensure_repo_session()
-			end,
-		})
 
 		vim.api.nvim_create_autocmd("VimLeavePre", {
 			group = group,
