@@ -1,6 +1,12 @@
 local M = {}
+local initialized = false
 
 function M.setup()
+	if initialized then
+		return
+	end
+	initialized = true
+
 	local core = require("config.matlab.core")
 	local cmdwin = require("config.matlab.command_window")
 	local exec = require("config.matlab.exec")
