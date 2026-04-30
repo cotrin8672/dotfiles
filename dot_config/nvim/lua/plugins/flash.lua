@@ -13,6 +13,7 @@ return {
 			"<leader>j",
 			mode = { "n", "x", "o" },
 			function()
+				require("lazy").load({ plugins = { "vim-kensaku" } })
 				require("flash").jump({
 					label = { before = true, after = false },
 					search = {

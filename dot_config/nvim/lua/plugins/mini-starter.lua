@@ -1,6 +1,9 @@
 return {
   "nvim-mini/mini.starter",
   lazy = false,
+  cond = function()
+    return vim.fn.argc() == 0
+  end,
 
   opts = function()
     local MiniStarter = require("mini.starter")

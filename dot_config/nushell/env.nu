@@ -21,3 +21,10 @@ if not ($mise_path | path exists) {
     ^mise activate nu | save $mise_path
 }
 $env.PYTHONUTF8 = "1"
+$env.XDG_CONFIG_HOME = ($env.USERPROFILE | path join ".config")
+
+def nvim [...args] {
+    with-env { LANG: "C" } {
+        ^nvim ...$args
+    }
+}
