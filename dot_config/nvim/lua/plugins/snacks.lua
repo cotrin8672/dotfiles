@@ -2,9 +2,6 @@ return {
 	"folke/snacks.nvim",
 	priority = 1000,
 	lazy = false,
-	dependencies = {
-		"lambdalisue/vim-kensaku",
-	},
 	opts = {
 		image = {
 			enabled = true,
@@ -51,6 +48,7 @@ return {
 		{
 			"<leader>pg",
 			function()
+				require("lazy").load({ plugins = { "vim-kensaku" } })
 				local sources = require("snacks.picker.config.sources")
 				sources.grep_kensaku = require("plugins.snacks-kensaku.grep_kensaku")
 				sources.grep_merged = require("plugins.snacks-kensaku.grep_merged")

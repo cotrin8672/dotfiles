@@ -21,6 +21,7 @@ deno = "latest"
 uv = "latest"
 python = "latest"
 "pipx:pylatexenc" = "latest"
+neovim = "latest"
 
 [tasks.nvim-startuptime-install]
 description = "Install vim-startuptime via go install"

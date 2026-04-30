@@ -25,7 +25,7 @@
 			local ok_theme, theme = pcall(require, "everforest")
 			if ok_colours and ok_theme then
 				local palette = colours.generate_palette(theme.config, vim.o.background)
-				fg = palette.grey1
+				fg = palette.aqua
 			end
 
 			if not fg then
