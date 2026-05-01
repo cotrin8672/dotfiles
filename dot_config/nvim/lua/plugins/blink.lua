@@ -7,6 +7,8 @@ return {
 			"Saghen/blink.lib",
 			lazy = true,
 		},
+		"L3MON4D3/LuaSnip",
+		"erooke/blink-cmp-latex",
 	},
 	build = function(plugin)
 		if vim.uv.os_uname().sysname ~= "Windows_NT" then
@@ -42,6 +44,9 @@ return {
 		appearance = {
 			nerd_font_variant = "mono",
 		},
+		snippets = {
+			preset = "luasnip",
+		},
 		completion = {
 			list = {
 				selection = {
@@ -70,6 +75,7 @@ return {
 		},
 		sources = {
 			default = {
+				"snippets",
 				"lazydev",
 				"copilot",
 				"buffer",
@@ -87,6 +93,17 @@ return {
 					module = "blink-cmp-copilot",
 					score_offset = 100,
 					async = true,
+				},
+				latex = {
+					name = "latex",
+					module = "blink-cmp-latex",
+					enabled = function()
+						local ft = vim.bo.filetype
+						return ft == "tex" or ft == "plaintex" or ft == "latex" or ft == "markdown"
+					end,
+					opts = {
+						insert_command = true,
+					},
 				},
 			},
 		},

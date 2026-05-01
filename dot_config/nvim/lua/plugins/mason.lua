@@ -24,6 +24,7 @@ return {
 				"rust_analyzer",
 				"taplo",
 				"marksman",
+				"texlab",
 				"matlab_ls",
 			}
 

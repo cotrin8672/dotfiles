@@ -101,6 +101,10 @@ return {
 			capabilities = capabilities,
 		})
 
+		vim.lsp.config("texlab", {
+			capabilities = capabilities,
+		})
+
 		local matlab_exe = vim.fn.exepath("matlab")
 		local matlab_install_path = matlab_exe ~= "" and vim.fn.fnamemodify(matlab_exe, ":h:h") or ""
 
