@@ -8,3 +8,4 @@ nvim-v*.txt
 nvim.log
 $log
 .kensaku*
+.codex-nvim/
