@@ -1,4 +1,4 @@
-model = "gpt-5.5"
+model = "gpt-5.4"
 approval_policy = "never"             # 承認をスキップ
 windows_wsl_setup_acknowledged = true
 hide_agent_reasoning = false # TUI（テキストユーザーインターフェース）とcodex execの出力において、推論イベントを表示するようにする
@@ -59,6 +59,12 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [projects.'c:\users\gummy\vault\knowledge']
+trust_level = "trusted"
+
+[projects.'c:\users\combl\vault\knowledge']
+trust_level = "trusted"
+
+[projects.'c:\users\combl']
 trust_level = "trusted"
 
 [notice]

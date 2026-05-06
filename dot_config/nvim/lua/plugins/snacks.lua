@@ -9,7 +9,7 @@ return {
 				enabled = true,
 				inline = false,
 				float = true,
-				conceal = function(lang, type)
+				conceal = function(_, type)
 					return type == "math"
 				end,
 			},

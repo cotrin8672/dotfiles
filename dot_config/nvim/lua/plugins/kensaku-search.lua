@@ -1,6 +1,6 @@
 return {
 	"lambdalisue/vim-kensaku-search",
-	event = "CmdlineEnter",
+	lazy = false,
 	dependencies = {
 		"lambdalisue/vim-kensaku",
 	},

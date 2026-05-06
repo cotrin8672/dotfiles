@@ -129,8 +129,10 @@ config.show_new_tab_button_in_tab_bar = false
 -- For example, changing the color scheme:
 config.leader = { key = "q", mods = "CTRL", timeout_milliseconds = 1000 }
 config.keys = {
-	{ key = "r", mods = "LEADER", action = wezterm.action.SplitHorizontal({ domain = "CurrentPaneDomain" }) },
-	{ key = "d", mods = "LEADER", action = wezterm.action.SplitVertical({ domain = "CurrentPaneDomain" }) },
+	{ key = "h", mods = "LEADER", action = wezterm.action.SplitPane({ direction = "Left" }) },
+	{ key = "j", mods = "LEADER", action = wezterm.action.SplitPane({ direction = "Down" }) },
+	{ key = "k", mods = "LEADER", action = wezterm.action.SplitPane({ direction = "Up" }) },
+	{ key = "l", mods = "LEADER", action = wezterm.action.SplitPane({ direction = "Right" }) },
 	{
 		key = "T",
 		mods = "CTRL|SHIFT",
@@ -172,7 +174,7 @@ config.keys = {
 		action = wezterm.action.ToggleFullScreen,
 	},
 	{
-		key = "S",
+		key = "s",
 		mods = "LEADER",
 		action = wezterm.action.ActivateKeyTable({ name = "resize_mode", one_shot = false }),
 	},

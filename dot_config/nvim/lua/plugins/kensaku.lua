@@ -1,6 +1,6 @@
 return {
 	"lambdalisue/vim-kensaku",
-	event = "VeryLazy",
+	lazy = false,
 	dependencies = {
 		"vim-denops/denops.vim",
 	},
