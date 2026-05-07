@@ -1,10 +1,11 @@
-model = "gpt-5.4"
+model = "gpt-5.5"
 approval_policy = "never"             # 承認をスキップ
 windows_wsl_setup_acknowledged = true
-hide_agent_reasoning = false # TUI（テキストユーザーインターフェース）とcodex execの出力において、推論イベントを表示するようにする
+hide_agent_reasoning = false          # TUI（テキストユーザーインターフェース）とcodex execの出力において、推論イベントを表示するようにする
 model_reasoning_effort = "medium"
-web_search = "live"             # モデルによるウェブ検索の実行を許可
+web_search = "live"                   # モデルによるウェブ検索の実行を許可
 personality = "pragmatic"
+default_permissions = ":workspace"
 approvals_reviewer = "user"
 
 [projects.'\\?\C:\Users\gummy\VSCodeProjects\SalesNetwork']
@@ -67,6 +68,12 @@ trust_level = "trusted"
 [projects.'c:\users\combl']
 trust_level = "trusted"
 
+[projects.'c:\users\gummy\vscodeprojects\vconcierge-feature-screen-share']
+trust_level = "trusted"
+
+[projects.'c:\users\gummy']
+trust_level = "trusted"
+
 [notice]
 hide_full_access_warning = true
 hide_rate_limit_model_nudge = true
@@ -76,15 +83,13 @@ hide_rate_limit_model_nudge = true
 "gpt-5.2-codex" = "gpt-5.3-codex"
 
 [features]
-shell_snapshot = true                 # 繰り返し実行するコマンドの処理速度を向上
-apply_patch_freeform = true           # フリーフォーム形式のapply_patchツールを利用可能に
-remote_compaction = true              # リモート圧縮を有効に
-remote_models = true                  # 準備状態を表示する前にリモートモデルリストを更新
-shell_tool = true                     # コマンド実行用のデフォルトツール「shell」を有効化
-undo = true                           # ターン単位のUndo機能を有効に
-powershell_utf8 = true                # UTF-8強制(文字化け対策)
-experimental_windows_sandbox = true
-elevated_windows_sandbox = true
+shell_snapshot = true          # 繰り返し実行するコマンドの処理速度を向上
+apply_patch_freeform = true    # フリーフォーム形式のapply_patchツールを利用可能に
+remote_compaction = true       # リモート圧縮を有効に
+remote_models = true           # 準備状態を表示する前にリモートモデルリストを更新
+shell_tool = true              # コマンド実行用のデフォルトツール「shell」を有効化
+undo = true                    # ターン単位のUndo機能を有効に
+powershell_utf8 = true         # UTF-8強制(文字化け対策)
 multi_agent = true
 use_linux_sandbox_bwrap = true
 voice_transcription = true
@@ -105,5 +110,30 @@ enabled = true
 [plugins."github@openai-curated"]
 enabled = true
 
+[plugins."documents@openai-primary-runtime"]
+enabled = true
+
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = true
+
+[plugins."presentations@openai-primary-runtime"]
+enabled = true
+
+[plugins."browser-use@openai-bundled"]
+enabled = true
+
 [tui.model_availability_nux]
 "gpt-5.5" = 4
+
+[marketplaces.openai-bundled]
+last_updated = "2026-05-07T10:04:33Z"
+source_type = "local"
+source = '\\?\C:\Users\gummy\.codex\.tmp\bundled-marketplaces\openai-bundled'
+
+[marketplaces.openai-primary-runtime]
+last_updated = "2026-05-07T10:40:10Z"
+source_type = "local"
+source = '\\?\C:\Users\gummy\.cache\codex-runtimes\codex-primary-runtime\plugins\openai-primary-runtime'
+
+[windows]
+sandbox = "elevated"

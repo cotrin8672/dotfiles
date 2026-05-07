@@ -21,6 +21,12 @@ uv = "latest"
 python = "latest"
 "pipx:pylatexenc" = "latest"
 neovim = "latest"
+eza = "latest"
+dust = "latest"
+delta = "latest"
+bat = "latest"
+direnv = "latest"
+lazygit = "latest"
 
 [tasks.nvim-startuptime-install]
 description = "Install vim-startuptime via go install"
