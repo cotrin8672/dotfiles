@@ -208,7 +208,7 @@ $env.PROMPT_COMMAND = {||
     let git = (git_block)
 
     let tail = if $git == '' {
-        (ansi { fg: $dir_bg }) + '' + (ansi reset)
+        (ansi { fg: $dir_bg bg: 'default' }) + '' + (ansi reset)
     } else {
         let dir_sep = (ansi { fg: $dir_bg bg: $git_bg }) + ''
         let git_end = (ansi { fg: $git_bg bg: 'default' }) + ''
@@ -232,6 +232,6 @@ $env.PROMPT_COMMAND_RIGHT = {||
     }
 }
 
-$env.PROMPT_INDICATOR = {|| (prompt_indicator '❯') }
-$env.PROMPT_INDICATOR_VI_INSERT = {|| (prompt_indicator '❯') }
-$env.PROMPT_INDICATOR_VI_NORMAL = {|| (prompt_indicator '❮') }
+$env.PROMPT_INDICATOR = {|| (prompt_indicator '❯ ') }
+$env.PROMPT_INDICATOR_VI_INSERT = {|| (prompt_indicator '❯ ') }
+$env.PROMPT_INDICATOR_VI_NORMAL = {|| (prompt_indicator '❮ ') }
