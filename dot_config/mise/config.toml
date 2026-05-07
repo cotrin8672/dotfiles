@@ -27,6 +27,12 @@ delta = "latest"
 bat = "latest"
 direnv = "latest"
 lazygit = "latest"
+gh = "latest"
+cmake = "latest"
+1password-cli = "latest"
+yq = "latest"
+jq = "latest"
+tree-sitter = "latest"
 
 [tasks.nvim-startuptime-install]
 description = "Install vim-startuptime via go install"
