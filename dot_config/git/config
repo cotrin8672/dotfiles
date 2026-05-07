@@ -1,0 +1,11 @@
+[core]
+	editor = "nvim"
+	protectNTFS = false
+[user]
+	name = cotrin8672
+	email = gummy8672@gmail.com
+[merge]
+	conflictStyle = diff3
+[merge "mergiraf"]
+	name = mergiraf
+	driver = mergiraf merge --git %O %A %B -s %S -x %X -y %Y -p %P -l %L
