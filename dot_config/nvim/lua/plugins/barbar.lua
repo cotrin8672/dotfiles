@@ -17,6 +17,9 @@ return {
 		highlight_inactive_file_icons = false,
 		icons = {
 			button = "",
+			modified = {
+				button = "●",
+			},
 			filetype = {
 				custom_colors = false,
 			},

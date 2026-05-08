@@ -70,7 +70,14 @@ return {
 				auto_show = true,
 				window = {
 					winblend = float.blend,
+					direction_priority = {
+						menu_north = { "e", "w", "n" },
+						menu_south = { "e", "w", "n" },
+					},
 				},
+			},
+			keyword = {
+				range = "full",
 			},
 		},
 		sources = {

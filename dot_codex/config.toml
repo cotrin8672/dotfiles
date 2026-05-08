@@ -126,14 +126,14 @@ enabled = true
 "gpt-5.5" = 4
 
 [marketplaces.openai-bundled]
-last_updated = "2026-05-07T10:04:33Z"
+last_updated = "2026-05-08T01:21:51Z"
 source_type = "local"
-source = '\\?\C:\Users\gummy\.codex\.tmp\bundled-marketplaces\openai-bundled'
+source = '\\?\C:\Users\minol\.codex\.tmp\bundled-marketplaces\openai-bundled'
 
 [marketplaces.openai-primary-runtime]
-last_updated = "2026-05-07T10:40:10Z"
+last_updated = "2026-05-08T01:44:52Z"
 source_type = "local"
-source = '\\?\C:\Users\gummy\.cache\codex-runtimes\codex-primary-runtime\plugins\openai-primary-runtime'
+source = '\\?\C:\Users\minol\.cache\codex-runtimes\codex-primary-runtime\plugins\openai-primary-runtime'
 
 [windows]
 sandbox = "elevated"

@@ -22,7 +22,7 @@ return {
 			hover = {
 				enabled = false,
 			},
-			sigunature = {
+			signature = {
 				enabled = false,
 			},
 			override = {
