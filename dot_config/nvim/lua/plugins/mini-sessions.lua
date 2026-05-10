@@ -32,15 +32,19 @@ return {
 			return "git-" .. normalized:gsub("[:/\\]+", "%%")
 		end
 
+		local function should_manage_session()
+			return vim.fn.argc() == 0
+		end
+
 		sessions.setup(opts)
 
-		local group = vim.api.nvim_create_augroup("MiniSessionsRepoAutoload", { clear = true })
+		local group = vim.api.nvim_create_augroup("MiniSessionsRepoAutowrite", { clear = true })
 
 		vim.api.nvim_create_autocmd("VimLeavePre", {
 			group = group,
 			callback = function()
 				if managed_session_name == nil then
-					if vim.g.mini_starter_requested ~= true then
+					if not should_manage_session() then
 						return
 					end
 

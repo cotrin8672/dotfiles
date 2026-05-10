@@ -33,6 +33,7 @@ cmake = "latest"
 yq = "latest"
 jq = "latest"
 tree-sitter = "latest"
+lefthook = "latest"
 
 [tasks.nvim-startuptime-install]
 description = "Install vim-startuptime via go install"

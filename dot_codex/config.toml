@@ -2,11 +2,12 @@ model = "gpt-5.5"
 approval_policy = "never"             # 承認をスキップ
 windows_wsl_setup_acknowledged = true
 hide_agent_reasoning = false          # TUI（テキストユーザーインターフェース）とcodex execの出力において、推論イベントを表示するようにする
-model_reasoning_effort = "medium"
+model_reasoning_effort = "high"
 web_search = "live"                   # モデルによるウェブ検索の実行を許可
 personality = "pragmatic"
 default_permissions = ":workspace"
 approvals_reviewer = "user"
+sandbox_mode = "workspace-write"
 
 [projects.'\\?\C:\Users\gummy\VSCodeProjects\SalesNetwork']
 trust_level = "trusted"
@@ -74,6 +75,12 @@ trust_level = "trusted"
 [projects.'c:\users\gummy']
 trust_level = "trusted"
 
+[projects.'c:\users\gummy\documents\codex\2026-05-08\files-mentioned-by-the-user-70a82936']
+trust_level = "trusted"
+
+[projects.'c:\users\gummy\ghq\github.com\cotrin8672\kyme.nvim']
+trust_level = "trusted"
+
 [notice]
 hide_full_access_warning = true
 hide_rate_limit_model_nudge = true
@@ -119,6 +126,9 @@ enabled = true
 [plugins."presentations@openai-primary-runtime"]
 enabled = true
 
+[plugins."openai-developers@openai-curated"]
+enabled = true
+
 [plugins."browser-use@openai-bundled"]
 enabled = true
 
@@ -126,14 +136,14 @@ enabled = true
 "gpt-5.5" = 4
 
 [marketplaces.openai-bundled]
-last_updated = "2026-05-08T01:21:51Z"
+last_updated = "2026-05-09T15:10:41Z"
 source_type = "local"
-source = '\\?\C:\Users\minol\.codex\.tmp\bundled-marketplaces\openai-bundled'
+source = '\\?\C:\Users\gummy\.codex\.tmp\bundled-marketplaces\openai-bundled'
 
 [marketplaces.openai-primary-runtime]
-last_updated = "2026-05-08T01:44:52Z"
+last_updated = "2026-05-08T13:50:19Z"
 source_type = "local"
-source = '\\?\C:\Users\minol\.cache\codex-runtimes\codex-primary-runtime\plugins\openai-primary-runtime'
+source = '\\?\C:\Users\gummy\.cache\codex-runtimes\codex-primary-runtime\plugins\openai-primary-runtime'
 
 [windows]
-sandbox = "elevated"
+sandbox = "unelevated"

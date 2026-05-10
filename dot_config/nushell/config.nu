@@ -32,5 +32,6 @@ if ('Path' in $env) {
     $env.Path = ($env.PATH | str join ';')
 }
 
-$env.config.show_banner = false
+add-mason-bin-to-path
 
+$env.config.show_banner = false
