@@ -81,6 +81,9 @@ trust_level = "trusted"
 [projects.'c:\users\gummy\ghq\github.com\cotrin8672\kyme.nvim']
 trust_level = "trusted"
 
+[projects.'c:\users\minol\sakaue\codexresearchvault']
+trust_level = "trusted"
+
 [notice]
 hide_full_access_warning = true
 hide_rate_limit_model_nudge = true
