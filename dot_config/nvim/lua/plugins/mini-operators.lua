@@ -3,7 +3,7 @@ return {
 	event = { "BufReadPost", "BufNewFile" },
 	opts = {
 		evaluate = { prefix = "g=" },
-		exchange = { prefix = "gx" },
+		exchange = { prefix = "ge" },
 		multiply = { prefix = "gm" },
 		replace = { prefix = "gR" },
 		sort = { prefix = "gs" },

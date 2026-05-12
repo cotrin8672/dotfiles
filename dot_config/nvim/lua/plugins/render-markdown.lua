@@ -3,7 +3,7 @@ return {
 	dependencies = {
 		"nvim-treesitter/nvim-treesitter",
 	},
-	ft = { "markdown" },
+	ft = { "markdown", "codecompanion" },
 	keys = {
 		{
 			"<leader>tm",
