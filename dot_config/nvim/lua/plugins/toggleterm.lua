@@ -19,6 +19,14 @@ return {
 			end, opts)
 		end
 
+		local function shutdown_toggleterms()
+			for _, term in ipairs(require("toggleterm.terminal").get_all(true)) do
+				pcall(function()
+					term:shutdown()
+				end)
+			end
+		end
+
 		require("toggleterm").setup({
 			open_mapping = nil,
 			shade_terminals = false,
@@ -73,5 +81,10 @@ return {
 		vim.keymap.set("n", "<leader>gg", function()
 			lazygit:toggle()
 		end, { desc = "LazyGit Float" })
+
+		vim.api.nvim_create_autocmd("QuitPre", {
+			group = vim.api.nvim_create_augroup("ToggleTermShutdownOnQuit", { clear = true }),
+			callback = shutdown_toggleterms,
+		})
 	end,
 }
