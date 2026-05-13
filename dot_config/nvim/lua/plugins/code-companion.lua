@@ -13,19 +13,19 @@ return {
 			chat = {
 				adapter = {
 					name = "copilot",
-					model = "gpt-5.4-mini",
+					model = "raptor-mini",
 				},
 			},
 			inline = {
 				adapter = {
 					name = "copilot",
-					model = "gpt-5.4-mini",
+					model = "raptor-mini",
 				},
 			},
 			cmd = {
 				adapter = {
 					name = "copilot",
-					model = "gpt-5.4-mini",
+					model = "raptor-mini",
 				},
 			},
 			shared = {
