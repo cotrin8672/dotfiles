@@ -3,6 +3,7 @@ return {
 	event = "VeryLazy",
 	dependencies = {
 		"mini.icons",
+		"mini.bufremove",
 		"gitsigns.nvim",
 	},
 	init = function()
@@ -165,6 +166,7 @@ return {
 		map("n", "<Tab>", "<Cmd>BufferNext<CR>", key_opts)
 		map("n", "<S-Tab>", "<Cmd>BufferPrevious<CR>", key_opts)
 		map("n", "<leader>x", function()
+			vim.cmd("silent update")
 			require("mini.bufremove").delete(0, false)
 		end, key_opts)
 	end,
