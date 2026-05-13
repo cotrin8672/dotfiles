@@ -11,13 +11,22 @@ return {
 		},
 		interactions = {
 			chat = {
-				adapter = "copilot",
+				adapter = {
+					name = "copilot",
+					model = "gpt-5.4-mini",
+				},
 			},
 			inline = {
-				adapter = "copilot",
+				adapter = {
+					name = "copilot",
+					model = "gpt-5.4-mini",
+				},
 			},
 			cmd = {
-				adapter = "copilot",
+				adapter = {
+					name = "copilot",
+					model = "gpt-5.4-mini",
+				},
 			},
 			shared = {
 				keymaps = {
