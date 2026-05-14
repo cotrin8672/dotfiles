@@ -84,6 +84,9 @@ trust_level = "trusted"
 [projects.'c:\users\minol\sakaue\codexresearchvault']
 trust_level = "trusted"
 
+[projects.'c:\users\minol\sakaue\eo_comb_sim']
+trust_level = "trusted"
+
 [notice]
 hide_full_access_warning = true
 hide_rate_limit_model_nudge = true
