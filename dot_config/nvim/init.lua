@@ -86,10 +86,13 @@ vim.opt.shada = "'10,<5,s1,h"
 vim.opt.scrolloff = 10
 vim.opt.wrap = false
 vim.opt.fillchars.eob = " "
+vim.opt.fillchars:append({ diff = "░" })
 vim.opt.ignorecase = true
 vim.opt.smartcase = true
 vim.opt.virtualedit = "block"
 vim.opt.autoread = true
+vim.opt.sessionoptions:remove({ "blank", "terminal" })
+vim.o.showtabline = 2
 
 local indent_group = vim.api.nvim_create_augroup("IndentDefaults", { clear = true })
 

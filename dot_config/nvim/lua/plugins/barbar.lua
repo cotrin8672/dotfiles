@@ -1,5 +1,6 @@
 return {
 	"romgrk/barbar.nvim",
+	enabled = false,
 	event = "VeryLazy",
 	dependencies = {
 		"mini.icons",

@@ -129,8 +129,8 @@ return function(sm)
 		{ "k", "k" },
 		{ "h", "h" },
 		{ "l", "l" },
-		{ "<Tab>", "<Cmd>BufferNext<CR>" },
-		{ "<S-Tab>", "<Cmd>BufferPrevious<CR>" },
+		{ "<Tab>", "<Cmd>lua require('plugins.tabby').next_buffer()<CR>" },
+		{ "<S-Tab>", "<Cmd>lua require('plugins.tabby').previous_buffer()<CR>" },
 		{
 			"<Esc>",
 			function()
