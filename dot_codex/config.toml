@@ -2,7 +2,7 @@ model = "gpt-5.5"
 approval_policy = "never"             # 承認をスキップ
 windows_wsl_setup_acknowledged = true
 hide_agent_reasoning = false          # TUI（テキストユーザーインターフェース）とcodex execの出力において、推論イベントを表示するようにする
-model_reasoning_effort = "high"
+model_reasoning_effort = "low"
 web_search = "live"                   # モデルによるウェブ検索の実行を許可
 personality = "pragmatic"
 default_permissions = ":workspace"
@@ -147,7 +147,7 @@ enabled = true
 "gpt-5.5" = 4
 
 [marketplaces.openai-bundled]
-last_updated = "2026-05-16T05:48:11Z"
+last_updated = "2026-05-17T05:17:10Z"
 source_type = "local"
 source = '\\?\C:\Users\gummy\.codex\.tmp\bundled-marketplaces\openai-bundled'
 

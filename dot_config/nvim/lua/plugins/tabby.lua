@@ -72,7 +72,7 @@ return vim.tbl_extend("force", M, {
 						return {
 							line.sep("", hl, theme.fill),
 							tab.in_jump_mode() and tab.jump_key() or tab.number(),
-							tab.is_current() and "● " or "○ ",
+							tab.is_current() and " ●" or " ○",
 							line.sep("", hl, theme.fill),
 							hl = hl,
 							margin = "",
