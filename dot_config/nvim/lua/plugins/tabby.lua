@@ -110,7 +110,7 @@ return vim.tbl_extend("force", M, {
 						end)
 						.foreach(function(buf)
 							local hl = buf.is_current() and theme.current or theme.inactive
-							local modified = buf.is_changed() and "[+]" or ""
+							local modified = buf.is_changed() and "● " or ""
 							return {
 								line.sep("", hl, theme.fill),
 								buffer_file_icon(buf.id, hl),
