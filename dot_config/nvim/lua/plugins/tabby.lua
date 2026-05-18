@@ -41,6 +41,31 @@ local function update_tabby_visibility()
 	vim.o.showtabline = 2
 end
 
+local function get_hl_bg(name)
+	local hl = vim.api.nvim_get_hl(0, { name = name, link = false })
+	if hl.bg ~= nil then
+		return hl.bg
+	end
+end
+
+local function buffer_file_icon(bufnr, bg_hl)
+	local path = vim.api.nvim_buf_get_name(bufnr)
+	local category = vim.fn.isdirectory(path) == 1 and "directory" or "file"
+	local ok, icon, icon_hl = pcall(require("mini.icons").get, category, path)
+	if not ok then
+		return ""
+	end
+
+	local icon_hl_data = vim.api.nvim_get_hl(0, { name = icon_hl, link = false })
+	local hl = "TabbyIcon" .. icon_hl .. bg_hl
+	vim.api.nvim_set_hl(0, hl, {
+		fg = icon_hl_data.fg,
+		bg = get_hl_bg(bg_hl) or get_hl_bg("TabLineFill") or get_hl_bg("TabLine"),
+	})
+
+	return { icon, hl = hl }
+end
+
 return vim.tbl_extend("force", M, {
 	"nanozuki/tabby.nvim",
 	lazy = false,
@@ -88,7 +113,7 @@ return vim.tbl_extend("force", M, {
 							local modified = buf.is_changed() and "[+]" or ""
 							return {
 								line.sep("", hl, theme.fill),
-								buf.file_icon(),
+								buffer_file_icon(buf.id, hl),
 								" ",
 								{ modified, hl = buf.is_changed() and theme.modified or hl },
 								buf.name(),
