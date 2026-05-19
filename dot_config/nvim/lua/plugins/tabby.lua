@@ -81,7 +81,6 @@ return vim.tbl_extend("force", M, {
 			tab = "TabLine",
 			current = "TabLineSel",
 			inactive = "TabLine",
-			modified = "TabLineSel",
 			tail = "TabLine",
 		}
 
@@ -115,7 +114,7 @@ return vim.tbl_extend("force", M, {
 								line.sep("", hl, theme.fill),
 								buffer_file_icon(buf.id, hl),
 								" ",
-								{ modified, hl = buf.is_changed() and theme.modified or hl },
+								{ modified, hl = hl },
 								buf.name(),
 								line.sep("", hl, theme.fill),
 								hl = hl,
