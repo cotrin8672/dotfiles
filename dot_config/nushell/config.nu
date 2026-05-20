@@ -19,6 +19,21 @@
 
 use ($nu.default-config-dir | path join mise.nu)
 source ($nu.default-config-dir | path join prompt.nu)
+source ($nu.default-config-dir | path join zoxide.nu)
+source ($nu.config-path | path dirname | path join completion bat-completions.nu)
+source ($nu.config-path | path dirname | path join completion cargo-completions.nu)
+source ($nu.config-path | path dirname | path join completion curl-completions.nu)
+source ($nu.config-path | path dirname | path join completion eza-completions.nu)
+source ($nu.config-path | path dirname | path join completion gh-completions.nu)
+source ($nu.config-path | path dirname | path join completion git-completions.nu)
+source ($nu.config-path | path dirname | path join completion gradlew-completions.nu)
+source ($nu.config-path | path dirname | path join completion pnpm-completions.nu)
+source ($nu.config-path | path dirname | path join completion rg-completions.nu)
+source ($nu.config-path | path dirname | path join completion rustup-completions.nu)
+source ($nu.config-path | path dirname | path join completion scoop-completions.nu)
+source ($nu.config-path | path dirname | path join completion ssh-completions.nu)
+source ($nu.config-path | path dirname | path join completion uv-completions.nu)
+source ($nu.config-path | path dirname | path join completion zoxide-completions.nu)
 
 if ('Path' in $env) {
     # Convert Windows ';' PATH string to Nushell PATH list.
