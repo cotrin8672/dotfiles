@@ -38,18 +38,27 @@ def prompt_dir_name [] {
     }
 }
 
+def env_color [name: string, fallback: string] {
+    let value = ($env | get -o $name | default '')
+    if $value == '' { $fallback } else { $value }
+}
+
 def prompt_theme [] {
+    let background = (env_color WEZTERM_PROMPT_BACKGROUND '#16181a')
+    let selection = (env_color WEZTERM_PROMPT_SELECTION '#3c4048')
+
     {
-        os_bg: 'green'
-        os_fg: 'black'
-        dir_bg: 'black'
-        dir_fg: 'cyan'
-        git_bg: 'black'
-        meta: 'white'
-        clean: 'green'
-        modified: 'yellow'
-        conflicted: 'red'
-        untracked: 'cyan'
+        os_bg: (env_color WEZTERM_PROMPT_BLUE '#5ea1ff')
+        os_fg: $background
+        dir_bg: $selection
+        dir_fg: (env_color WEZTERM_PROMPT_CYAN '#5ef1ff')
+        git_bg: $selection
+        meta: (env_color WEZTERM_PROMPT_FOREGROUND '#ffffff')
+        prompt: (env_color WEZTERM_PROMPT_BLUE '#5ea1ff')
+        clean: (env_color WEZTERM_PROMPT_GREEN '#5eff6c')
+        modified: (env_color WEZTERM_PROMPT_YELLOW '#f1ff5e')
+        conflicted: (env_color WEZTERM_PROMPT_RED '#ff6e5e')
+        untracked: (env_color WEZTERM_PROMPT_CYAN '#5ef1ff')
     }
 }
 
@@ -207,7 +216,7 @@ def format_duration [ms: int] {
 
 def prompt_indicator [symbol: string] {
     let theme = (prompt_theme)
-    let color = if (($env.LAST_EXIT_CODE? | default 0) == 0) { $theme.clean } else { $theme.conflicted }
+    let color = if (($env.LAST_EXIT_CODE? | default 0) == 0) { $theme.prompt } else { $theme.conflicted }
     (ansi { fg: $color attr: 'b' }) + $symbol + (ansi reset)
 }
 

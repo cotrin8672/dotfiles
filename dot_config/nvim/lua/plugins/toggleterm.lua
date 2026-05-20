@@ -2,9 +2,19 @@ return {
 	"akinsho/toggleterm.nvim",
 	event = "VeryLazy",
 	config = function()
+		local normal = vim.api.nvim_get_hl(0, { name = "Normal", link = false })
 		local normal_float = vim.api.nvim_get_hl(0, { name = "NormalFloat", link = false })
 		local float_border = vim.api.nvim_get_hl(0, { name = "FloatBorder", link = false })
 		local Terminal = require("toggleterm.terminal").Terminal
+
+		local function hl_color(hl, key, fallback)
+			local value = hl and hl[key]
+			if value then
+				return string.format("#%06x", value)
+			end
+
+			return fallback
+		end
 
 		local function attach_close_keymaps(term)
 			local opts = { buffer = term.bufnr, silent = true, desc = "Close floating terminal" }
@@ -33,16 +43,16 @@ return {
 			direction = "float",
 			highlights = {
 				Normal = {
-					guibg = string.format("#%06x", normal_float.bg),
-					guifg = string.format("#%06x", normal_float.fg),
+					guibg = hl_color(normal_float, "bg", "NONE"),
+					guifg = hl_color(normal_float, "fg", hl_color(normal, "fg", nil)),
 				},
 				NormalFloat = {
-					guibg = string.format("#%06x", normal_float.bg),
-					guifg = string.format("#%06x", normal_float.fg),
+					guibg = hl_color(normal_float, "bg", "NONE"),
+					guifg = hl_color(normal_float, "fg", hl_color(normal, "fg", nil)),
 				},
 				FloatBorder = {
-					guibg = string.format("#%06x", float_border.bg),
-					guifg = string.format("#%06x", float_border.fg),
+					guibg = hl_color(float_border, "bg", hl_color(normal_float, "bg", "NONE")),
+					guifg = hl_color(float_border, "fg", hl_color(normal_float, "fg", hl_color(normal, "fg", nil))),
 				},
 			},
 			float_opts = {
