@@ -41,11 +41,44 @@ local function update_tabby_visibility()
 	vim.o.showtabline = 2
 end
 
-local function get_hl_bg(name)
-	local hl = vim.api.nvim_get_hl(0, { name = name, link = false })
-	if hl.bg ~= nil then
-		return hl.bg
-	end
+local function get_hl_attr(name, attr)
+	local hl = vim.api.nvim_get_hl(0, { name = name, link = true })
+	local value = hl[attr]
+	assert(value, string.format("missing highlight attribute: %s.%s", name, attr))
+	return value
+end
+
+local function apply_tabby_highlights()
+	local normal_fg = get_hl_attr("Normal", "fg")
+	local muted_fg = get_hl_attr("StatusLineNC", "fg")
+	local active_bg = get_hl_attr("DiagnosticHint", "fg")
+	local active_fg = get_hl_attr("Search", "fg")
+	local inactive_bg = get_hl_attr("CursorLine", "bg")
+	local fill_bg = get_hl_attr("PmenuSel", "bg")
+
+	vim.api.nvim_set_hl(0, "TabbyFill", {
+		fg = muted_fg,
+		bg = fill_bg,
+	})
+	vim.api.nvim_set_hl(0, "TabbyHead", {
+		fg = active_bg,
+		bg = fill_bg,
+		bold = true,
+	})
+	vim.api.nvim_set_hl(0, "TabbyActive", {
+		fg = active_fg,
+		bg = active_bg,
+		bold = true,
+	})
+	vim.api.nvim_set_hl(0, "TabbyInactive", {
+		fg = normal_fg,
+		bg = inactive_bg,
+	})
+	vim.api.nvim_set_hl(0, "TabbyTail", {
+		fg = get_hl_attr("DiagnosticOk", "fg"),
+		bg = fill_bg,
+		bold = true,
+	})
 end
 
 local function buffer_file_icon(bufnr, bg_hl)
@@ -60,7 +93,7 @@ local function buffer_file_icon(bufnr, bg_hl)
 	local hl = "TabbyIcon" .. icon_hl .. bg_hl
 	vim.api.nvim_set_hl(0, hl, {
 		fg = icon_hl_data.fg,
-		bg = get_hl_bg(bg_hl) or get_hl_bg("TabLineFill") or get_hl_bg("TabLine"),
+		bg = get_hl_attr(bg_hl, "bg"),
 	})
 
 	return { icon, hl = hl }
@@ -74,14 +107,21 @@ return vim.tbl_extend("force", M, {
 		"mini.bufremove",
 	},
 	config = function()
+		apply_tabby_highlights()
+
+		vim.api.nvim_create_autocmd("ColorScheme", {
+			group = vim.api.nvim_create_augroup("TabbyContrastColors", { clear = true }),
+			callback = apply_tabby_highlights,
+		})
+
 		local theme = {
-			fill = "TabLineFill",
-			head = "TabLineSel",
-			current_tab = "TabLineSel",
-			tab = "TabLine",
-			current = "TabLineSel",
-			inactive = "TabLine",
-			tail = "TabLine",
+			fill = "TabbyFill",
+			head = "TabbyHead",
+			current_tab = "TabbyActive",
+			tab = "TabbyInactive",
+			current = "TabbyActive",
+			inactive = "TabbyInactive",
+			tail = "TabbyTail",
 		}
 
 		require("tabby").setup({
