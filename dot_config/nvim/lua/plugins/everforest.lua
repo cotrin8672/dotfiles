@@ -10,13 +10,21 @@ return {
 		})
 		vim.cmd.colorscheme("everforest")
 
-		local colours = require("everforest.colours")
-		local palette = colours.generate_palette(require("everforest").config, vim.o.background)
-		vim.api.nvim_set_hl(0, "LineNr", { fg = palette.grey0 })
-		vim.api.nvim_set_hl(0, "LineNrAbove", { fg = palette.grey0 })
-		vim.api.nvim_set_hl(0, "LineNrBelow", { fg = palette.grey0 })
-		vim.api.nvim_set_hl(0, "CursorLineNr", { fg = palette.grey0 })
-		vim.api.nvim_set_hl(0, "LspInlayHint", { fg = palette.grey0 })
-		vim.api.nvim_set_hl(0, "Whitespace", { fg = palette.grey1 })
+		local function hl(name, key)
+			local ok, value = pcall(vim.api.nvim_get_hl, 0, { name = name, link = true })
+			if ok and value and value[key] then
+				return string.format("#%06x", value[key])
+			end
+		end
+
+		local dim = hl("StatusLineNC", "fg") or hl("LineNr", "fg")
+		local subtle = hl("Comment", "fg") or hl("StatusLine", "fg") or hl("Whitespace", "fg")
+
+		vim.api.nvim_set_hl(0, "LineNr", { fg = dim })
+		vim.api.nvim_set_hl(0, "LineNrAbove", { fg = dim })
+		vim.api.nvim_set_hl(0, "LineNrBelow", { fg = dim })
+		vim.api.nvim_set_hl(0, "CursorLineNr", { fg = dim })
+		vim.api.nvim_set_hl(0, "LspInlayHint", { fg = dim })
+		vim.api.nvim_set_hl(0, "Whitespace", { fg = subtle })
 	end,
 }

@@ -19,24 +19,17 @@
 		local indentscope = require("mini.indentscope")
 
 		local function apply_hl()
-			local fg
-
-			local ok_colours, colours = pcall(require, "everforest.colours")
-			local ok_theme, theme = pcall(require, "everforest")
-			if ok_colours and ok_theme then
-				local palette = colours.generate_palette(theme.config, vim.o.background)
-				fg = palette.aqua
-			end
-
-			if not fg then
-				local ok, hl = pcall(vim.api.nvim_get_hl, 0, {
-					name = "Whitespace",
+			local function hl(name, key)
+				local ok, value = pcall(vim.api.nvim_get_hl, 0, {
+					name = name,
 					link = true,
 				})
-				if ok and hl and hl.fg then
-					fg = string.format("#%06x", hl.fg)
+				if ok and value and value[key] then
+					return string.format("#%06x", value[key])
 				end
 			end
+
+			local fg = hl("MiniStatuslineModeCommand", "bg") or hl("Aqua", "fg") or hl("DiagnosticInfo", "fg") or hl("Whitespace", "fg")
 
 			if not fg then
 				return

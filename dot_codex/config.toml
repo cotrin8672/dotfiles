@@ -2,7 +2,7 @@ model = "gpt-5.5"
 approval_policy = "never"             # 承認をスキップ
 windows_wsl_setup_acknowledged = true
 hide_agent_reasoning = false          # TUI（テキストユーザーインターフェース）とcodex execの出力において、推論イベントを表示するようにする
-model_reasoning_effort = "low"
+model_reasoning_effort = "medium"
 web_search = "live"                   # モデルによるウェブ検索の実行を許可
 personality = "pragmatic"
 default_permissions = ":workspace"
@@ -90,6 +90,9 @@ trust_level = "trusted"
 [projects.'c:\users\gummy\ghq\github.com\cotrin8672\wise-backspace.nvim']
 trust_level = "trusted"
 
+[projects.'c:\users\gummy\downloads\corbit']
+trust_level = "trusted"
+
 [notice]
 hide_full_access_warning = true
 hide_rate_limit_model_nudge = true
@@ -147,12 +150,12 @@ enabled = true
 "gpt-5.5" = 4
 
 [marketplaces.openai-bundled]
-last_updated = "2026-05-17T05:17:10Z"
+last_updated = "2026-05-20T13:32:44Z"
 source_type = "local"
 source = '\\?\C:\Users\gummy\.codex\.tmp\bundled-marketplaces\openai-bundled'
 
 [marketplaces.openai-primary-runtime]
-last_updated = "2026-05-16T00:40:02Z"
+last_updated = "2026-05-19T10:40:02Z"
 source_type = "local"
 source = '\\?\C:\Users\gummy\.cache\codex-runtimes\codex-primary-runtime\plugins\openai-primary-runtime'
 

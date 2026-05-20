@@ -29,12 +29,15 @@ local function mix(hex_a, hex_b, ratio)
 end
 
 function M.refresh()
-	local base_bg = "#272e33"
+	local normal = vim.api.nvim_get_hl(0, { name = "Normal", link = true })
+	local statusline = vim.api.nvim_get_hl(0, { name = "MiniStatuslineModeNormal", link = true })
+	local tabline = vim.api.nvim_get_hl(0, { name = "TabLineSel", link = true })
+	local base_bg = normal.bg or statusline.fg or tabline.fg
 	local color = mode_accent.get_accent_color()
-	if not color then
+	if not base_bg or not color then
 		return
 	end
-	local line_bg = mix(base_bg, color, 0.35)
+	local line_bg = mix(string.format("#%06x", base_bg), color, 0.35)
 	vim.api.nvim_set_hl(0, "CursorLine", { bg = line_bg })
 	vim.api.nvim_set_hl(0, "CursorColumn", { bg = line_bg })
 	vim.api.nvim_set_hl(0, "CursorLineNr", { fg = color, bold = true })

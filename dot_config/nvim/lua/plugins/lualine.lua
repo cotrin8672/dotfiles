@@ -7,48 +7,64 @@ return {
 		"mini.icons",
 	},
 	config = function()
-		local everforest = require("everforest")
-		local colours = require("everforest.colours")
 		local diagnostic_icons = require("ui.diagnostic_icons")
 		local sm = require("nvim-submode")
 		local mode = require("lualine.utils.mode")
-		local palette = colours.generate_palette(everforest.config, vim.o.background)
+		local function hl(name, key)
+			local ok, value = pcall(vim.api.nvim_get_hl, 0, { name = name, link = true })
+			if ok and value and value[key] then
+				return string.format("#%06x", value[key])
+			end
+		end
+
+		local colors = {
+			bg0 = hl("MiniStatuslineModeNormal", "fg") or hl("TabLineSel", "fg") or hl("Normal", "bg"),
+			bg3 = hl("TabLine", "bg") or hl("StatusLine", "bg"),
+			bg5 = hl("Conceal", "fg") or hl("StatusLineNC", "bg") or hl("StatusLine", "bg"),
+			fg = hl("Normal", "fg") or hl("StatusLine", "fg"),
+			grey1 = hl("Comment", "fg") or hl("StatusLine", "fg"),
+			green = hl("Directory", "fg") or hl("MiniStatuslineModeNormal", "bg"),
+			red = hl("DiagnosticError", "fg") or hl("Error", "fg"),
+			orange = hl("MiniStatuslineModeReplace", "bg") or hl("Label", "fg") or hl("DiagnosticWarn", "fg"),
+			aqua = hl("MiniStatuslineModeCommand", "bg") or hl("Aqua", "fg") or hl("DiagnosticInfo", "fg"),
+			purple = hl("DiagnosticHint", "fg") or hl("MiniStatuslineModeOther", "bg"),
+		}
 
 		local theme = {
 			normal = {
-				a = { bg = palette.green, fg = palette.bg0, gui = "bold" },
-				b = { bg = palette.bg3, fg = palette.fg },
-				c = { bg = palette.bg5, fg = palette.fg },
+				a = { bg = colors.green, fg = colors.bg0, gui = "bold" },
+				b = { bg = colors.bg3, fg = colors.fg },
+				c = { bg = colors.bg5, fg = colors.fg },
 			},
 			insert = {
-				a = { bg = palette.fg, fg = palette.bg0, gui = "bold" },
-				b = { bg = palette.bg3, fg = palette.fg },
-				c = { bg = palette.bg5, fg = palette.fg },
+				a = { bg = colors.fg, fg = colors.bg0, gui = "bold" },
+				b = { bg = colors.bg3, fg = colors.fg },
+				c = { bg = colors.bg5, fg = colors.fg },
 			},
 			visual = {
-				a = { bg = palette.red, fg = palette.bg0, gui = "bold" },
-				b = { bg = palette.bg3, fg = palette.fg },
-				c = { bg = palette.bg5, fg = palette.fg },
+				a = { bg = colors.red, fg = colors.bg0, gui = "bold" },
+				b = { bg = colors.bg3, fg = colors.fg },
+				c = { bg = colors.bg5, fg = colors.fg },
 			},
 			replace = {
-				a = { bg = palette.orange, fg = palette.bg0, gui = "bold" },
-				b = { bg = palette.bg3, fg = palette.fg },
-				c = { bg = palette.bg5, fg = palette.fg },
+				a = { bg = colors.orange, fg = colors.bg0, gui = "bold" },
+				b = { bg = colors.bg3, fg = colors.fg },
+				c = { bg = colors.bg5, fg = colors.fg },
 			},
 			command = {
-				a = { bg = palette.aqua, fg = palette.bg0, gui = "bold" },
-				b = { bg = palette.bg3, fg = palette.fg },
-				c = { bg = palette.bg5, fg = palette.fg },
+				a = { bg = colors.aqua, fg = colors.bg0, gui = "bold" },
+				b = { bg = colors.bg3, fg = colors.fg },
+				c = { bg = colors.bg5, fg = colors.fg },
 			},
 			terminal = {
-				a = { bg = palette.purple, fg = palette.bg0, gui = "bold" },
-				b = { bg = palette.bg3, fg = palette.fg },
-				c = { bg = palette.bg5, fg = palette.fg },
+				a = { bg = colors.purple, fg = colors.bg0, gui = "bold" },
+				b = { bg = colors.bg3, fg = colors.fg },
+				c = { bg = colors.bg5, fg = colors.fg },
 			},
 			inactive = {
-				a = { bg = palette.bg5, fg = palette.grey1, gui = "bold" },
-				b = { bg = palette.bg5, fg = palette.grey1 },
-				c = { bg = palette.bg5, fg = palette.grey1 },
+				a = { bg = colors.bg5, fg = colors.grey1, gui = "bold" },
+				b = { bg = colors.bg5, fg = colors.grey1 },
+				c = { bg = colors.bg5, fg = colors.grey1 },
 			},
 		}
 
@@ -61,11 +77,11 @@ return {
 			terminal = theme.terminal.a.bg,
 		})
 
-		vim.api.nvim_set_hl(0, "LualineLspDiag", { fg = palette.fg, bg = palette.bg5 })
-		vim.api.nvim_set_hl(0, "LualineLspDiagError", { fg = palette.red, bg = palette.bg5 })
-		vim.api.nvim_set_hl(0, "LualineLspDiagWarn", { fg = palette.orange, bg = palette.bg5 })
-		vim.api.nvim_set_hl(0, "LualineLspDiagHint", { fg = palette.aqua, bg = palette.bg5 })
-		vim.api.nvim_set_hl(0, "LualineLspDiagInfo", { fg = palette.green, bg = palette.bg5 })
+		vim.api.nvim_set_hl(0, "LualineLspDiag", { fg = colors.fg, bg = colors.bg5 })
+		vim.api.nvim_set_hl(0, "LualineLspDiagError", { fg = colors.red, bg = colors.bg5 })
+		vim.api.nvim_set_hl(0, "LualineLspDiagWarn", { fg = colors.orange, bg = colors.bg5 })
+		vim.api.nvim_set_hl(0, "LualineLspDiagHint", { fg = colors.aqua, bg = colors.bg5 })
+		vim.api.nvim_set_hl(0, "LualineLspDiagInfo", { fg = colors.green, bg = colors.bg5 })
 
 		local function submode_label()
 			local name = sm.get_submode_name()
@@ -226,21 +242,21 @@ return {
 					{
 						"branch",
 						icon = "",
-						color = { bg = palette.bg5, fg = palette.fg },
+						color = { bg = colors.bg5, fg = colors.fg },
 					},
 				},
 				lualine_c = {},
 				lualine_x = {
 					{
 						lsp_diagnostics,
-						color = { bg = palette.bg5, fg = palette.fg },
+						color = { bg = colors.bg5, fg = colors.fg },
 						padding = { left = 1, right = 1 },
 					},
 				},
 				lualine_y = {
 					{
 						"filetype",
-						color = { bg = palette.bg3, fg = palette.fg },
+						color = { bg = colors.bg3, fg = colors.fg },
 					},
 				},
 				lualine_z = {

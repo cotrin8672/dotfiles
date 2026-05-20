@@ -3,22 +3,17 @@ return {
 	event = "VeryLazy",
 	opts = function()
 		local fallback = {}
-		local ok_everforest, everforest = pcall(require, "everforest")
-		local ok_colours, colours = pcall(require, "everforest.colours")
-
-		if ok_everforest and ok_colours then
-			local palette = colours.generate_palette(everforest.config, vim.o.background)
-			fallback.bg = palette.bg0
-			fallback.fg = palette.fg
-		else
-			local normal = vim.api.nvim_get_hl(0, { name = "Normal", link = true })
-			if normal.bg then
-				fallback.bg = string.format("#%06x", normal.bg)
-			end
-			if normal.fg then
-				fallback.fg = string.format("#%06x", normal.fg)
+		local function hl(name, key)
+			local ok, value = pcall(vim.api.nvim_get_hl, 0, {
+				name = name,
+				link = true,
+			})
+			if ok and value and value[key] then
+				return string.format("#%06x", value[key])
 			end
 		end
+		fallback.bg = hl("Normal", "bg") or hl("MiniStatuslineModeNormal", "fg") or hl("TabLineSel", "fg")
+		fallback.fg = hl("Normal", "fg") or hl("StatusLine", "fg")
 
 		return {
 			fallback_for_transparency = fallback,

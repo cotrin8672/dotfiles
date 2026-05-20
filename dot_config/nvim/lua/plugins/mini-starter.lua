@@ -347,20 +347,38 @@ return {
 
     local function apply_starter_hl()
       vim.opt.termguicolors = true
+      local function hl(name, key)
+        local ok, value = pcall(vim.api.nvim_get_hl, 0, {
+          name = name,
+          link = true,
+        })
+        if ok and value and value[key] then
+          return string.format("#%06x", value[key])
+        end
+      end
+
+      local info = hl("DiagnosticInfo", "fg") or hl("Directory", "fg")
+      local success = hl("Directory", "fg") or hl("MiniStatuslineModeNormal", "bg")
+      local warn = hl("DiagnosticWarn", "fg") or hl("Special", "fg")
+      local error = hl("DiagnosticError", "fg") or hl("Error", "fg")
+      local muted = hl("Comment", "fg") or hl("StatusLine", "fg")
+      local accent = hl("MiniStatuslineModeCommand", "bg") or hl("Aqua", "fg") or hl("DiagnosticInfo", "fg")
+      local hint = hl("DiagnosticHint", "fg") or hl("MiniStatuslineModeOther", "bg")
+
       vim.api.nvim_set_hl(0, "MiniStarterItemPrefix", { link = "MiniStarterItem" })
-      vim.api.nvim_set_hl(0, "MiniStarterSectionProjects", { fg = "#7fbbb3", bold = true })
-      vim.api.nvim_set_hl(0, "MiniStarterSectionRecent", { fg = "#a7c080", bold = true })
-      vim.api.nvim_set_hl(0, "MiniStarterSectionKeymaps", { fg = "#dbbc7f", bold = true })
+      vim.api.nvim_set_hl(0, "MiniStarterSectionProjects", { fg = info, bold = true })
+      vim.api.nvim_set_hl(0, "MiniStarterSectionRecent", { fg = success, bold = true })
+      vim.api.nvim_set_hl(0, "MiniStarterSectionKeymaps", { fg = warn, bold = true })
       vim.api.nvim_set_hl(0, "MiniStarterProjectIcon", { link = "Directory" })
-      vim.api.nvim_set_hl(0, "MiniStarterKeymapIcon", { fg = "#7fbbb3", bold = true })
-      vim.api.nvim_set_hl(0, "MiniStarterFileIcon", { fg = "#7fbbb3", bold = true })
-      vim.api.nvim_set_hl(0, "MiniStarterQuitIcon", { fg = "#e67e80", bold = true })
+      vim.api.nvim_set_hl(0, "MiniStarterKeymapIcon", { fg = info, bold = true })
+      vim.api.nvim_set_hl(0, "MiniStarterFileIcon", { fg = info, bold = true })
+      vim.api.nvim_set_hl(0, "MiniStarterQuitIcon", { fg = error, bold = true })
       vim.api.nvim_set_hl(0, "MiniStarterItemEmphasis", { bold = true })
-      vim.api.nvim_set_hl(0, "MiniStarterItemPath", { fg = "#859289", italic = false })
+      vim.api.nvim_set_hl(0, "MiniStarterItemPath", { fg = muted, italic = false })
       vim.api.nvim_set_hl(0, "MiniStarterQuery", { italic = false })
-      vim.api.nvim_set_hl(0, "MiniStarterFooter", { fg = "#83c092", bold = true })
-      vim.api.nvim_set_hl(0, "MiniStarterFooterIcon", { fg = "#dbbc7f", bold = true })
-      vim.api.nvim_set_hl(0, "MiniStarterFooterNumber", { fg = "#d699b6", bold = true })
+      vim.api.nvim_set_hl(0, "MiniStarterFooter", { fg = accent, bold = true })
+      vim.api.nvim_set_hl(0, "MiniStarterFooterIcon", { fg = warn, bold = true })
+      vim.api.nvim_set_hl(0, "MiniStarterFooterNumber", { fg = hint, bold = true })
     end
 
     local function repaint_starter_buffer(buf, opts)
