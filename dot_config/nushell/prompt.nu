@@ -38,6 +38,21 @@ def prompt_dir_name [] {
     }
 }
 
+def prompt_theme [] {
+    {
+        os_bg: 'green'
+        os_fg: 'black'
+        dir_bg: 'black'
+        dir_fg: 'cyan'
+        git_bg: 'black'
+        meta: 'white'
+        clean: 'green'
+        modified: 'yellow'
+        conflicted: 'red'
+        untracked: 'cyan'
+    }
+}
+
 def git_status_data [] {
     let result = (^git status --porcelain=v2 --branch | complete)
     if $result.exit_code != 0 {
@@ -112,43 +127,45 @@ def git_block [] {
         return ''
     }
 
-    let meta = '#859289'
-    let clean = '#7fbbb3'
-    let modified = '#dbbc7f'
-    let conflicted = '#e67e80'
-    let untracked = '#83c092'
+    let theme = (prompt_theme)
+    let meta = $theme.meta
+    let clean = $theme.clean
+    let modified = $theme.modified
+    let conflicted = $theme.conflicted
+    let untracked = $theme.untracked
+    let git_bg = $theme.git_bg
 
     let branch_part = if $data.branch != '' {
-        (ansi { fg: $clean bg: '#2e383c' }) + $" ($data.branch)"
+        (ansi { fg: $clean bg: $git_bg }) + $" ($data.branch)"
     } else if $data.commit != '' {
-        (ansi { fg: $meta bg: '#2e383c' }) + ' ' + (ansi { fg: $clean bg: '#2e383c' }) + $data.commit
+        (ansi { fg: $meta bg: $git_bg }) + ' ' + (ansi { fg: $clean bg: $git_bg }) + $data.commit
     } else {
         ''
     }
 
     mut details = []
     if $data.behind > 0 {
-        $details = ($details | append ((ansi { fg: $clean bg: '#2e383c' }) + $"⇣($data.behind)"))
+        $details = ($details | append ((ansi { fg: $clean bg: $git_bg }) + $"⇣($data.behind)"))
     }
     if $data.ahead > 0 {
-        $details = ($details | append ((ansi { fg: $clean bg: '#2e383c' }) + $"⇡($data.ahead)"))
+        $details = ($details | append ((ansi { fg: $clean bg: $git_bg }) + $"⇡($data.ahead)"))
     }
 
     let stash_count = (git_stash_count)
     if $stash_count > 0 {
-        $details = ($details | append ((ansi { fg: $clean bg: '#2e383c' }) + $"*($stash_count)"))
+        $details = ($details | append ((ansi { fg: $clean bg: $git_bg }) + $"*($stash_count)"))
     }
     if $data.conflicted > 0 {
-        $details = ($details | append ((ansi { fg: $conflicted bg: '#2e383c' }) + $"~($data.conflicted)"))
+        $details = ($details | append ((ansi { fg: $conflicted bg: $git_bg }) + $"~($data.conflicted)"))
     }
     if $data.staged > 0 {
-        $details = ($details | append ((ansi { fg: $modified bg: '#2e383c' }) + $"+($data.staged)"))
+        $details = ($details | append ((ansi { fg: $modified bg: $git_bg }) + $"+($data.staged)"))
     }
     if $data.unstaged > 0 {
-        $details = ($details | append ((ansi { fg: $modified bg: '#2e383c' }) + $"!($data.unstaged)"))
+        $details = ($details | append ((ansi { fg: $modified bg: $git_bg }) + $"!($data.unstaged)"))
     }
     if $data.untracked > 0 {
-        $details = ($details | append ((ansi { fg: $untracked bg: '#2e383c' }) + $"?($data.untracked)"))
+        $details = ($details | append ((ansi { fg: $untracked bg: $git_bg }) + $"?($data.untracked)"))
     }
 
     let body = if (($details | length) == 0) {
@@ -157,7 +174,7 @@ def git_block [] {
         $branch_part + ' ' + ($details | str join ' ')
     }
 
-    (ansi { fg: '#7fbbb3' bg: '#2e383c' }) + '  ' + $body
+    (ansi { fg: $clean bg: $git_bg }) + '  ' + $body
 }
 
 def format_duration [ms: int] {
@@ -189,21 +206,25 @@ def format_duration [ms: int] {
 }
 
 def prompt_indicator [symbol: string] {
-    let color = if (($env.LAST_EXIT_CODE? | default 0) == 0) { '#a7c080' } else { '#e67e80' }
+    let theme = (prompt_theme)
+    let color = if (($env.LAST_EXIT_CODE? | default 0) == 0) { $theme.clean } else { $theme.conflicted }
     (ansi { fg: $color attr: 'b' }) + $symbol + (ansi reset)
 }
 
 $env.PROMPT_COMMAND = {||
-    let os_bg = '#a7c080'
-    let dir_bg = '#272e33'
-    let git_bg = '#2e383c'
+    let theme = (prompt_theme)
+    let os_bg = $theme.os_bg
+    let os_fg = $theme.os_fg
+    let dir_bg = $theme.dir_bg
+    let dir_fg = $theme.dir_fg
+    let git_bg = $theme.git_bg
 
     let os_start = (ansi { fg: $os_bg }) + ''
-    let os_body = (ansi { fg: '#272e33' bg: $os_bg }) + $"(os_icon) "
+    let os_body = (ansi { fg: $os_fg bg: $os_bg }) + $"(os_icon) "
     let os_sep = (ansi { fg: $os_bg bg: $dir_bg }) + ''
     let os = $os_start + $os_body + $os_sep
 
-    let dir = (ansi { fg: '#7fbbb3' bg: $dir_bg }) + ' 󰉋 ' + $"(prompt_dir_name) "
+    let dir = (ansi { fg: $dir_fg bg: $dir_bg }) + ' 󰉋 ' + $"(prompt_dir_name) "
 
     let git = (git_block)
 
@@ -228,7 +249,8 @@ $env.PROMPT_COMMAND_RIGHT = {||
     if $duration == '' {
         ''
     } else {
-        (ansi { fg: '#7fbbb3' }) + ' ' + $duration + (ansi reset)
+        let theme = (prompt_theme)
+        (ansi { fg: $theme.clean }) + ' ' + $duration + (ansi reset)
     }
 }
 
