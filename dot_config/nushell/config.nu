@@ -34,6 +34,7 @@ source ($nu.config-path | path dirname | path join completion scoop-completions.
 source ($nu.config-path | path dirname | path join completion ssh-completions.nu)
 source ($nu.config-path | path dirname | path join completion uv-completions.nu)
 source ($nu.config-path | path dirname | path join completion zoxide-completions.nu)
+source ($nu.config-path | path dirname | path join abbr.nu)
 
 if ('Path' in $env) {
     # Convert Windows ';' PATH string to Nushell PATH list.
