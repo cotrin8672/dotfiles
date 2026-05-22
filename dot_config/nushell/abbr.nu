@@ -1,5 +1,11 @@
 source ($nu.config-path | path dirname | path join abbr-defs.nu)
 
+const ABBR_SINGLE_QUOTE = "\u{27}"
+const ABBR_BARE_TAIL_RE = (
+    "^(?<prefix>.*[ \\t\\r\\n|\"" + $ABBR_SINGLE_QUOTE + "`{}\\[\\]\\(\\)])?"
+    + "(?<text>[^ \\t\\r\\n|\"" + $ABBR_SINGLE_QUOTE + "`{}\\[\\]\\(\\)]+)$"
+)
+
 def abbr-is-space [char: string] {
     $char in [" " (char tab) (char newline) (char carriage_return)]
 }
@@ -26,30 +32,140 @@ def abbr-is-bare-delimiter [char: string] {
     ] | any { |it| $it }
 }
 
-def abbr-tokenize [buffer: string] {
-    let chars = ($buffer | split chars)
+def abbr-last-bare-candidate [buffer: string] {
+    if $buffer == "" {
+        return null
+    }
+
+    let matched = ($buffer | parse --regex $ABBR_BARE_TAIL_RE)
+    if ($matched | is-empty) {
+        return null
+    }
+
+    let row = ($matched | first)
+    { text: $row.text prefix: ($row.prefix | default "") }
+}
+
+def abbr-prefix-expects-command-exact [prefix: string] {
+    let chars = ($prefix | split chars)
     let len = ($chars | length)
     mut i = 0
     mut depth = 0
-    mut tokens = []
+    mut last_top_level = ""
 
     while $i < $len {
         let ch = ($chars | get $i)
 
         if (abbr-is-space $ch) {
-            let start_depth = $depth
-            mut text = ""
+            $i = ($i + 1)
+        } else if $ch == "|" {
+            if $depth == 0 {
+                $last_top_level = "pipe"
+            }
+            $i = ($i + 1)
+        } else if (abbr-is-quote $ch) {
+            let quote = $ch
+            if $depth == 0 {
+                $last_top_level = "other"
+            }
+            $i = ($i + 1)
+
+            while $i < $len {
+                let c = ($chars | get $i)
+                if $quote == "\"" and $c == "\\" and ($i + 1) < $len {
+                    $i = ($i + 2)
+                } else if $c == $quote {
+                    $i = ($i + 1)
+                    break
+                } else {
+                    $i = ($i + 1)
+                }
+            }
+        } else if (abbr-is-open-bracket $ch) {
+            if $depth == 0 {
+                $last_top_level = "other"
+            }
+            $depth = ($depth + 1)
+            $i = ($i + 1)
+        } else if (abbr-is-close-bracket $ch) {
+            if $depth > 0 {
+                $depth = ($depth - 1)
+            }
+            if $depth == 0 {
+                $last_top_level = "other"
+            }
+            $i = ($i + 1)
+        } else {
+            if $depth == 0 {
+                $last_top_level = "other"
+            }
+            while $i < $len {
+                let c = ($chars | get $i)
+                if (abbr-is-bare-delimiter $c) {
+                    break
+                }
+                $i = ($i + 1)
+            }
+        }
+    }
+
+    $last_top_level in ["" "pipe"]
+}
+
+def abbr-prefix-expects-command [prefix: string] {
+    let trimmed = ($prefix | str trim --right)
+    if $trimmed == "" {
+        return true
+    }
+
+    if not ($trimmed | str ends-with "|") {
+        return false
+    }
+
+    let needs_exact = [
+        ($trimmed | str contains "\"")
+        ($trimmed | str contains "'")
+        ($trimmed | str contains "`")
+        ($trimmed | str contains "{")
+        ($trimmed | str contains "[")
+        ($trimmed | str contains "(")
+        ($trimmed | str contains "}")
+        ($trimmed | str contains "]")
+        ($trimmed | str contains ")")
+    ] | any { |it| $it }
+
+    if not $needs_exact {
+        return true
+    }
+
+    abbr-prefix-expects-command-exact $prefix
+}
+
+def abbr-expand-buffer [buffer: string] {
+    let chars = ($buffer | split chars)
+    let len = ($chars | length)
+    mut i = 0
+    mut depth = 0
+    mut expect_command = true
+    mut out = ""
+
+    while $i < $len {
+        let ch = ($chars | get $i)
+
+        if (abbr-is-space $ch) {
             while $i < $len {
                 let c = ($chars | get $i)
                 if not (abbr-is-space $c) {
                     break
                 }
-                $text = ($text + $c)
+                $out = ($out + $c)
                 $i = ($i + 1)
             }
-            $tokens = ($tokens | append { kind: "space" text: $text depth: $start_depth })
         } else if $ch == "|" {
-            $tokens = ($tokens | append { kind: "pipe" text: $ch depth: $depth })
+            $out = ($out + $ch)
+            if $depth == 0 {
+                $expect_command = true
+            }
             $i = ($i + 1)
         } else if (abbr-is-quote $ch) {
             let quote = $ch
@@ -76,19 +192,29 @@ def abbr-tokenize [buffer: string] {
             }
 
             if not $closed {
-                return { ok: false tokens: [] }
+                return $buffer
             }
 
-            $tokens = ($tokens | append { kind: "quote" text: $text depth: $start_depth })
+            $out = ($out + $text)
+            if $expect_command and $start_depth == 0 {
+                $expect_command = false
+            }
         } else if (abbr-is-open-bracket $ch) {
-            $tokens = ($tokens | append { kind: "bracket" text: $ch depth: $depth })
+            let start_depth = $depth
+            $out = ($out + $ch)
             $depth = ($depth + 1)
+            if $expect_command and $start_depth == 0 {
+                $expect_command = false
+            }
             $i = ($i + 1)
         } else if (abbr-is-close-bracket $ch) {
             if $depth > 0 {
                 $depth = ($depth - 1)
             }
-            $tokens = ($tokens | append { kind: "bracket" text: $ch depth: $depth })
+            $out = ($out + $ch)
+            if $expect_command and $depth == 0 {
+                $expect_command = false
+            }
             $i = ($i + 1)
         } else {
             let start_depth = $depth
@@ -101,35 +227,20 @@ def abbr-tokenize [buffer: string] {
                 $text = ($text + $c)
                 $i = ($i + 1)
             }
-            $tokens = ($tokens | append { kind: "bare" text: $text depth: $start_depth })
-        }
-    }
 
-    { ok: true tokens: $tokens }
-}
-
-def abbr-expand-tokens [tokens: list] {
-    mut out = []
-    mut expect_command = true
-
-    for token in $tokens {
-        if $token.kind == "pipe" and $token.depth == 0 {
-            $out = ($out | append $token)
-            $expect_command = true
-        } else if $token.kind == "space" {
-            $out = ($out | append $token)
-        } else if $token.kind == "bare" and $token.depth == 0 and $expect_command {
-            let expanded = ($ABBRS | get --optional $token.text)
-            if $expanded == null {
-                $out = ($out | append $token)
-            } else {
-                $out = ($out | append ($token | update text $expanded))
-            }
-            $expect_command = false
-        } else {
-            $out = ($out | append $token)
-            if $expect_command and $token.depth == 0 {
+            if $start_depth == 0 and $expect_command {
+                let expanded = ($ABBRS | get --optional $text)
+                if $expanded == null {
+                    $out = ($out + $text)
+                } else {
+                    $out = ($out + $expanded)
+                }
                 $expect_command = false
+            } else {
+                $out = ($out + $text)
+                if $expect_command and $start_depth == 0 {
+                    $expect_command = false
+                }
             }
         }
     }
@@ -137,13 +248,13 @@ def abbr-expand-tokens [tokens: list] {
     $out
 }
 
-def abbr-expand-buffer [buffer: string] {
-    let parsed = (abbr-tokenize $buffer)
-    if not $parsed.ok {
-        return $buffer
+def abbr-buffer-can-expand [buffer: string] {
+    let candidate = (abbr-last-bare-candidate $buffer)
+    if $candidate == null or ($ABBRS | get --optional $candidate.text) == null {
+        return false
     }
 
-    abbr-expand-tokens $parsed.tokens | get text | str join ""
+    abbr-prefix-expects-command $candidate.prefix
 }
 
 def abbr-has-continuation-tail [buffer: string] {
@@ -180,6 +291,11 @@ def abbr-expand-line-and-accept [] {
         return
     }
 
+    if not (abbr-buffer-can-expand $buffer) {
+        commandline edit --replace --accept $buffer
+        return
+    }
+
     commandline edit --replace --accept (abbr-expand-buffer $buffer)
 }
 
@@ -190,12 +306,19 @@ def abbr-expand-line-or-insert-space [] {
         return
     }
 
-    let expanded = (abbr-expand-buffer $buffer)
-    if $expanded == $buffer {
-        commandline edit --insert " "
+    let candidate = (abbr-last-bare-candidate $buffer)
+    let expanded = if $candidate == null {
+        null
     } else {
-        commandline edit --replace ($expanded + " ")
+        $ABBRS | get --optional $candidate.text
     }
+
+    if $expanded == null or not (abbr-prefix-expects-command $candidate.prefix) {
+        commandline edit --insert " "
+        return
+    }
+
+    commandline edit --replace ($candidate.prefix + $expanded + " ")
 }
 
 $env.config.keybindings = (
