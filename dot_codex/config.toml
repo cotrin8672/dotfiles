@@ -114,6 +114,7 @@ use_linux_sandbox_bwrap = true
 voice_transcription = true
 terminal_resize_reflow = true
 memories = true
+js_repl = false
 
 [model_providers.glm]
 name = "GLM"
@@ -150,14 +151,43 @@ enabled = true
 "gpt-5.5" = 4
 
 [marketplaces.openai-bundled]
-last_updated = "2026-05-20T13:32:44Z"
+last_updated = "2026-05-22T06:00:18Z"
 source_type = "local"
-source = '\\?\C:\Users\gummy\.codex\.tmp\bundled-marketplaces\openai-bundled'
+source = '\\?\C:\Users\minol\.codex\.tmp\bundled-marketplaces\openai-bundled'
 
 [marketplaces.openai-primary-runtime]
-last_updated = "2026-05-19T10:40:02Z"
+last_updated = "2026-05-22T01:45:00Z"
 source_type = "local"
-source = '\\?\C:\Users\gummy\.cache\codex-runtimes\codex-primary-runtime\plugins\openai-primary-runtime'
+source = '\\?\C:\Users\minol\.cache\codex-runtimes\codex-primary-runtime\plugins\openai-primary-runtime'
 
 [windows]
 sandbox = "unelevated"
+
+[desktop]
+composerEnterBehavior = "enter"
+integratedTerminalShell = "gitBash"
+selected-avatar-id = "custom:kodee"
+conversationDetailMode = "STEPS_COMMANDS"
+
+[desktop.open-in-target-preferences]
+global = "fileManager"
+
+[desktop.open-in-target-preferences.perPath]
+'C:\Users\minol\sakaue\CodexResearchVault' = "fileManager"
+
+[mcp_servers.node_repl]
+args = []
+command = 'C:\Users\minol\AppData\Local\OpenAI\Codex\bin\3c238e29bbc930ff\node_repl.exe'
+startup_timeout_sec = 120
+
+[mcp_servers.node_repl.env]
+BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
+BROWSER_USE_MARKETPLACE_NAME = "openai-bundled"
+CODEX_CLI_PATH = 'C:\Users\minol\AppData\Local\OpenAI\Codex\bin\3f4fb8cdd344abc7\codex.exe'
+CODEX_HOME = 'C:\Users\minol\.codex'
+NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
+NODE_REPL_NODE_MODULE_DIRS = ""
+NODE_REPL_NODE_PATH = 'C:\Users\minol\AppData\Local\OpenAI\Codex\bin\5b9024f90663758b\node.exe'
+NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "167fdf579477181fba1773c1efb067b00c5a64fe85dafb50a2001bde198dc739"
+NODE_REPL_TRUSTED_CODE_PATHS = 'C:\Users\minol\.codex'
+NODE_REPL_UNTRUSTED_ENV_ALLOWLIST = "BROWSER_USE_MARKETPLACE_NAME"

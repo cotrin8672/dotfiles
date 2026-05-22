@@ -9,6 +9,67 @@ return {
 		local sm = require("nvim-submode")
 		local mode = require("lualine.utils.mode")
 
+		local function hl_color(name, attr)
+			local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = name, link = true })
+			if not ok or not hl or not hl[attr] then
+				return nil
+			end
+			return string.format("#%06x", hl[attr])
+		end
+
+		local function first_color(attr, names)
+			for _, name in ipairs(names) do
+				local color = hl_color(name, attr)
+				if color then
+					return color
+				end
+			end
+		end
+
+		local function tabline_like_theme()
+			local background = first_color("bg", { "Normal", "StatusLine", "Pmenu", "CursorLine" })
+			local surface = first_color("bg", { "StatusLineNC", "PmenuSel", "CursorLine", "TabLine" }) or background
+			local foreground = first_color("fg", { "Normal", "StatusLine" })
+			local accent = first_color("fg", { "DiagnosticInfo", "Identifier", "Function" })
+			local insert = first_color("fg", { "DiagnosticOk", "String" }) or accent
+			local visual = first_color("fg", { "Statement", "DiagnosticHint" }) or accent
+			local replace = first_color("fg", { "DiagnosticWarn", "WarningMsg" }) or accent
+			local command = first_color("fg", { "DiagnosticHint", "Special" }) or accent
+
+			return {
+				normal = {
+					a = { fg = background, bg = accent, gui = "bold" },
+					b = { fg = accent, bg = surface },
+					c = { fg = foreground, bg = background },
+				},
+				insert = {
+					a = { fg = background, bg = insert, gui = "bold" },
+					b = { fg = insert, bg = surface },
+					c = { fg = foreground, bg = background },
+				},
+				visual = {
+					a = { fg = background, bg = visual, gui = "bold" },
+					b = { fg = visual, bg = surface },
+					c = { fg = foreground, bg = background },
+				},
+				replace = {
+					a = { fg = background, bg = replace, gui = "bold" },
+					b = { fg = replace, bg = surface },
+					c = { fg = foreground, bg = background },
+				},
+				command = {
+					a = { fg = background, bg = command, gui = "bold" },
+					b = { fg = command, bg = surface },
+					c = { fg = foreground, bg = background },
+				},
+				inactive = {
+					a = { fg = foreground, bg = background },
+					b = { fg = foreground, bg = background },
+					c = { fg = foreground, bg = background },
+				},
+			}
+		end
+
 		local function submode_label()
 			local name = sm.get_submode_name()
 			if name and name ~= "" then
@@ -126,7 +187,7 @@ return {
 
 		require("lualine").setup({
 			options = {
-				theme = "auto",
+				theme = tabline_like_theme(),
 				section_separators = { left = "", right = "" },
 				component_separators = { left = "╲", right = "╲" },
 				disabled_filetypes = {

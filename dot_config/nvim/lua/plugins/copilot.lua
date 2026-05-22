@@ -9,13 +9,10 @@ return {
 		panel = {
 			enabled = false,
 		},
-		filetypes = {
-			["*"] = false,
-		},
 	},
 	keys = {
 		"<leader>tc",
-		"<cmd>Cipilot toggle<cr>",
+		"<cmd>Copilot toggle<cr>",
 		desc = "Toggle Copilot",
 	},
 }

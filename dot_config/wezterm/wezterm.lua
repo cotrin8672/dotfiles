@@ -1,6 +1,7 @@
 -- Pull in the wezterm API
 local wezterm = require("wezterm")
 local tabline = require("tabline")
+local cyberdream = require("cyberdream")
 local config = wezterm.config_builder()
 local blur_off_window_background_opacity = 0.7
 config.automatically_reload_config = true
@@ -22,8 +23,19 @@ config.ime_preedit_rendering = "Builtin"
 config.show_close_tab_button_in_tabs = false
 config.custom_block_glyphs = true
 config.anti_alias_custom_block_glyphs = true
-config.color_scheme = "Everforest Dark Hard (Gogh)"
+-- config.color_scheme = "Everforest Dark Hard (Gogh)"
 config.audible_bell = "Disabled"
+config.colors = cyberdream.colors
+config.set_environment_variables = {
+	WEZTERM_PROMPT_BACKGROUND = cyberdream.colors.background,
+	WEZTERM_PROMPT_SELECTION = cyberdream.colors.selection_bg,
+	WEZTERM_PROMPT_FOREGROUND = cyberdream.colors.foreground,
+	WEZTERM_PROMPT_RED = cyberdream.colors.ansi[2],
+	WEZTERM_PROMPT_GREEN = cyberdream.colors.ansi[3],
+	WEZTERM_PROMPT_YELLOW = cyberdream.colors.ansi[4],
+	WEZTERM_PROMPT_BLUE = cyberdream.colors.ansi[5],
+	WEZTERM_PROMPT_CYAN = cyberdream.colors.ansi[7],
+}
 
 local mux = wezterm.mux
 local BLUR_ON_OPACITY = config.window_background_opacity
@@ -65,9 +77,8 @@ config.window_frame = {
 	active_titlebar_bg = "none",
 	font_size = 14.0,
 }
-local scheme = wezterm.color.get_builtin_schemes()[config.color_scheme]
 config.window_background_gradient = {
-	colors = { scheme.background },
+	colors = { cyberdream.colors.background },
 }
 
 local direction_keys = {
@@ -199,10 +210,8 @@ config.key_tables = {
 		{ key = "Enter", action = "PopKeyTable" },
 	},
 }
-config.colors = {
-	tab_bar = {
-		background = "none",
-	},
+config.colors.tab_bar = {
+	background = "none",
 }
 
 tabline.setup(config)

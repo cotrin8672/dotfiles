@@ -38,27 +38,30 @@ def prompt_dir_name [] {
     }
 }
 
-def env_color [name: string, fallback: string] {
+def env_color [name: string] {
     let value = ($env | get -o $name | default '')
-    if $value == '' { $fallback } else { $value }
+    if $value == '' {
+        error make { msg: $"Missing required prompt color environment variable: ($name)" }
+    }
+    $value
 }
 
 def prompt_theme [] {
-    let background = (env_color WEZTERM_PROMPT_BACKGROUND '#16181a')
-    let selection = (env_color WEZTERM_PROMPT_SELECTION '#3c4048')
+    let background = (env_color WEZTERM_PROMPT_BACKGROUND)
+    let selection = (env_color WEZTERM_PROMPT_SELECTION)
 
     {
-        os_bg: (env_color WEZTERM_PROMPT_BLUE '#5ea1ff')
+        os_bg: (env_color WEZTERM_PROMPT_BLUE)
         os_fg: $background
         dir_bg: $selection
-        dir_fg: (env_color WEZTERM_PROMPT_CYAN '#5ef1ff')
+        dir_fg: (env_color WEZTERM_PROMPT_CYAN)
         git_bg: $selection
-        meta: (env_color WEZTERM_PROMPT_FOREGROUND '#ffffff')
-        prompt: (env_color WEZTERM_PROMPT_BLUE '#5ea1ff')
-        clean: (env_color WEZTERM_PROMPT_GREEN '#5eff6c')
-        modified: (env_color WEZTERM_PROMPT_YELLOW '#f1ff5e')
-        conflicted: (env_color WEZTERM_PROMPT_RED '#ff6e5e')
-        untracked: (env_color WEZTERM_PROMPT_CYAN '#5ef1ff')
+        meta: (env_color WEZTERM_PROMPT_FOREGROUND)
+        prompt: (env_color WEZTERM_PROMPT_BLUE)
+        clean: (env_color WEZTERM_PROMPT_GREEN)
+        modified: (env_color WEZTERM_PROMPT_YELLOW)
+        conflicted: (env_color WEZTERM_PROMPT_RED)
+        untracked: (env_color WEZTERM_PROMPT_CYAN)
     }
 }
 

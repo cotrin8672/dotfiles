@@ -53,9 +53,9 @@
 | `<M-j>` | `n` | 下ウィンドウへ移動 | `dot_config/nvim/init.lua` |
 | `<M-k>` | `n` | 上ウィンドウへ移動 | `dot_config/nvim/init.lua` |
 | `<M-l>` | `n` | 右ウィンドウへ移動 | `dot_config/nvim/init.lua` |
-| `<Tab>` | `n` | 次バッファ | `dot_config/nvim/lua/plugins/barbar.lua` |
-| `<S-Tab>` | `n` | 前バッファ | `dot_config/nvim/lua/plugins/barbar.lua` |
-| `<leader>x` | `n` | バッファを閉じる | `dot_config/nvim/init.lua`, `dot_config/nvim/lua/plugins/barbar.lua` |
+| `<Tab>` | `n` | 次バッファ | `dot_config/nvim/lua/plugins/tabby.lua` |
+| `<S-Tab>` | `n` | 前バッファ | `dot_config/nvim/lua/plugins/tabby.lua` |
+| `<leader>x` | `n` | バッファを閉じる | `dot_config/nvim/lua/plugins/tabby.lua` |
 | `<leader>w` | `n` | WINDOW submode に入る | `dot_config/nvim/lua/plugins/submode.lua` |
 
 ### ファイル・ツリー・ピッカー
@@ -347,7 +347,6 @@
 
 ## 競合・上書きメモ
 
-- `<leader>x` は `init.lua` と `barbar.lua` の両方で `BufferClose` に割り当てられている
 - `<leader>ca` は `lspsaga.lua` と `lspconfig.lua` の両方で code action に割り当てられている
 - `<leader>l` は `hlslens.lua` では `:noh`、`submode.lua` では LSP submode 入口に割り当てられている  
   実効上は後から定義された方が優先されるため、通常は LSP submode 入口として使う前提で読むのが安全
@@ -364,7 +363,7 @@
 
 - `dot_config/nvim/init.lua`
 - `dot_config/nvim/lua/plugins/accelerated-jk.lua`
-- `dot_config/nvim/lua/plugins/barbar.lua`
+- `dot_config/nvim/lua/plugins/tabby.lua`
 - `dot_config/nvim/lua/plugins/bqf.lua`
 - `dot_config/nvim/lua/plugins/codex.lua`
 - `dot_config/nvim/lua/plugins/comment.lua`
