@@ -5,12 +5,46 @@ return {
 		"mason-org/mason-lspconfig.nvim",
 	},
 	config = function()
-		local capabilities = vim.lsp.protocol.make_client_capabilities()
+		local capabilities = vim.tbl_deep_extend("force", vim.lsp.protocol.make_client_capabilities(), {
+			textDocument = {
+				completion = {
+					completionItem = {
+						snippetSupport = true,
+						commitCharactersSupport = false,
+						documentationFormat = { "markdown", "plaintext" },
+						deprecatedSupport = true,
+						preselectSupport = false,
+						tagSupport = { valueSet = { 1 } },
+						insertReplaceSupport = true,
+						resolveSupport = {
+							properties = {
+								"documentation",
+								"detail",
+								"additionalTextEdits",
+								"command",
+								"data",
+							},
+						},
+						insertTextModeSupport = {
+							valueSet = { 1 },
+						},
+						labelDetailsSupport = true,
+					},
+					completionList = {
+						itemDefaults = {
+							"commitCharacters",
+							"editRange",
+							"insertTextFormat",
+							"insertTextMode",
+							"data",
+						},
+					},
+					contextSupport = true,
+					insertTextMode = 1,
+				},
+			},
+		})
 		local diagnostic_icons = require("shared.diagnostic_icons")
-
-		pcall(function()
-			capabilities = require("blink.cmp").get_lsp_capabilities(capabilities)
-		end)
 
 		vim.diagnostic.config({
 			signs = {

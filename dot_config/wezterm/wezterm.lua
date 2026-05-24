@@ -5,7 +5,9 @@ local cyberdream = require("cyberdream")
 local config = wezterm.config_builder()
 local blur_off_window_background_opacity = 0.7
 config.automatically_reload_config = true
-config.font = wezterm.font("UDEV Gothic 35NFLG")
+config.font = wezterm.font_with_fallback({
+	{ family = "UDEV Gothic 35NFLG" },
+})
 config.font_size = 11
 config.adjust_window_size_when_changing_font_size = false
 config.use_ime = true
@@ -24,18 +26,7 @@ config.show_close_tab_button_in_tabs = false
 config.custom_block_glyphs = true
 config.anti_alias_custom_block_glyphs = true
 -- config.color_scheme = "Everforest Dark Hard (Gogh)"
-config.audible_bell = "Disabled"
 config.colors = cyberdream.colors
-config.set_environment_variables = {
-	WEZTERM_PROMPT_BACKGROUND = cyberdream.colors.background,
-	WEZTERM_PROMPT_SELECTION = cyberdream.colors.selection_bg,
-	WEZTERM_PROMPT_FOREGROUND = cyberdream.colors.foreground,
-	WEZTERM_PROMPT_RED = cyberdream.colors.ansi[2],
-	WEZTERM_PROMPT_GREEN = cyberdream.colors.ansi[3],
-	WEZTERM_PROMPT_YELLOW = cyberdream.colors.ansi[4],
-	WEZTERM_PROMPT_BLUE = cyberdream.colors.ansi[5],
-	WEZTERM_PROMPT_CYAN = cyberdream.colors.ansi[7],
-}
 
 local mux = wezterm.mux
 local BLUR_ON_OPACITY = config.window_background_opacity

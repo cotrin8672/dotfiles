@@ -1,28 +1,31 @@
 return {
 	"cotrin8672/kyme.nvim",
+	lazy = true,
 	dependencies = {
 		"folke/snacks.nvim",
-		"akinsho/toggleterm.nvim",
 	},
-	opts = {
-		sources = {
-			{ "mise" },
-		},
-		picker = { "snacks" },
-		runner = { "toggleterm" },
-	},
+	opts = function()
+		local kyme = require("kyme")
+
+		return {
+			sources = {
+				kyme.mise(),
+			},
+			runner = kyme.system(),
+		}
+	end,
 	keys = {
 		{
 			"<leader>pt",
 			function()
-				require("kyme").pick_task()
+				require("config.kyme.picker").tasks()
 			end,
 			desc = "Pick task",
 		},
 		{
 			"<leader>pe",
 			function()
-				require("kyme").pick_execution()
+				require("config.kyme.picker").executions()
 			end,
 			desc = "Pick execution",
 		},
