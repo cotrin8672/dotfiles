@@ -6,10 +6,12 @@ local function zenhan_off(opts)
 		return
 	end
 
-	pcall(vim.system, { opts.command, opts.off_arg }, {
-		stdout = false,
-		stderr = false,
-	}, function() end)
+	pcall(function()
+		vim.system({ opts.command, opts.off_arg }, {
+			stdout = false,
+			stderr = false,
+		}):wait(100)
+	end)
 end
 
 function M.setup(opts)

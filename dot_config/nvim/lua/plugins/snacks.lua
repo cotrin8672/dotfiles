@@ -39,14 +39,14 @@ return {
 	},
 	keys = {
 		{
-			"<leader>pf",
+			"<leader>ff",
 			function()
 				Snacks.picker.files()
 			end,
 			desc = "Find files",
 		},
 		{
-			"<leader>pg",
+			"<leader>fg",
 			function()
 				require("lazy").load({ plugins = { "vim-kensaku" } })
 				local sources = require("snacks.picker.config.sources")
@@ -57,42 +57,42 @@ return {
 			desc = "Live grep with grep + kensaku.vim",
 		},
 		{
-			"<leader>pb",
+			"<leader>fb",
 			function()
 				Snacks.picker.git_branches()
 			end,
 			desc = "Git branches",
 		},
 		{
-			"<leader>pd",
+			"<leader>fd",
 			function()
 				Snacks.picker.diagnostics()
 			end,
 			desc = "Diagnostics",
 		},
 		{
-			"<leader>ps",
+			"<leader>fs",
 			function()
 				Snacks.picker.lsp_symbols()
 			end,
 			desc = "Document symbols",
 		},
 		{
-			"<leader>pS",
+			"<leader>fS",
 			function()
 				Snacks.picker.lsp_workspace_symbols()
 			end,
 			desc = "Workspace symbols",
 		},
 		{
-			"<leader>pi",
+			"<leader>fi",
 			function()
 				Snacks.picker.gh_issue()
 			end,
 			desc = "Github issues",
 		},
 		{
-			"<leader>pp",
+			"<leader>fp",
 			function()
 				Snacks.picker.gh_pr()
 			end,
