@@ -23,6 +23,13 @@ return {
 			preview = function(ctx)
 				return require("md-render.snacks").preview()(ctx)
 			end,
+			win = {
+				input = {
+					keys = {
+						["<M-q>"] = { "qflist", mode = { "i", "n" } },
+					},
+				},
+			},
 		},
 		rename = {
 			enabled = true,
