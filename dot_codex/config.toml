@@ -178,7 +178,7 @@ enabled = true
 "gpt-5.5" = 4
 
 [marketplaces.openai-bundled]
-last_updated = "2026-06-03T06:16:37Z"
+last_updated = "2026-06-04T05:02:56Z"
 source_type = "local"
 source = '\\?\C:\Users\minol\.codex\.tmp\bundled-marketplaces\openai-bundled'
 
@@ -213,7 +213,7 @@ NODE_REPL_NODE_MODULE_DIRS = ""
 NODE_REPL_NODE_PATH = 'C:\Users\minol\AppData\Local\OpenAI\Codex\bin\5b9024f90663758b\node.exe'
 NODE_REPL_TRUSTED_CODE_PATHS = 'C:\Users\minol\.codex'
 CODEX_HOME = 'C:\Users\minol\.codex'
-NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "0b0d41e7a14a4903d2f95b0b3f427ed796b12c8edca2fa392a03df43997075ae,e13c388c2427308a68dffc803e1f28316077b719672e4518a621ae6ab56ad7cf"
+NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "4b6bfaf4ed2ce9b5cd68e60a61642eb4927a36306ba8c8993f6058607b3530fb,e13c388c2427308a68dffc803e1f28316077b719672e4518a621ae6ab56ad7cf"
 BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
 NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = "Control the in-app browser in conjunction with the Browser Plugin."
 NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = "Control the Chrome browser in conjunction with the Chrome Plugin. Prefer this method of controlling Chrome over alternatives (such as Computer Use) unless the user explicitly mentions an alternative."
