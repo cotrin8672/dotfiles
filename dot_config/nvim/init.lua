@@ -146,17 +146,7 @@ vim.api.nvim_create_autocmd({ "WinEnter", "FocusGained", "BufEnter" }, {
 })
 
 require("shared.java_kotlin_package").setup()
-require("config.matlab.editing").setup()
-vim.api.nvim_create_autocmd("LspAttach", {
-	callback = function(args)
-		local client = vim.lsp.get_client_by_id(args.data.client_id)
-		if not client or client.name ~= "matlab_ls" then
-			return
-		end
-
-		require("config.matlab").setup()
-	end,
-})
+require("config.matlab").setup()
 vim.api.nvim_create_autocmd("User", {
 	pattern = "VeryLazy",
 	once = true,

@@ -1,7 +1,8 @@
 local M = {}
 local initialized = false
+local registered = false
 
-function M.setup()
+local function initialize_lsp_integration()
 	if initialized then
 		return
 	end
@@ -26,6 +27,27 @@ function M.setup()
 	end)
 	require("config.matlab.handler").setup()
 	require("config.matlab.commands")
+end
+
+function M.setup()
+	if registered then
+		return
+	end
+	registered = true
+
+	require("config.matlab.editing").setup()
+
+	vim.api.nvim_create_autocmd("LspAttach", {
+		group = vim.api.nvim_create_augroup("MatlabIntegration", { clear = true }),
+		callback = function(args)
+			local client = vim.lsp.get_client_by_id(args.data.client_id)
+			if not client or client.name ~= "matlab_ls" then
+				return
+			end
+
+			initialize_lsp_integration()
+		end,
+	})
 end
 
 return M
