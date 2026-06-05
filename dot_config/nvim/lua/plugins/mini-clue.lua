@@ -14,7 +14,6 @@ return {
 				{ mode = "n", keys = "]" },
 				{ mode = "n", keys = "z" },
 				{ mode = "x", keys = "z" },
-				{ mode = "n", keys = "<C-w>" },
 			},
 			clues = {
 				{ mode = "n", keys = "<Leader>a", desc = "+align" },
@@ -32,6 +31,8 @@ return {
 				{ mode = "n", keys = "<Leader>t", desc = "+trouble" },
 				{ mode = "n", keys = "<Leader>tt", desc = "Trouble diagnostics" },
 				{ mode = "n", keys = "<Leader>u", desc = "Undotree" },
+				{ mode = "n", keys = "<Leader>w", desc = "Window submode" },
+				{ mode = "n", keys = "<Leader>W", desc = "Update all" },
 				{ mode = "n", keys = "<Leader>x", desc = "Delete buffer" },
 				clue.gen_clues.builtin_completion(),
 				clue.gen_clues.g(),

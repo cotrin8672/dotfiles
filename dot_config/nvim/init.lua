@@ -28,6 +28,8 @@ vim.g.maplocalleader = " "
 
 vim.keymap.set("i", "<M-o>", "<C-g>u<C-o>o", { desc = "Open line below" })
 vim.keymap.set("n", "<M-m>", "`", { desc = "Jump to mark line" })
+vim.keymap.set("n", "<C-w>", "<Cmd>update<CR>", { desc = "Write if modified" })
+vim.keymap.set("n", "<leader>W", "<Cmd>wall<CR>", { desc = "Write all modified buffers" })
 
 local float = require("shared.float")
 require("config.zenhan").setup({
