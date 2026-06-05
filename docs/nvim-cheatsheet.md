@@ -53,10 +53,12 @@
 | `<M-j>` | `n` | 下ウィンドウへ移動 | `dot_config/nvim/init.lua` |
 | `<M-k>` | `n` | 上ウィンドウへ移動 | `dot_config/nvim/init.lua` |
 | `<M-l>` | `n` | 右ウィンドウへ移動 | `dot_config/nvim/init.lua` |
+| `<C-w>` | `n` | `:update` で変更時だけ現在バッファを書き込み | `dot_config/nvim/init.lua` |
 | `<Tab>` | `n` | 次バッファ | `dot_config/nvim/lua/plugins/tabby.lua` |
 | `<S-Tab>` | `n` | 前バッファ | `dot_config/nvim/lua/plugins/tabby.lua` |
+| `<leader>W` | `n` | `:wall` で変更済みバッファをまとめて書き込み | `dot_config/nvim/init.lua` |
 | `<leader>x` | `n` | バッファを閉じる | `dot_config/nvim/lua/plugins/tabby.lua` |
-| `<leader>w` | `n` | WINDOW submode に入る | `dot_config/nvim/lua/plugins/submode.lua` |
+| `<leader>w` | `n` | WINDOW submode に入る | `dot_config/nvim/lua/plugins/submode/window.lua` |
 
 ### ファイル・ツリー・ピッカー
 
@@ -171,18 +173,18 @@
 
 | Key | Action |
 |---|---|
-| `h` | 左へ移動 |
-| `j` | 下へ移動 |
-| `k` | 上へ移動 |
-| `l` | 右へ移動 |
+| `h` | 幅を減らす |
+| `j` | 高さを増やす |
+| `k` | 高さを減らす |
+| `l` | 幅を増やす |
+| `<M-h>` | 左ウィンドウへ移動 |
+| `<M-j>` | 下ウィンドウへ移動 |
+| `<M-k>` | 上ウィンドウへ移動 |
+| `<M-l>` | 右ウィンドウへ移動 |
 | `s` | 水平分割 |
 | `v` | 垂直分割 |
-| `+` | 高さを増やす |
-| `-` | 高さを減らす |
-| `>` | 幅を増やす |
-| `<` | 幅を減らす |
 | `x` | ウィンドウを閉じる |
-| `q` | submode を抜ける |
+| `<Esc>` | submode を抜ける |
 
 ### LSP submode
 

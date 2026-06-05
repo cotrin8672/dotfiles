@@ -14,17 +14,17 @@ return function(sm)
 			shared.refresh_ui()
 		end,
 	}, {
-		{ "h", "<C-w><" },
-		{ "j", "<C-w>+" },
-		{ "k", "<C-w>-" },
-		{ "l", "<C-w>>" },
-		{ "<M-h>", "<C-w>h" },
-		{ "<M-j>", "<C-w>j" },
-		{ "<M-k>", "<C-w>k" },
-		{ "<M-l>", "<C-w>l" },
-		{ "s", "<C-w>s" },
-		{ "v", "<C-w>v" },
-		{ "x", "<C-w>c" },
+		{ "h", "<Cmd>vertical resize -1<CR>" },
+		{ "j", "<Cmd>resize +1<CR>" },
+		{ "k", "<Cmd>resize -1<CR>" },
+		{ "l", "<Cmd>vertical resize +1<CR>" },
+		{ "<M-h>", "<Cmd>wincmd h<CR>" },
+		{ "<M-j>", "<Cmd>wincmd j<CR>" },
+		{ "<M-k>", "<Cmd>wincmd k<CR>" },
+		{ "<M-l>", "<Cmd>wincmd l<CR>" },
+		{ "s", "<Cmd>split<CR>" },
+		{ "v", "<Cmd>vsplit<CR>" },
+		{ "x", "<Cmd>close<CR>" },
 		{
 			"<Esc>",
 			function()
