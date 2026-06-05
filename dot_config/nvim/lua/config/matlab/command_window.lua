@@ -147,12 +147,16 @@ local function ensure_window()
 
 	if state.winid and vim.api.nvim_win_is_valid(state.winid) then
 		vim.api.nvim_win_set_buf(state.winid, bufnr)
+		vim.api.nvim_set_option_value("winfixbuf", true, { win = state.winid })
+		vim.w[state.winid].matlab_command_window = true
 		return assert(state.winid)
 	end
 
 	vim.cmd("botright 12split")
 	local winid = vim.api.nvim_get_current_win()
 	vim.api.nvim_win_set_buf(winid, bufnr)
+	vim.api.nvim_set_option_value("winfixbuf", true, { win = winid })
+	vim.w[winid].matlab_command_window = true
 
 	state.winid = winid
 	return assert(winid)
@@ -191,6 +195,21 @@ function M.open()
 	vim.cmd("startinsert")
 end
 
+function M.toggle()
+	if state.winid and vim.api.nvim_win_is_valid(state.winid) then
+		vim.api.nvim_win_close(state.winid, false)
+		state.winid = nil
+		return
+	end
+
+	M.open()
+end
+
+function M.is_command_window(winid)
+	winid = winid or vim.api.nvim_get_current_win()
+	return vim.api.nvim_win_is_valid(winid) and vim.w[winid].matlab_command_window == true
+end
+
 function M.set_submit_callback(fn)
 	state.on_submit = fn
 end
@@ -204,7 +223,7 @@ function M.submit(command, opts)
 		return
 	end
 
-	ensure_window()
+	ensure_buffer()
 	if opts == nil or opts.echo then
 		append_input(command)
 	end

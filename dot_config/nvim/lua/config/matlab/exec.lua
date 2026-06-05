@@ -28,6 +28,50 @@ function M.command_from_current_file()
 	return matlab_command_from_file(path), nil
 end
 
+function M.lines_command(start_line, end_line)
+	local line_count = vim.api.nvim_buf_line_count(0)
+	start_line = math.max(1, math.min(start_line, line_count))
+	end_line = math.max(start_line, math.min(end_line, line_count))
+
+	local lines = vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
+	local command = table.concat(lines, "\n")
+	if vim.trim(command) == "" then
+		return nil, "selected MATLAB code is empty"
+	end
+
+	return command, nil
+end
+
+local function is_section_break(line)
+	return line:find("^%s*%%%%") ~= nil
+end
+
+function M.current_cell_command()
+	local row = vim.api.nvim_win_get_cursor(0)[1]
+	local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+	if #lines == 0 then
+		return nil, "current buffer is empty"
+	end
+
+	local start_line = 1
+	for line_number = row, 1, -1 do
+		if is_section_break(lines[line_number] or "") then
+			start_line = line_number
+			break
+		end
+	end
+
+	local end_line = #lines
+	for line_number = row + 1, #lines do
+		if is_section_break(lines[line_number] or "") then
+			end_line = line_number - 1
+			break
+		end
+	end
+
+	return M.lines_command(start_line, end_line)
+end
+
 function M.eval(command)
 	local ok, err = core.notify("evalRequest", {
 		requestId = core.new_request_id(),

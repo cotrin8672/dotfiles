@@ -11,6 +11,10 @@ local function listed_normal_buffers()
 end
 
 local function cycle_buffer(step)
+	if require("config.matlab.command_window").is_command_window() then
+		return
+	end
+
 	local bufs = listed_normal_buffers()
 	if #bufs == 0 then
 		return

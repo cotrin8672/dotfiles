@@ -72,6 +72,32 @@ vim.api.nvim_create_user_command("MatlabRunFile", function()
 	cmdwin.submit(command)
 end, {})
 
+vim.api.nvim_create_user_command("MatlabRunSelection", function(opts)
+	local cmdwin = require("config.matlab.command_window")
+	local exec = require("config.matlab.exec")
+
+	local command, err = exec.lines_command(opts.line1, opts.line2)
+	if not command then
+		vim.notify(tostring(err), vim.log.levels.ERROR)
+		return
+	end
+
+	cmdwin.submit(command)
+end, { range = true })
+
+vim.api.nvim_create_user_command("MatlabRunCell", function()
+	local cmdwin = require("config.matlab.command_window")
+	local exec = require("config.matlab.exec")
+
+	local command, err = exec.current_cell_command()
+	if not command then
+		vim.notify(tostring(err), vim.log.levels.ERROR)
+		return
+	end
+
+	cmdwin.submit(command)
+end, {})
+
 vim.api.nvim_create_user_command("MatlabEval", function(opts)
 	local exec = require("config.matlab.exec")
 
@@ -87,4 +113,14 @@ end, {
 vim.api.nvim_create_user_command("MatlabOpenCommandWindow", function()
 	local cmdwin = require("config.matlab.command_window")
 	cmdwin.open()
+end, {})
+
+vim.api.nvim_create_user_command("MatlabCommandWindow", function()
+	local cmdwin = require("config.matlab.command_window")
+	cmdwin.open()
+end, {})
+
+vim.api.nvim_create_user_command("MatlabToggleCommandWindow", function()
+	local cmdwin = require("config.matlab.command_window")
+	cmdwin.toggle()
 end, {})
