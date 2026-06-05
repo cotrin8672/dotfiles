@@ -157,6 +157,32 @@ function M.toggle_split_join()
 	end
 end
 
+local function has_treesj_target()
+	local ok_parser, parser = pcall(vim.treesitter.get_parser, 0)
+	if not ok_parser or not parser then
+		return false
+	end
+
+	parser:parse(true)
+
+	local ok_node, node = pcall(require("treesj.format").get_node_at_cursor, parser)
+	if not ok_node or not node then
+		return false
+	end
+
+	local ok_configured = pcall(require("treesj.search").get_configured_node, node)
+	return ok_configured
+end
+
+function M.toggle_treesj_or_continuation()
+	if has_treesj_target() then
+		require("treesj").toggle()
+		return
+	end
+
+	M.toggle_split_join()
+end
+
 function M.setup()
 	vim.api.nvim_create_autocmd("FileType", {
 		group = group,
@@ -166,9 +192,29 @@ function M.setup()
 				return M.newline()
 			end, { buffer = event.buf, expr = true, replace_keycodes = true, desc = "Matlab continuation newline" })
 
-			vim.keymap.set("n", "<leader>s", M.toggle_split_join, {
+			vim.keymap.set("n", "<leader>s", M.toggle_treesj_or_continuation, {
 				buffer = event.buf,
-				desc = "Matlab split/join continuation",
+				desc = "Matlab TreeSJ or continuation split/join",
+			})
+
+			vim.keymap.set("n", "<leader>mr", "<Cmd>MatlabRunFile<CR>", {
+				buffer = event.buf,
+				desc = "Matlab run file",
+			})
+
+			vim.keymap.set("x", "<leader>ms", ":MatlabRunSelection<CR>", {
+				buffer = event.buf,
+				desc = "Matlab run selection",
+			})
+
+			vim.keymap.set("n", "<leader>mc", "<Cmd>MatlabRunCell<CR>", {
+				buffer = event.buf,
+				desc = "Matlab run cell",
+			})
+
+			vim.keymap.set("n", "<leader>mw", "<Cmd>MatlabToggleCommandWindow<CR>", {
+				buffer = event.buf,
+				desc = "Matlab toggle command window",
 			})
 		end,
 	})
