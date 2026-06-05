@@ -1,12 +1,12 @@
 ((function_definition
    "function" @indent
-   name: (identifier) @cursor)
+   name: (identifier) @cursor) @endable
  (#endwise! "end"))
 
 ((function_definition
    "function" @indent
    name: (identifier)
-   (function_arguments) @cursor)
+   (function_arguments) @cursor) @endable
  (#endwise! "end"))
 
 ((for_statement
