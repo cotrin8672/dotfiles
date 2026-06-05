@@ -185,6 +185,60 @@ return {
 			})
 		end
 
+		local function dropbar_location()
+			local ok = pcall(require, "dropbar")
+			if not ok or not _G.dropbar then
+				return ""
+			end
+
+			local win = vim.g.statusline_winid or vim.api.nvim_get_current_win()
+			if not vim.api.nvim_win_is_valid(win) then
+				return ""
+			end
+
+			local buf = vim.api.nvim_win_get_buf(win)
+			return _G.dropbar.bars[buf][win]()
+		end
+
+		local function winbar_filename()
+			local win = vim.g.statusline_winid or vim.api.nvim_get_current_win()
+			if not vim.api.nvim_win_is_valid(win) then
+				return ""
+			end
+
+			local buf = vim.api.nvim_win_get_buf(win)
+			local path = vim.api.nvim_buf_get_name(buf)
+			local name = vim.fn.fnamemodify(path, ":t")
+			if name == "" then
+				return ""
+			end
+
+			local ok, icons = pcall(require, "mini.icons")
+			if not ok then
+				return name
+			end
+
+			local icon, icon_hl = icons.get("file", path)
+			return "%#" .. icon_hl .. "#" .. icon .. "%* " .. name
+		end
+
+		local winbar = {
+			lualine_a = {},
+			lualine_b = {},
+			lualine_c = {
+				{
+					dropbar_location,
+				},
+			},
+			lualine_x = {
+				{
+					winbar_filename,
+				},
+			},
+			lualine_y = {},
+			lualine_z = {},
+		}
+
 		require("lualine").setup({
 			options = {
 				theme = tabline_like_theme(),
@@ -234,6 +288,8 @@ return {
 					},
 				},
 			},
+			winbar = winbar,
+			inactive_winbar = winbar,
 		})
 
 		local ok_cursor, cursor_mode = pcall(require, "ui.cursor_mode")
