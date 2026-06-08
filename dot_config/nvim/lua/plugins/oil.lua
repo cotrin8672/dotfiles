@@ -2,9 +2,7 @@ return {
 	"stevearc/oil.nvim",
 	cmd = "Oil",
 	keys = {
-		{ "-", "<cmd>Oil<cr>", desc = "Oil: Parent dir" },
 		{ "<leader>e", "<cmd>Oil --float<cr>", desc = "Oil: Float" },
-		{ "<leader>O", "<cmd>Oil<cr>", desc = "Oil: CWD" },
 	},
 	config = function(_, opts)
 		require("oil").setup(opts)

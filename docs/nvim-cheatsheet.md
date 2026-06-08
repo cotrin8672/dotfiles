@@ -24,7 +24,7 @@
 
 - ウィンドウ移動は `Alt-h/j/k/l`
 - バッファ移動は `<Tab>` / `<S-Tab>`
-- ファイル探索は `-`, `<leader>o`, `<leader>O`, `<leader>pp`, `<leader>pf`
+- ファイル探索は `<leader>e`, `<leader>pp`, `<leader>pf`
 - 検索系は `s`, `S`, `n`, `N`, `*`, `#`, `g*`, `g#`
 - LSP 通常操作は `gd`, `gD`, `gi`, `gr`, `K`, `<leader>rn`, `<leader>ca`
 - Submode は `<leader>w`, `<leader>l`, `<leader>d`
@@ -64,10 +64,7 @@
 
 | Key | Mode | Action | Source |
 |---|---|---|---|
-| `-` | `n` | `Oil` で親ディレクトリを開く | `dot_config/nvim/lua/plugins/oil.lua` |
-| `<leader>o` | `n` | `Oil` を float で開く | `dot_config/nvim/lua/plugins/oil.lua` |
-| `<leader>O` | `n` | `Oil` を通常ウィンドウで開く | `dot_config/nvim/lua/plugins/oil.lua` |
-| `<leader>e` | `n` | `Neo-tree` をトグル | `dot_config/nvim/lua/plugins/neo-tree.lua` |
+| `<leader>e` | `n` | `Oil` を float で開く | `dot_config/nvim/lua/plugins/oil.lua` |
 | `<leader>pf` | `n` | Smart picker: `buffers`/`recent`/`git_files or files` | `dot_config/nvim/lua/plugins/snacks.lua` |
 | `<leader>pp` | `n` | Files picker | `dot_config/nvim/lua/plugins/snacks.lua` |
 | `<leader>pg` | `n` | Grep picker | `dot_config/nvim/lua/plugins/snacks.lua` |
@@ -376,7 +373,6 @@
 - `dot_config/nvim/lua/plugins/lspconfig.lua`
 - `dot_config/nvim/lua/plugins/lspsaga.lua`
 - `dot_config/nvim/lua/plugins/mini.lua`
-- `dot_config/nvim/lua/plugins/neo-tree.lua`
 - `dot_config/nvim/lua/plugins/oil.lua`
 - `dot_config/nvim/lua/plugins/snacks.lua`
 - `dot_config/nvim/lua/plugins/submode.lua`
