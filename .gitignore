@@ -10,3 +10,4 @@ nvim.log
 $log
 .kensaku*
 .codex-nvim/
+dot_codex/config.toml
