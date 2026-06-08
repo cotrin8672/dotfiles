@@ -63,26 +63,6 @@ return {
 			noremap = true,
 			silent = true,
 		},
-		{
-			"p",
-			function()
-				require("undo-glow").paste_below()
-			end,
-			mode = "n",
-			desc = "Paste below with highlights",
-			noremap = true,
-			silent = true,
-		},
-		{
-			"P",
-			function()
-				require("undo-glow").paste_above()
-			end,
-			mode = "n",
-			desc = "Paste above with highlights",
-			noremap = true,
-			silent = true,
-		},
 	},
 	init = function()
 		vim.api.nvim_create_autocmd("TextYankPost", {
