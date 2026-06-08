@@ -1,3 +1,23 @@
+local float = require("shared.float")
+
+local function apply_picker_winblend(picker)
+	local wins = {}
+	if picker.layout then
+		if picker.layout.root then
+			wins[#wins + 1] = picker.layout.root
+		end
+		vim.list_extend(wins, vim.tbl_values(picker.layout.wins or {}))
+		vim.list_extend(wins, vim.tbl_values(picker.layout.box_wins or {}))
+	end
+
+	for _, win in ipairs(wins) do
+		win.opts.wo.winblend = float.blend
+		if win:win_valid() then
+			vim.wo[win.win].winblend = float.blend
+		end
+	end
+end
+
 return {
 	"folke/snacks.nvim",
 	priority = 1000,
@@ -20,6 +40,16 @@ return {
 		picker = {
 			enabled = true,
 			ui_select = true,
+			config = function(opts)
+				local on_show = opts.on_show
+				opts.on_show = function(picker)
+					apply_picker_winblend(picker)
+					if on_show then
+						on_show(picker)
+					end
+				end
+				return opts
+			end,
 			preview = function(ctx)
 				return require("md-render.snacks").preview()(ctx)
 			end,
