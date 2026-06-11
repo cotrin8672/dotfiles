@@ -18,8 +18,9 @@ local function initialize_lsp_integration()
 
 	cmdwin.set_submit_callback(function(input)
 		if input ~= "" then
-			exec.eval(input)
+			return exec.eval(input)
 		end
+		return true, nil
 	end)
 
 	cmdwin.set_interrupt_callback(function()

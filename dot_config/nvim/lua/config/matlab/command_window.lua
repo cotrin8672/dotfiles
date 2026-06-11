@@ -175,7 +175,14 @@ local function append_lines(lines)
 end
 
 local function append_input(command)
-	append_lines({ ">> " .. command })
+	local command_lines = vim.split(command:gsub("\r\n", "\n"):gsub("\r", "\n"), "\n", { plain = true })
+	command_lines[1] = ">> " .. command_lines[1]
+
+	for i = 2, #command_lines do
+		command_lines[i] = "   " .. command_lines[i]
+	end
+
+	append_lines(command_lines)
 end
 
 local function add_history(command)
@@ -220,18 +227,23 @@ end
 
 function M.submit(command, opts)
 	if command == "" then
-		return
+		return true, nil
 	end
 
 	ensure_buffer()
+	if state.on_submit then
+		local ok, err = state.on_submit(command)
+		if ok == false then
+			return false, err
+		end
+	end
+
 	if opts == nil or opts.echo then
 		append_input(command)
 	end
 
-	if state.on_submit then
-		state.on_submit(command)
-	end
 	add_history(command)
+	return true, nil
 end
 
 function M.handle_text(chunk)

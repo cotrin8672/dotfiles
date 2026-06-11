@@ -73,6 +73,12 @@ function M.current_cell_command()
 end
 
 function M.eval(command)
+	if not core.is_connected() then
+		local err = core.connection_error()
+		require("config.matlab.status").blocked(err)
+		return false, err
+	end
+
 	local ok, err = core.notify("evalRequest", {
 		requestId = core.new_request_id(),
 		command = command,
