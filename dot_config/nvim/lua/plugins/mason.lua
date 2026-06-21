@@ -2,16 +2,20 @@ return {
 	{
 		"mason-org/mason.nvim",
 		lazy = true,
+		cmd = { "Mason", "MasonInstall", "MasonUninstall", "MasonUpdate", "MasonLog" },
 		opts = {
 			PATH = "prepend",
+			registries = {
+				"github:cotrin8672/mc-dev-lsp",
+				"github:mason-org/mason-registry",
+			},
 		},
 	},
 	{
 		"mason-org/mason-lspconfig.nvim",
-		event = { "BufReadPre", "BufNewFile" },
+		cmd = { "LspInstall", "LspUninstall" },
 		dependencies = {
 			"mason.nvim",
-			"neovim/nvim-lspconfig",
 		},
 		opts = function()
 			local ensure_installed = {
@@ -44,7 +48,6 @@ return {
 		end,
 	},
 	{
-		name = "mason-tool-installer.nvim",
 		"WhoIsSethDaniel/mason-tool-installer.nvim",
 		cmd = { "MasonToolsInstall", "MasonToolsUpdate", "MasonToolsClean" },
 		dependencies = {

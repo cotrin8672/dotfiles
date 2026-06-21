@@ -1,10 +1,13 @@
 return {
 	"neovim/nvim-lspconfig",
-	event = { "BufReadPre", "BufNewFile" },
-	dependencies = {
-		"mason-org/mason-lspconfig.nvim",
-	},
+	ft = require("config.lsp_filetypes"),
 	config = function()
+		local mason_bin = vim.fn.stdpath("data") .. "/mason/bin"
+		local path_sep = vim.fn.has("win32") == 1 and ";" or ":"
+		if not vim.env.PATH:find(vim.pesc(mason_bin), 1, false) then
+			vim.env.PATH = mason_bin .. path_sep .. vim.env.PATH
+		end
+
 		local capabilities = vim.tbl_deep_extend("force", vim.lsp.protocol.make_client_capabilities(), {
 			textDocument = {
 				completion = {
@@ -140,5 +143,25 @@ return {
 		})
 
 		require("config.matlab.lsp").setup(capabilities)
+
+		local servers = {
+			"bashls",
+			"cssls",
+			"html",
+			"jsonls",
+			"lua_ls",
+			"marksman",
+			"matlab_ls",
+			"rust_analyzer",
+			"taplo",
+			"texlab",
+			"ts_ls",
+		}
+
+		if vim.fn.has("win32") == 0 then
+			table.insert(servers, "nixd")
+		end
+
+		vim.lsp.enable(servers)
 	end,
 }

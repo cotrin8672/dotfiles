@@ -62,6 +62,19 @@ if vim.env.WSL_DISTRO_NAME then
 		},
 		cache_enabled = 0,
 	}
+elseif vim.fn.has("win32") == 1 then
+	vim.g.clipboard = {
+		name = "win32-clipboard",
+		copy = {
+			["+"] = { "powershell.exe", "-NoProfile", "-NoLogo", "-Command", "Set-Clipboard" },
+			["*"] = { "powershell.exe", "-NoProfile", "-NoLogo", "-Command", "Set-Clipboard" },
+		},
+		paste = {
+			["+"] = { "powershell.exe", "-NoProfile", "-NoLogo", "-Command", "Get-Clipboard -Raw" },
+			["*"] = { "powershell.exe", "-NoProfile", "-NoLogo", "-Command", "Get-Clipboard -Raw" },
+		},
+		cache_enabled = 0,
+	}
 end
 
 vim.opt.number = true

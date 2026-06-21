@@ -2,6 +2,7 @@ return {
 	"mfussenegger/nvim-jdtls",
 	ft = { "java" },
 	dependencies = {
+		"mcdev-nvim",
 		"neovim/nvim-lspconfig",
 	},
 	config = function()
@@ -34,7 +35,7 @@ return {
 		local project_name = vim.fn.fnamemodify(root_dir, ":p:h:t")
 		local workspace_dir = vim.fs.joinpath(vim.fn.stdpath("cache"), "jdtls", project_name)
 
-		jdtls.start_or_attach({
+		local config = {
 			cmd = {
 				"jdtls",
 				"-data",
@@ -52,6 +53,10 @@ return {
 			init_options = {
 				bundles = {},
 			},
-		})
+		}
+
+		if require("mcdev.jdtls").extend_config(config) then
+			jdtls.start_or_attach(config)
+		end
 	end,
 }
