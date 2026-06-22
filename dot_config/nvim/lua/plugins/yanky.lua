@@ -5,6 +5,12 @@ return {
 		"y3owk1n/undo-glow.nvim",
 	},
 	opts = {
+		ring = {
+			sync_with_numbered_registers = false,
+		},
+		system_clipboard = {
+			sync_with_ring = false,
+		},
 		highlight = {
 			on_put = false,
 			on_yank = false,

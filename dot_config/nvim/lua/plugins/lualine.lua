@@ -26,6 +26,21 @@ return {
 			end
 		end
 
+		local function apply_transparent_winbar()
+			local fg = first_color("fg", { "WinBar", "Normal", "StatusLine" })
+			local fg_nc = first_color("fg", { "WinBarNC", "Comment", "Normal" }) or fg
+
+			vim.api.nvim_set_hl(0, "WinBar", { fg = fg, bg = "NONE" })
+			vim.api.nvim_set_hl(0, "WinBarNC", { fg = fg_nc, bg = "NONE" })
+		end
+
+		local function transparent_winbar_color()
+			return {
+				fg = first_color("fg", { "WinBar", "Normal", "StatusLine" }),
+				bg = "NONE",
+			}
+		end
+
 		local function tabline_like_theme()
 			local background = first_color("bg", { "Normal", "StatusLine", "Pmenu", "CursorLine" })
 			local surface = first_color("bg", { "StatusLineNC", "PmenuSel", "CursorLine", "TabLine" }) or background
@@ -228,16 +243,24 @@ return {
 			lualine_c = {
 				{
 					dropbar_location,
+					color = transparent_winbar_color,
 				},
 			},
 			lualine_x = {
 				{
 					winbar_filename,
+					color = transparent_winbar_color,
 				},
 			},
 			lualine_y = {},
 			lualine_z = {},
 		}
+
+		apply_transparent_winbar()
+		vim.api.nvim_create_autocmd("ColorScheme", {
+			group = vim.api.nvim_create_augroup("transparent_winbar", { clear = true }),
+			callback = apply_transparent_winbar,
+		})
 
 		require("lualine").setup({
 			options = {

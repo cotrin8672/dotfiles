@@ -37,51 +37,11 @@ require("config.zenhan").setup({
 	off_arg = "0",
 })
 
-if vim.env.WSL_DISTRO_NAME then
-	vim.g.clipboard = {
-		name = "wsl-clipp",
-		copy = {
-			["+"] = { "clip.exe" },
-			["*"] = { "clip.exe" },
-		},
-		paste = {
-			["+"] = {
-				"powershell.exe",
-				"-NoProfile",
-				"-NoLogo",
-				"-Command",
-				'[Console]::Out.Write((Get-Clipboard -Raw).Replace("`r", ""))',
-			},
-			["*"] = {
-				"powershell.exe",
-				"-NoProfile",
-				"-NoLogo",
-				"-Command",
-				'[Console]::Out.Write((Get-Clipboard -Raw).Replace("`r", ""))',
-			},
-		},
-		cache_enabled = 0,
-	}
-elseif vim.fn.has("win32") == 1 then
-	vim.g.clipboard = {
-		name = "win32-clipboard",
-		copy = {
-			["+"] = { "powershell.exe", "-NoProfile", "-NoLogo", "-Command", "Set-Clipboard" },
-			["*"] = { "powershell.exe", "-NoProfile", "-NoLogo", "-Command", "Set-Clipboard" },
-		},
-		paste = {
-			["+"] = { "powershell.exe", "-NoProfile", "-NoLogo", "-Command", "Get-Clipboard -Raw" },
-			["*"] = { "powershell.exe", "-NoProfile", "-NoLogo", "-Command", "Get-Clipboard -Raw" },
-		},
-		cache_enabled = 0,
-	}
-end
-
 vim.opt.number = true
 vim.opt.relativenumber = true
 vim.opt.termguicolors = true
 vim.opt.signcolumn = "yes"
-vim.opt.clipboard = "unnamedplus"
+vim.opt.clipboard = ""
 vim.opt.laststatus = 3
 vim.opt.expandtab = true
 vim.opt.tabstop = 4
