@@ -277,21 +277,28 @@ return {
 			return "%#" .. icon_hl .. "#" .. icon .. "%* " .. name
 		end
 
+		local function winbar_line()
+			local location = dropbar_location()
+			local filename = winbar_filename()
+			if location == "" then
+				return "%=" .. filename
+			end
+			if filename == "" then
+				return location
+			end
+			return location .. "%=" .. filename
+		end
+
 		local winbar = {
 			lualine_a = {},
 			lualine_b = {},
 			lualine_c = {
 				{
-					dropbar_location,
+					winbar_line,
 					color = transparent_winbar_color,
 				},
 			},
-			lualine_x = {
-				{
-					winbar_filename,
-					color = transparent_winbar_color,
-				},
-			},
+			lualine_x = {},
 			lualine_y = {},
 			lualine_z = {},
 		}
