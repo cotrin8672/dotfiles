@@ -1,6 +1,17 @@
 return {
 	"windwp/nvim-ts-autotag",
-	event = { "BufReadPost", "BufNewFile" },
+	ft = {
+		"astro",
+		"eruby",
+		"heex",
+		"html",
+		"javascriptreact",
+		"php",
+		"svelte",
+		"typescriptreact",
+		"vue",
+		"xml",
+	},
 	dependencies = {
 		"nvim-treesitter/nvim-treesitter",
 	},

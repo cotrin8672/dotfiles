@@ -1,6 +1,6 @@
 return {
 	"giuxtaposition/blink-cmp-copilot",
-	event = "InsertEnter",
+	lazy = true,
 	dependencies = {
 		"zbirenbaum/copilot.lua",
 	},

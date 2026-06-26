@@ -1,7 +1,9 @@
 return {
 	"zbirenbaum/copilot.lua",
 	cmd = "Copilot",
-	event = "InsertEnter",
+	init = function()
+		vim.g.copilot_enabled = false
+	end,
 	opts = {
 		suggestion = {
 			enabled = false,
@@ -11,8 +13,13 @@ return {
 		},
 	},
 	keys = {
-		"<leader>tc",
-		"<cmd>Copilot toggle<cr>",
-		desc = "Toggle Copilot",
+		{
+			"<leader>tc",
+			function()
+				vim.g.copilot_enabled = not vim.g.copilot_enabled
+				vim.cmd(vim.g.copilot_enabled and "Copilot enable" or "Copilot disable")
+			end,
+			desc = "Toggle Copilot",
+		},
 	},
 }

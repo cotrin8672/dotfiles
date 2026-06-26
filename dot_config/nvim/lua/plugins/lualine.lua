@@ -6,8 +6,10 @@ return {
 	},
 	config = function()
 		local diagnostic_icons = require("ui.diagnostic_icons")
-		local sm = require("nvim-submode")
 		local mode = require("lualine.utils.mode")
+		local repo_name_cache = {}
+		local diagnostic_cache = {}
+		local lsp_client_cache = {}
 
 		local function hl_color(name, attr)
 			local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = name, link = true })
@@ -86,7 +88,8 @@ return {
 		end
 
 		local function submode_label()
-			local name = sm.get_submode_name()
+			local sm = package.loaded["nvim-submode"]
+			local name = sm and sm.get_submode_name()
 			if name and name ~= "" then
 				return name
 			end
@@ -101,18 +104,36 @@ return {
 				path = vim.fs.dirname(path)
 			end
 
+			local cached = repo_name_cache[path]
+			if cached ~= nil then
+				return cached
+			end
+
 			local git_dir = vim.fs.find(".git", { path = path, upward = true })[1]
 			if not git_dir then
+				repo_name_cache[path] = ""
 				return ""
 			end
 
-			return vim.fs.basename(vim.fs.dirname(git_dir))
+			local name = vim.fs.basename(vim.fs.dirname(git_dir))
+			repo_name_cache[path] = name
+			return name
 		end
 
 		local function diagnostics_summary()
-			local diagnostics = vim.diagnostic.get(0)
+			local bufnr = vim.api.nvim_get_current_buf()
+			local cached = diagnostic_cache[bufnr]
+			if cached ~= nil then
+				if cached == false then
+					return nil
+				end
+				return cached.total, cached.severity
+			end
+
+			local diagnostics = vim.diagnostic.get(bufnr)
 			local total = #diagnostics
 			if total == 0 then
+				diagnostic_cache[bufnr] = false
 				return nil
 			end
 
@@ -132,20 +153,31 @@ return {
 			end
 
 			if has_error then
+				diagnostic_cache[bufnr] = { total = total, severity = vim.diagnostic.severity.ERROR }
 				return total, vim.diagnostic.severity.ERROR
 			end
 			if has_warn then
+				diagnostic_cache[bufnr] = { total = total, severity = vim.diagnostic.severity.WARN }
 				return total, vim.diagnostic.severity.WARN
 			end
 			if has_hint then
+				diagnostic_cache[bufnr] = { total = total, severity = vim.diagnostic.severity.HINT }
 				return total, vim.diagnostic.severity.HINT
 			end
+			diagnostic_cache[bufnr] = { total = total, severity = vim.diagnostic.severity.INFO }
 			return total, vim.diagnostic.severity.INFO
 		end
 
 		local function lsp_client_names()
-			local clients = vim.lsp.get_clients({ bufnr = 0 })
+			local bufnr = vim.api.nvim_get_current_buf()
+			local cached = lsp_client_cache[bufnr]
+			if cached ~= nil then
+				return cached
+			end
+
+			local clients = vim.lsp.get_clients({ bufnr = bufnr })
 			if #clients == 0 then
+				lsp_client_cache[bufnr] = ""
 				return ""
 			end
 
@@ -155,7 +187,9 @@ return {
 			end
 
 			table.sort(names)
-			return table.concat(names, ", ")
+			local value = table.concat(names, ", ")
+			lsp_client_cache[bufnr] = value
+			return value
 		end
 
 		local function lsp_diagnostics()
@@ -201,8 +235,7 @@ return {
 		end
 
 		local function dropbar_location()
-			local ok = pcall(require, "dropbar")
-			if not ok or not _G.dropbar then
+			if not package.loaded["dropbar"] or not _G.dropbar then
 				return ""
 			end
 
@@ -212,7 +245,14 @@ return {
 			end
 
 			local buf = vim.api.nvim_win_get_buf(win)
-			return _G.dropbar.bars[buf][win]()
+			local bars = _G.dropbar.bars
+			local buf_bars = bars and bars[buf]
+			local bar = buf_bars and buf_bars[win]
+			if not bar then
+				return ""
+			end
+
+			return bar()
 		end
 
 		local function winbar_filename()
@@ -260,6 +300,37 @@ return {
 		vim.api.nvim_create_autocmd("ColorScheme", {
 			group = vim.api.nvim_create_augroup("transparent_winbar", { clear = true }),
 			callback = apply_transparent_winbar,
+		})
+
+		local cache_group = vim.api.nvim_create_augroup("LualineCachedComponents", { clear = true })
+		vim.api.nvim_create_autocmd("DiagnosticChanged", {
+			group = cache_group,
+			callback = function(args)
+				if args.buf then
+					diagnostic_cache[args.buf] = nil
+				else
+					diagnostic_cache = {}
+				end
+			end,
+		})
+		vim.api.nvim_create_autocmd({ "LspAttach", "LspDetach" }, {
+			group = cache_group,
+			callback = function(args)
+				lsp_client_cache[args.buf] = nil
+			end,
+		})
+		vim.api.nvim_create_autocmd("BufWipeout", {
+			group = cache_group,
+			callback = function(args)
+				diagnostic_cache[args.buf] = nil
+				lsp_client_cache[args.buf] = nil
+			end,
+		})
+		vim.api.nvim_create_autocmd("DirChanged", {
+			group = cache_group,
+			callback = function()
+				repo_name_cache = {}
+			end,
 		})
 
 		require("lualine").setup({

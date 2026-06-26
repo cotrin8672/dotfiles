@@ -104,16 +104,6 @@ return {
 			capabilities = capabilities,
 		})
 
-		vim.lsp.config("jsonls", {
-			capabilities = capabilities,
-			settings = {
-				json = {
-					schemas = require("schemastore").json.schemas(),
-					validate = { enable = true },
-				},
-			},
-		})
-
 		vim.lsp.config("html", {
 			capabilities = capabilities,
 		})
@@ -142,16 +132,12 @@ return {
 			capabilities = capabilities,
 		})
 
-		require("config.matlab.lsp").setup(capabilities)
-
 		local servers = {
 			"bashls",
 			"cssls",
 			"html",
-			"jsonls",
 			"lua_ls",
 			"marksman",
-			"matlab_ls",
 			"rust_analyzer",
 			"taplo",
 			"texlab",
@@ -163,5 +149,52 @@ return {
 		end
 
 		vim.lsp.enable(servers)
+
+		local configured = {}
+
+		local function configure_jsonls()
+			if configured.jsonls then
+				return
+			end
+			configured.jsonls = true
+
+			vim.lsp.config("jsonls", {
+				capabilities = capabilities,
+				settings = {
+					json = {
+						schemas = require("schemastore").json.schemas(),
+						validate = { enable = true },
+					},
+				},
+			})
+			vim.lsp.enable("jsonls")
+		end
+
+		local function configure_matlab_ls()
+			if configured.matlab_ls then
+				return
+			end
+			configured.matlab_ls = true
+
+			require("config.matlab.lsp").setup(capabilities)
+			vim.lsp.enable("matlab_ls")
+		end
+
+		local function configure_for_filetype(filetype)
+			if filetype == "json" or filetype == "jsonc" then
+				configure_jsonls()
+			elseif filetype == "matlab" then
+				configure_matlab_ls()
+			end
+		end
+
+		vim.api.nvim_create_autocmd("FileType", {
+			group = vim.api.nvim_create_augroup("LspDeferredServerConfig", { clear = true }),
+			callback = function(args)
+				configure_for_filetype(vim.bo[args.buf].filetype)
+			end,
+		})
+
+		configure_for_filetype(vim.bo.filetype)
 	end,
 }

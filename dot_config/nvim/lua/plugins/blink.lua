@@ -77,6 +77,9 @@ return {
 					module = "blink-cmp-copilot",
 					score_offset = 100,
 					async = true,
+					enabled = function()
+						return vim.g.copilot_enabled == true
+					end,
 				},
 				latex = {
 					name = "latex",
