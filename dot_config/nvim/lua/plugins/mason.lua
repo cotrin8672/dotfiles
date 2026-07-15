@@ -1,12 +1,10 @@
 return {
 	{
 		"mason-org/mason.nvim",
-		lazy = true,
-		cmd = { "Mason", "MasonInstall", "MasonUninstall", "MasonUpdate", "MasonLog" },
+		lazy = false,
 		opts = {
 			PATH = "prepend",
 			registries = {
-				"github:cotrin8672/mc-dev-lsp",
 				"github:mason-org/mason-registry",
 			},
 		},
@@ -68,7 +66,7 @@ return {
 				"shellcheck",
 				"markdownlint",
 			},
-			auto_update = false,
+			auto_update = true,
 			start_delay = 0,
 		},
 	},

@@ -1,9 +1,22 @@
 local M = {}
 
-local function listed_normal_buffers()
+local function is_jdtls_class_buffer(bufnr)
+	if vim.bo[bufnr].buftype ~= "nofile" or vim.bo[bufnr].filetype ~= "java" then
+		return false
+	end
+
+	local name = vim.api.nvim_buf_get_name(bufnr)
+	return vim.startswith(name, "jdt://") or name:lower():match("%.class$") ~= nil
+end
+
+local function is_tabby_buffer(bufnr)
+	return vim.bo[bufnr].buflisted and (vim.bo[bufnr].buftype == "" or is_jdtls_class_buffer(bufnr))
+end
+
+local function listed_tabby_buffers()
 	local bufs = {}
 	for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-		if vim.bo[bufnr].buflisted and vim.bo[bufnr].buftype == "" then
+		if is_tabby_buffer(bufnr) then
 			bufs[#bufs + 1] = bufnr
 		end
 	end
@@ -15,7 +28,7 @@ local function cycle_buffer(step)
 		return
 	end
 
-	local bufs = listed_normal_buffers()
+	local bufs = listed_tabby_buffers()
 	if #bufs == 0 then
 		return
 	end
@@ -149,7 +162,7 @@ return vim.tbl_extend("force", M, {
 					line.spacer(),
 					line.bufs()
 						.filter(function(buf)
-							return vim.bo[buf.id].buflisted and buf.type() == ""
+							return is_tabby_buffer(buf.id)
 						end)
 						.foreach(function(buf)
 							local hl = buf.is_current() and theme.current or theme.inactive
