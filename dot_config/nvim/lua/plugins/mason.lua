@@ -44,7 +44,7 @@ return {
 				"taplo",
 				"marksman",
 				"texlab",
-				"matlab_ls",
+				"matlab_ls@v1.3.12",
 			}
 
 			if vim.fn.has("win32") == 0 then

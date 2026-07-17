@@ -15,8 +15,7 @@ end
 
 local function matlab_command_from_file(path)
 	local filename = vim.fn.fnamemodify(path, ":t")
-	local name = filename:gsub("%.m$", "")
-	return name
+	return filename:gsub("%.m$", "")
 end
 
 function M.command_from_current_file()
@@ -62,47 +61,58 @@ function M.current_cell_command()
 	end
 
 	local end_line = #lines
+	local next_cell_line = nil
 	for line_number = row + 1, #lines do
 		if is_section_break(lines[line_number] or "") then
 			end_line = line_number - 1
+			next_cell_line = line_number
 			break
 		end
 	end
 
-	return M.lines_command(start_line, end_line)
+	local command, err = M.lines_command(start_line, end_line)
+	return command, err, next_cell_line, start_line, end_line
 end
 
-function M.eval(command)
-	if not core.is_connected() then
-		local err = core.connection_error()
+function M.visual_selection_command(start_pos, end_pos, selection_type)
+	local lines = vim.fn.getregion(start_pos, end_pos, { type = selection_type })
+	local command = table.concat(lines, "\n")
+	if vim.trim(command) == "" then
+		return nil, "selected MATLAB code is empty"
+	end
+
+	return command, nil
+end
+
+function M.eval(command, opts)
+	return core.enqueue_eval(command, opts)
+end
+
+function M.interrupt()
+	local ok, err = core.interrupt()
+
+	if not ok then
 		require("config.matlab.status").blocked(err)
 		return false, err
 	end
 
-	local ok, err = core.notify("evalRequest", {
-		requestId = core.new_request_id(),
-		command = command,
-		isUserEval = true,
-	})
-
-	if not ok then
-		return false, err
-	end
-
 	return true, nil
 end
 
-function M.interrupt()
-	local ok, err = core.notify("interruptRequest", {})
+function M.stop()
+	return core.stop_session()
+end
 
-	if not ok then
-		return false, err
-	end
+function M.restart_here(bufnr)
+	return core.restart_here(bufnr)
+end
 
-	return true, nil
+function M.cancel_queued()
+	return core.cancel_queued()
 end
 
 function M.run_file()
+	local bufnr = vim.api.nvim_get_current_buf()
 	local command, err = M.command_from_current_file()
 	if not command then
 		return false, err
@@ -112,7 +122,7 @@ function M.run_file()
 		vim.cmd.write()
 	end
 
-	return M.eval(command)
+	return M.eval(command, { bufnr = bufnr })
 end
 
 return M

@@ -1,10 +1,18 @@
+local function toggle_split_join()
+	if vim.bo.filetype == "matlab" then
+		return require("config.matlab.splitjoin").toggle()
+	end
+
+	return require("treesj").toggle()
+end
+
 return {
 	"Wansmer/treesj",
 	dependencies = {
 		"nvim-treesitter/nvim-treesitter",
 	},
 	keys = {
-		{ "<leader>s", "<Cmd>TSJToggle<CR>" },
+		{ "<leader>s", toggle_split_join, desc = "Split/join" },
 	},
 	opts = function()
 		return {
@@ -14,7 +22,6 @@ return {
 			cursor_behavior = "hold",
 			notify = true,
 			dot_repeat = true,
-			langs = require("config.matlab.treesj").langs(),
 		}
 	end,
 }
