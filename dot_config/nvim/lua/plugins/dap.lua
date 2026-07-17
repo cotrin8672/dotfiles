@@ -25,7 +25,8 @@ return {
 		"theHamsta/nvim-dap-virtual-text",
 	},
 	config = function()
-		local _ = require("dap")
+		local dap = require("dap")
+		require("config.matlab.dap").setup(dap)
 
 		vim.fn.sign_define("DapBreakpoint", {
 			text = "",

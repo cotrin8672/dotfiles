@@ -23,9 +23,11 @@ describe("MATLAB execution client", function()
 
 	before_each(function()
 		package.loaded["config.matlab.core"] = nil
-		roots = setmetatable({}, { __index = function()
-			return "C:/repo-one"
-		end })
+		roots = setmetatable({}, {
+			__index = function()
+				return "C:/repo-one"
+			end,
+		})
 		package.loaded["config.matlab.lsp"] = {
 			execution_root = function(bufnr)
 				return roots[bufnr]
@@ -330,15 +332,21 @@ describe("MATLAB execution client", function()
 
 	it("cancels queued work without interrupting the active command", function()
 		local completed = {}
-		core.enqueue_eval("first", { on_complete = function(ok)
-			table.insert(completed, { "first", ok })
-		end })
-		core.enqueue_eval("second", { on_complete = function(ok)
-			table.insert(completed, { "second", ok })
-		end })
-		core.enqueue_eval("third", { on_complete = function(ok)
-			table.insert(completed, { "third", ok })
-		end })
+		core.enqueue_eval("first", {
+			on_complete = function(ok)
+				table.insert(completed, { "first", ok })
+			end,
+		})
+		core.enqueue_eval("second", {
+			on_complete = function(ok)
+				table.insert(completed, { "second", ok })
+			end,
+		})
+		core.enqueue_eval("third", {
+			on_complete = function(ok)
+				table.insert(completed, { "third", ok })
+			end,
+		})
 		core.handle_mvm_state_change({ state = "connected", release = "R2024a" }, 41)
 
 		assert.are.equal(2, core.cancel_queued())
@@ -360,12 +368,16 @@ describe("MATLAB execution client", function()
 
 	it("stops the session and fails all pending work", function()
 		local completed = {}
-		core.enqueue_eval("first", { on_complete = function(ok)
-			table.insert(completed, ok)
-		end })
-		core.enqueue_eval("second", { on_complete = function(ok)
-			table.insert(completed, ok)
-		end })
+		core.enqueue_eval("first", {
+			on_complete = function(ok)
+				table.insert(completed, ok)
+			end,
+		})
+		core.enqueue_eval("second", {
+			on_complete = function(ok)
+				table.insert(completed, ok)
+			end,
+		})
 		core.handle_mvm_state_change({ state = "connected", release = "R2024a" }, 41)
 
 		assert.is_true(core.stop_session())
@@ -386,5 +398,32 @@ describe("MATLAB execution client", function()
 		assert.are.equal(42, core._snapshot().client_id)
 		assert.are.equal("C:/repo-two", core._snapshot().root_dir)
 		assert.are.equal("connecting", core._snapshot().state)
+	end)
+
+	it("publishes connection state immediately and stops after unsubscribe", function()
+		local events = {}
+		local unsubscribe = core.subscribe_connection_state(function(state, opts)
+			table.insert(events, { state = state, release = opts.release })
+		end)
+
+		assert.is_function(unsubscribe)
+		assert.same({ { state = "disconnected" } }, events)
+
+		assert.is_true(core.ensure_client(1))
+		assert.same({
+			{ state = "disconnected" },
+			{ state = "connecting" },
+		}, events)
+
+		core.handle_mvm_state_change({ state = "connected", release = "R2024a" }, 41)
+		assert.same({
+			{ state = "disconnected" },
+			{ state = "connecting" },
+			{ state = "connected", release = "R2024a" },
+		}, events)
+
+		unsubscribe()
+		core.handle_mvm_state_change({ state = "disconnected" }, 41)
+		assert.are.equal(3, #events)
 	end)
 end)

@@ -2,6 +2,8 @@ local M = {}
 
 local options = {}
 local request_counter = 0
+local connection_subscriber_counter = 0
+local connection_subscribers = {}
 local connection = {
 	state = "disconnected",
 	release = nil,
@@ -110,6 +112,13 @@ local function set_connection_state(state, opts)
 	opts = opts or {}
 	connection.state = state
 	connection.release = opts.release
+	local subscribers = {}
+	for _, subscriber in pairs(connection_subscribers) do
+		table.insert(subscribers, subscriber)
+	end
+	for _, subscriber in ipairs(subscribers) do
+		subscriber(state, opts)
+	end
 	local update = status().update
 	local update_command_window = require("config.matlab.command_window").handle_connection_state
 	vim.schedule(function()
@@ -171,6 +180,18 @@ end
 
 function M.is_exec_client(client_id)
 	return client_id ~= nil and client_id == connection.client_id
+end
+
+function M.subscribe_connection_state(callback)
+	assert(type(callback) == "function", "MATLAB connection state subscriber must be a function")
+	connection_subscriber_counter = connection_subscriber_counter + 1
+	local subscriber_id = connection_subscriber_counter
+	connection_subscribers[subscriber_id] = callback
+	callback(connection.state, { release = connection.release })
+
+	return function()
+		connection_subscribers[subscriber_id] = nil
+	end
 end
 
 function M.get_exec_client()
@@ -481,6 +502,8 @@ function M._reset_for_tests()
 	connection.queue = {}
 	connection.inflight = nil
 	request_counter = 0
+	connection_subscriber_counter = 0
+	connection_subscribers = {}
 	options = default_options()
 end
 

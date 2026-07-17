@@ -57,6 +57,27 @@ function M.handlers()
 				require("config.matlab.workspace").handle_server_message(result, ctx.client_id)
 			end
 		end,
+		DebugAdaptorResponse = function(_, result, ctx)
+			if from_exec_client(ctx) then
+				local response = exec_payload(result, "debugResponse", "DebugAdaptorResponse")
+				exec_payload(result, "tag", "DebugAdaptorResponse")
+				assert(type(response) == "table", "DebugAdaptorResponse debugResponse must be a table")
+				require("config.matlab.dap").handle_response(result, ctx.client_id)
+			end
+		end,
+		DebugAdaptorEvent = function(_, result, ctx)
+			if from_exec_client(ctx) then
+				local event = exec_payload(result, "debugEvent", "DebugAdaptorEvent")
+				assert(type(event) == "table", "DebugAdaptorEvent debugEvent must be a table")
+				require("config.matlab.dap").handle_event(result, ctx.client_id)
+			end
+		end,
+		DebuggingStateChange = function(_, result, ctx)
+			if from_exec_client(ctx) then
+				assert(type(result) == "boolean", "DebuggingStateChange payload must be a boolean")
+				require("config.matlab.dap").handle_debugging_state_change(result, ctx.client_id)
+			end
+		end,
 		["matlab/launchfailed"] = function(_, _, ctx)
 			if from_exec_client(ctx) then
 				require("config.matlab.core").handle_launch_failed(ctx.client_id, "MATLAB failed to launch")
