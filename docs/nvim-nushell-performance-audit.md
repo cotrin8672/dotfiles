@@ -153,11 +153,11 @@ Gitリポジトリ内の実ファイルでVeryLazyを発火すると、同期部
 
 空バッファ起動300ms後のロード数を **17 / 108から11 / 107**へ削減した。Kensaku/Denops、配色、Starter、Tabby、Snacks、Lualine、Sessionsは維持し、用途が限定される以下の初期ロードだけを移動した。
 
-* `nvim-dap-virtual-text`の独立start specをDAPのdependencyへ統合した。起動時はDAP本体とも未ロードで、`nvim-dap`ロード時に両方がロード・setupされることを確認した。
+* `nvim-dap-virtual-text`の独立start specをDAPのdependencyへ統合した。起動時はDAP本体とも未ロードで、`nvim-dap`ロード時に両方がロード・setupされることを確認した。旧module名を保持したlazy.nvim/`vim.loader`キャッシュからのimportエラーを避けるため、旧specファイル自体は空の互換stubとして残す。
 * `kross.nvim`をlazy化した。空バッファでは未ロード、`nvim-jdtls`ロード時にはKrossもロードされることを確認した。
 * `mason.nvim`をMason各commandとMason系plugin dependencyによるロードへ変更した。通常のLua fileでは`nvim-lspconfig`だけがロードされ、Masonは未ロードのままLSP設定が成立する。
 * `mini.bufremove`をTabbyの起動時dependencyから外し、既存の`<leader>x`でロードする。実キーcallbackによるロードとbuffer削除を確認した。
-* `mini.visits`は現在のMiniStarterから参照されていなかった。session表示は`MiniSessions.detected`、recent filesは`vim.v.oldfiles`を直接使っており、`MiniVisits`のsetup・参照が存在しないためspecを削除した。
+* `mini.visits`は現在のMiniStarterから参照されていなかった。session表示は`MiniSessions.detected`、recent filesは`vim.v.oldfiles`を直接使っており、`MiniVisits`のsetup・参照が存在しないためplugin specは除去した。ただし旧module名を保持したキャッシュとの互換性のため、同名ファイルは空のimportとして残す。
 * Cyberdreamのcacheを有効化し、extensionを実際に使用するBlink/DAP UI/Gitsigns/Lazy/render-markdown/Mini/Noice/Notify/Rainbow delimiters/Snacks/Treesitter/Treesitter context/Troubleだけに限定した。各extensionの代表highlightが生成されることを確認した。
 * `init.lua`ですでに`loaded_*`を設定して無効化していた標準runtime pluginをlazy.nvimの`performance.rtp.disabled_plugins`にも登録し、無効なscriptを開いて即returnするファイルI/Oを除去した。OSC52とEditorConfigは従来どおり維持する。
 
