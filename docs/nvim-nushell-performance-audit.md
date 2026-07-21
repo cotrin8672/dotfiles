@@ -155,7 +155,7 @@ Gitリポジトリ内の実ファイルでVeryLazyを発火すると、同期部
 
 * `nvim-dap-virtual-text`のspecは元のファイルに維持したままlazy化し、DAP側からdependencyとして参照する。起動時はDAP本体とも未ロードで、`nvim-dap`ロード時に両方がロード・setupされることを確認した。
 * `kross.nvim`をlazy化した。空バッファでは未ロード、`nvim-jdtls`ロード時にはKrossもロードされることを確認した。
-* `mason.nvim`をMason各commandとMason系plugin dependencyによるロードへ変更した。通常のLua fileでは`nvim-lspconfig`だけがロードされ、Masonは未ロードのままLSP設定が成立する。
+* `mason.nvim`をMason各commandとMason系plugin dependencyによるロードへ変更した。軽量なspec `init`では従来`mason.setup()`が公開していた`$MASON`とMasonの`bin` PATHだけを設定するため、Kotlin LSPなどのconsumerはインストール済みtoolを遅延ロード前にも探索できる。Kotlin実ファイルでMason本体を未ロードに保ったまま、`kotlin-lsp` rootとnative launcherの解決を確認した。
 * `mini.bufremove`をTabbyの起動時dependencyから外し、既存の`<leader>x`でロードする。実キーcallbackによるロードとbuffer削除を確認した。
 * `mini.visits`のspecと機能は維持し、start pluginからmodule-demand lazyへ変更した。現在のMiniStarterはsession表示に`MiniSessions.detected`、recent filesに`vim.v.oldfiles`を直接使うため起動時には未ロードだが、`require("mini.visits")`時にはlazy.nvimのmodule loaderからロードされる。
 * Cyberdreamのcacheを有効化し、extensionを実際に使用するBlink/DAP UI/Gitsigns/Lazy/render-markdown/Mini/Noice/Notify/Rainbow delimiters/Snacks/Treesitter/Treesitter context/Troubleだけに限定した。各extensionの代表highlightが生成されることを確認した。

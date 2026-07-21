@@ -1,6 +1,16 @@
 return {
 	{
 		"mason-org/mason.nvim",
+		init = function()
+			local mason_root = vim.env.MASON or vim.fs.joinpath(vim.fn.stdpath("data"), "mason")
+			local path_separator = vim.fn.has("win32") == 1 and ";" or ":"
+			local mason_bin_prefix = vim.fs.joinpath(mason_root, "bin") .. path_separator
+
+			vim.env.MASON = mason_root
+			if not vim.startswith(vim.env.PATH or "", mason_bin_prefix) then
+				vim.env.PATH = mason_bin_prefix .. (vim.env.PATH or "")
+			end
+		end,
 		cmd = {
 			"Mason",
 			"MasonInstall",
@@ -10,7 +20,7 @@ return {
 			"MasonLog",
 		},
 		opts = {
-			PATH = "prepend",
+			PATH = "skip",
 			registries = {
 				"github:mason-org/mason-registry",
 			},
