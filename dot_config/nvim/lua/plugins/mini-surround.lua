@@ -1,6 +1,6 @@
 return {
 	"nvim-mini/mini.surround",
-	event = "VeryLazy",
+	keys = { "sa", "sd", "sf", "sF", "sh", "sr", "sn" },
 	opts = {
 		custom_surroundings = {
 			l = {

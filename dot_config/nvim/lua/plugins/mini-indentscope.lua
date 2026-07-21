@@ -1,5 +1,6 @@
 ﻿return {
 	"nvim-mini/mini.indentscope",
+	enabled = false,
 	event = { "BufReadPost", "BufNewFile" },
 
 	opts = function()

@@ -1,6 +1,9 @@
 return {
 	"akinsho/toggleterm.nvim",
-	event = "VeryLazy",
+	keys = {
+		{ "<leader>f", mode = "n", desc = "Float Terminal" },
+		{ "<leader>gg", mode = "n", desc = "LazyGit Float" },
+	},
 	config = function()
 		local normal = vim.api.nvim_get_hl(0, { name = "Normal", link = false })
 		local normal_float = vim.api.nvim_get_hl(0, { name = "NormalFloat", link = false })

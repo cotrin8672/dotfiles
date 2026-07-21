@@ -1,6 +1,12 @@
 return {
 	"mfussenegger/nvim-dap",
-	event = "VeryLazy",
+	keys = {
+		{ "<F5>", function() require("dap").continue() end, desc = "Debug continue" },
+		{ "<F9>", function() require("dap").toggle_breakpoint() end, desc = "Toggle breakpoint" },
+	},
+	dependencies = {
+		"theHamsta/nvim-dap-virtual-text",
+	},
 	config = function()
 		local _ = require("dap")
 

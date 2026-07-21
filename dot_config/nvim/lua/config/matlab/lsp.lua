@@ -10,8 +10,8 @@ function M.setup(capabilities)
 			MATLAB = {
 				indexWorkspace = false,
 				installPath = matlab_install_path,
-				matlabConnectionTiming = "onStart",
-				telemetry = true,
+			matlabConnectionTiming = "onDemand",
+			telemetry = false,
 			},
 		},
 	})

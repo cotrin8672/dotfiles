@@ -1,4 +1,5 @@
 local M = {}
+local icon_cache = {}
 
 local function is_jdtls_class_buffer(bufnr)
 	if vim.bo[bufnr].buftype ~= "nofile" or vim.bo[bufnr].filetype ~= "java" then
@@ -100,6 +101,10 @@ end
 
 local function buffer_file_icon(bufnr, bg_hl)
 	local path = vim.api.nvim_buf_get_name(bufnr)
+	local cached = icon_cache[bufnr]
+	if cached and cached.path == path and cached.bg_hl == bg_hl then
+		return cached.value
+	end
 	local category = vim.fn.isdirectory(path) == 1 and "directory" or "file"
 	local ok, icon, icon_hl = pcall(require("mini.icons").get, category, path)
 	if not ok then
@@ -113,7 +118,9 @@ local function buffer_file_icon(bufnr, bg_hl)
 		bg = get_hl_attr(bg_hl, "bg"),
 	})
 
-	return { icon, hl = hl }
+	local value = { icon, hl = hl }
+	icon_cache[bufnr] = { path = path, bg_hl = bg_hl, value = value }
+	return value
 end
 
 return vim.tbl_extend("force", M, {
@@ -128,7 +135,15 @@ return vim.tbl_extend("force", M, {
 
 		vim.api.nvim_create_autocmd("ColorScheme", {
 			group = vim.api.nvim_create_augroup("TabbyContrastColors", { clear = true }),
-			callback = apply_tabby_highlights,
+			callback = function()
+				icon_cache = {}
+				apply_tabby_highlights()
+			end,
+		})
+		vim.api.nvim_create_autocmd({ "BufFilePost", "BufWipeout" }, {
+			callback = function(args)
+				icon_cache[args.buf] = nil
+			end,
 		})
 
 		local theme = {

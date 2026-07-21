@@ -1,6 +1,5 @@
 return {
 	"y3owk1n/undo-glow.nvim",
-	event = "VeryLazy",
 	opts = function()
 		local fallback = {}
 		local function hl(name, key)
@@ -18,7 +17,7 @@ return {
 		return {
 			fallback_for_transparency = fallback,
 			animation = {
-				enabled = true,
+				enabled = false,
 				duration = 300,
 				animation_type = "fade",
 				window_scoped = true,

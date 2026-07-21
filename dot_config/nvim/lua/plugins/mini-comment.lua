@@ -1,6 +1,6 @@
 return {
 	"nvim-mini/mini.comment",
-	event = "VeryLazy",
+	keys = { "gc", "gcc" },
 	opts = {
 		mappings = {
 			comment = "gc",

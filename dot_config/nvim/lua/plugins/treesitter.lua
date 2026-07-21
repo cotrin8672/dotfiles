@@ -18,6 +18,7 @@ local parsers = {
 	"latex",
 	"matlab",
 }
+local performance = require("config.performance")
 
 return {
 	"nvim-treesitter/nvim-treesitter",
@@ -46,13 +47,15 @@ return {
 		vim.api.nvim_create_autocmd("FileType", {
 			group = group,
 			callback = function(event)
-				pcall(vim.treesitter.start, event.buf)
+				if not performance.disable_treesitter(event.buf) then
+					pcall(vim.treesitter.start, event.buf)
+				end
 			end,
 		})
 
 		vim.schedule(function()
 			for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-				if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].filetype ~= "" then
+				if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].filetype ~= "" and not performance.disable_treesitter(buf) then
 					pcall(vim.treesitter.start, buf)
 				end
 			end

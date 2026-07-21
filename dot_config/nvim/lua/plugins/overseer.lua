@@ -1,6 +1,6 @@
 return {
 	"stevearc/overseer.nvim",
-	event = "VeryLazy",
+	cmd = { "OverseerToggle", "OverseerRun", "OverseerRunCmd" },
 	opts = {
 		dap = true,
 	},

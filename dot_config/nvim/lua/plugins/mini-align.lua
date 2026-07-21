@@ -1,6 +1,6 @@
 return {
 	"nvim-mini/mini.align",
-	event = "VeryLazy",
+	keys = { "ga", "<leader>al" },
 	opts = {
 		mappings = {
 			start = "ga",

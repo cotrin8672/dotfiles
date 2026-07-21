@@ -5,7 +5,7 @@ return {
 	opts = {
 		enable_autosnippets = true,
 		history = true,
-		update_events = "TextChanged,TextChangedI",
+		update_events = "TextChanged",
 		delete_check_events = "TextChanged",
 	},
 	config = function(_, opts)

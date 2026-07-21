@@ -1,6 +1,6 @@
 return {
 	"cotrin8672/wise-backspace.nvim",
-	event = { "InsertEnter", "CmdlineEnter" },
+	event = { "BufReadPost", "BufNewFile", "CmdlineEnter" },
 	opts = {
 		ignored_filetypes = {
 			"",

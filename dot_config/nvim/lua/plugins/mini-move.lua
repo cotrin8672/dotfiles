@@ -1,5 +1,5 @@
 return {
 	"nvim-mini/mini.move",
-	event = "VeryLazy",
+	keys = { "<M-h>", "<M-j>", "<M-k>", "<M-l>" },
 	opts = {},
 }

@@ -113,17 +113,21 @@ def git_status_data [] {
     $data
 }
 
-def git_stash_count [] {
-    let result = (^git stash list | complete)
-    if $result.exit_code != 0 {
-        0
-    } else {
-        ($result.stdout | lines | length)
+def --env git_status_cached [] {
+    let cwd = (pwd)
+    let cached = ($env.GIT_PROMPT_CACHE? | default {})
+
+    if (($cached.cwd? | default '') == $cwd) {
+        return ($cached.data? | default null)
     }
+
+    let data = (git_status_data)
+    $env.GIT_PROMPT_CACHE = { cwd: $cwd data: $data }
+    $data
 }
 
-def git_block [] {
-    let data = (git_status_data)
+def --env git_block [] {
+    let data = (git_status_cached)
     if $data == null {
         return ''
     }
@@ -152,10 +156,6 @@ def git_block [] {
         $details = ($details | append ((ansi { fg: $clean bg: $git_bg }) + $"⇡($data.ahead)"))
     }
 
-    let stash_count = (git_stash_count)
-    if $stash_count > 0 {
-        $details = ($details | append ((ansi { fg: $clean bg: $git_bg }) + $"*($stash_count)"))
-    }
     if $data.conflicted > 0 {
         $details = ($details | append ((ansi { fg: $conflicted bg: $git_bg }) + $"~($data.conflicted)"))
     }
