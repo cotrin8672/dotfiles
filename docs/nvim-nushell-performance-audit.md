@@ -13,10 +13,21 @@ Nushell の主要な待ち時間は起動ではなく、プロンプト復帰ご
 
 | 箇所 | 実測 | 影響 | 提案 |
 |---|---:|---|---|
-| `dot_config/nushell/mise.nu:10-11,55-58` | `mise hook-env -s nu` median 137.6ms, p95 148.7ms | `pre_prompt` と PWD変更で重複起動する | 同一PWDでの`mise use`即時反映を守るためhookは維持。上流側の高速化なしに削除しない |
+| `dot_config/nushell/mise.nu` | 温状態の`mise hook-env -s nu` median 172.708ms, p95 244.619ms。変更なしfingerprint hookはmedian 4.468ms, p95 6.232ms | 毎promptの外部プロセス起動を除去 | PWD変更・設定変更・明示的なmise変更時だけ同期更新し、通常promptはNushell組み込み処理だけでmtime/sizeを比較する |
 | `dot_config/nushell/prompt.nu:58` | `git status --porcelain=v2 --branch` median 63.8ms | プロンプトごとに起動 | 表示が古くなるPWD/TTL cacheは使わず、stash取得と1プロセスへ統合 |
 | `dot_config/nushell/prompt.nu:117` | `git stash list` median 86.7ms, p95 104.5ms | プロンプトごとに全stash列挙 | `git status --show-stash`へ統合し、stash表示は維持 |
 | `PROMPT_COMMAND` 全体 | median 150.7ms, p95 165.6ms | Git repo内でプロンプト復帰を阻害 | 非repoでGit起動を避け、失敗コマンド後だけ更新 |
+
+### miseのfingerprint更新
+
+`mise activate nu`の生成物を起動時に保存する方式をやめ、`dot_config/nushell/mise.nu`をchezmoiで追跡する独自moduleへ置き換えた。通常promptでは外部プロセスを起動せず、PWDからHOMEまでのmise設定候補、global config、`conf.d`の存在・mtime・sizeからfingerprintを作る。
+
+* PWD変更時は、次のコマンドが古いtool環境で実行されないよう`hook-env`を同期実行し、新しい階層のfingerprintを保存する。
+* `.mise.toml`、`mise.toml`、`.tool-versions`、local/env別config、global configの作成・更新・削除を毎promptの軽量fingerprintで検出し、実際に変化していれば同期更新する。
+* `mise use`、`unuse`、`settings`、install/upgrade/plugin系など環境を変え得る明示コマンドは、成功後に同期更新する。`shell`、`deactivate`も従来どおり現在のNushell環境へ直接反映する。
+* 通常prompt 1,000回のmedianは **4.4684ms**、p95は **6.2322ms**。温状態の外部`hook-env` 100回のmedian **172.7079ms**、p95 **244.6188ms**に対して、通常promptのmise待ちを **97.413%** 削減した。
+* background jobは使わない。対話shellの`exit`、job一覧、CPU/handle使用量を変えず、非対話Nushellではprompt hook自体を登録しない。
+* PWD変更の同期更新は実測 **241.568ms**。これは環境の正しさのため変更時だけ支払い、通常promptには持ち込まない。
 | `dot_config/nushell/config.nu:23-36` | 補完14本の無条件sourceは +58.8ms (515KB, 7,672行) | 起動コスト | git/uv/cargo/ghからオンデマンド化 |
 
 通常のプロンプト復帰は mise と Git prompt の合計で約288ms median、`cd` 後は約426ms規模になる。zoxide PWD hook は median 0.435msであり優先度は低い。
@@ -135,7 +146,8 @@ Gitリポジトリ内の実ファイルでVeryLazyを発火すると、同期部
 * KotlinのOil/Trouble依存、JavaのBlink capability、MATLABの自動起動/onStart接続、InsertLeave lint、TextChangedI snippet更新、500ms formatter待機は元のまま維持する。
 * Treesitter、rainbow delimiters、mini.indentscope、mini.hipatterns、複数行diagnostic、untracked fileのgitsigns、undo animationはサイズやfiletypeによらず維持する。25,000行のLuaバッファでもTreesitter activeを確認した。
 * Tabbyのアイコン・highlight解決結果だけをバッファ単位でキャッシュし、表示内容は変えずに再描画コストを削減した。
-* Nushellのmise pre_prompt hookは、同一PWDでの`mise use`直後の環境反映を守るため維持した。Git promptは鮮度を落とすcacheを使わず、`git status --porcelain=v2 --branch --show-stash`一回でstatusとstash数を取得する。同一run各5回のmedianはstatus **394.231ms** + stash **322.636ms** 相当から統合 **299.274ms** となり、表示内容を保ったまま約 **417.6ms（58.3%）** 削減した（dirty worktreeでの補正計測）。
+* Nushellのmiseは設定fingerprint方式へ変更し、通常promptでは外部プロセスを起動しない。PWD変更、設定ファイル変更、`mise use`等の明示的変更では同期更新するため、環境反映の鮮度は維持する。
+* Git promptは鮮度を落とすcacheを使わず、`git status --porcelain=v2 --branch --show-stash`一回でstatusとstash数を取得する。同一run各5回のmedianはstatus **394.231ms** + stash **322.636ms** 相当から統合 **299.274ms** となり、表示内容を保ったまま約 **417.6ms（58.3%）** 削減した（dirty worktreeでの補正計測）。
 
 ## 外部の基準・一次資料
 

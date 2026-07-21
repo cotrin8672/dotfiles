@@ -16,10 +16,6 @@
 #
 # You can remove these comments if you want or leave
 # them for future reference.
-let mise_path = $nu.default-config-dir | path join mise.nu
-if not ($mise_path | path exists) {
-    ^mise activate nu | save $mise_path
-}
 $env.PYTHONUTF8 = "1"
 
 if $nu.os-info.name == "windows" and ("SSH_AUTH_SOCK" in $env) {
