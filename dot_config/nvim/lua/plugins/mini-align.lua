@@ -1,6 +1,9 @@
 return {
 	"nvim-mini/mini.align",
-	keys = { "ga", "<leader>al" },
+	keys = {
+		{ "ga", mode = { "n", "x" } },
+		{ "<leader>al", mode = { "n", "x" } },
+	},
 	opts = {
 		mappings = {
 			start = "ga",

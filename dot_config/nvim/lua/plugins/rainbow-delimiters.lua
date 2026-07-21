@@ -6,15 +6,9 @@ return {
 	},
 	config = function()
 		local rainbow_delimiters = require("rainbow-delimiters")
-		local performance = require("config.performance")
 		vim.g.rainbow_delimiters = {
 			strategy = {
-				[""] = function(bufnr)
-					if performance.disable_decorations(bufnr) then
-						return nil
-					end
-					return rainbow_delimiters.strategy["global"]
-				end,
+				[""] = rainbow_delimiters.strategy["global"],
 				vim = rainbow_delimiters.strategy["local"],
 			},
 			query = {

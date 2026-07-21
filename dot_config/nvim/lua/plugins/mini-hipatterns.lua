@@ -1,6 +1,6 @@
 return {
 	"nvim-mini/mini.hipatterns",
-	ft = { "css", "html", "javascript", "javascriptreact", "typescript", "typescriptreact" },
+	event = { "BufReadPost", "BufNewFile" },
 	opts = function()
 		local hipatterns = require("mini.hipatterns")
 

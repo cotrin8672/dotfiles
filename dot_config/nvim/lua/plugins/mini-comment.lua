@@ -1,6 +1,9 @@
 return {
 	"nvim-mini/mini.comment",
-	keys = { "gc", "gcc" },
+	keys = {
+		{ "gc", mode = { "n", "x", "o" } },
+		{ "gcc", mode = "n" },
+	},
 	opts = {
 		mappings = {
 			comment = "gc",

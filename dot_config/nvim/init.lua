@@ -69,11 +69,6 @@ vim.opt.virtualedit = "block"
 vim.opt.autoread = true
 vim.opt.sessionoptions:remove({ "blank", "terminal" })
 vim.o.showtabline = 2
-vim.opt.timeoutlen = 300
-vim.opt.updatetime = 250
-vim.opt.redrawtime = 250
-
-require("config.performance").setup()
 
 local indent_group = vim.api.nvim_create_augroup("IndentDefaults", { clear = true })
 
@@ -118,7 +113,7 @@ vim.api.nvim_create_autocmd("FileType", {
 	callback = set_indent(4),
 })
 
-vim.api.nvim_create_autocmd("FocusGained", {
+vim.api.nvim_create_autocmd({ "WinEnter", "FocusGained", "BufEnter" }, {
 	pattern = "*",
 	command = "checktime",
 })

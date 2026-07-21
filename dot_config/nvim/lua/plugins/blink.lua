@@ -9,7 +9,8 @@ return {
 			lazy = true,
 		},
 		"L3MON4D3/LuaSnip",
-		{ "erooke/blink-cmp-latex", ft = { "markdown", "tex", "plaintex", "latex" } },
+		"erooke/blink-cmp-latex",
+		"mcdev-nvim",
 	},
 	event = { "BufReadPost", "BufNewFile" },
 	opts = {
@@ -36,15 +37,13 @@ return {
 			},
 			ghost_text = {
 				enabled = true,
-				show_with_menu = false,
+				show_with_menu = true,
 			},
 			menu = {
 				winblend = float.blend,
-				auto_show_delay_ms = 50,
 			},
 			documentation = {
-				auto_show = false,
-				auto_show_delay_ms = 300,
+				auto_show = true,
 				window = {
 					winblend = float.blend,
 					direction_priority = {
@@ -57,24 +56,24 @@ return {
 				range = "full",
 			},
 		},
-			sources = {
-				default = function()
-					local sources = { "snippets", "buffer", "path", "lsp" }
-					if vim.bo.filetype == "lua" then
-						table.insert(sources, "lazydev")
-					elseif vim.bo.filetype == "java" then
-						table.insert(sources, "mcdev")
-					end
-					if vim.g.copilot_enabled == true then
-						table.insert(sources, "copilot")
-					end
-					return sources
-				end,
+		sources = {
+			default = {
+				"snippets",
+				"lazydev",
+				"copilot",
+				"buffer",
+				"path",
+				"lsp",
+				"mcdev",
+			},
 			providers = {
 				lazydev = {
 					name = "LazyDev",
 					module = "lazydev.integrations.blink",
 					score_offset = 100,
+					enabled = function()
+						return vim.bo.filetype == "lua"
+					end,
 				},
 				copilot = {
 					name = "copilot",
@@ -99,6 +98,9 @@ return {
 				mcdev = {
 					name = "mcdev",
 					module = "mcdev.blink",
+					enabled = function()
+						return vim.bo.filetype == "java"
+					end,
 				},
 			},
 		},

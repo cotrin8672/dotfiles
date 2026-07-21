@@ -1,7 +1,11 @@
 return {
 	"AlexandrosAlexiou/kotlin.nvim",
 	ft = { "kotlin" },
-	dependencies = { "neovim/nvim-lspconfig" },
+	dependencies = {
+		"neovim/nvim-lspconfig",
+		"stevearc/oil.nvim",
+		"folke/trouble.nvim",
+	},
 	config = function()
 		require("kotlin").setup({
 			root_markers = {

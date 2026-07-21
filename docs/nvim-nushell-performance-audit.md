@@ -13,9 +13,9 @@ Nushell の主要な待ち時間は起動ではなく、プロンプト復帰ご
 
 | 箇所 | 実測 | 影響 | 提案 |
 |---|---:|---|---|
-| `dot_config/nushell/mise.nu:10-11,55-58` | `mise hook-env -s nu` median 137.6ms, p95 148.7ms | `pre_prompt` と PWD変更で重複起動する | `pre_prompt` を削除し、初期化時1回とPWD変更時だけ実行 |
-| `dot_config/nushell/prompt.nu:58` | `git status --porcelain=v2 --branch` median 63.8ms | プロンプトごとに起動 | PWD単位/短TTLでキャッシュ |
-| `dot_config/nushell/prompt.nu:117` | `git stash list` median 86.7ms, p95 104.5ms | プロンプトごとに全stash列挙 | 表示を削除、または独立キャッシュ |
+| `dot_config/nushell/mise.nu:10-11,55-58` | `mise hook-env -s nu` median 137.6ms, p95 148.7ms | `pre_prompt` と PWD変更で重複起動する | 同一PWDでの`mise use`即時反映を守るためhookは維持。上流側の高速化なしに削除しない |
+| `dot_config/nushell/prompt.nu:58` | `git status --porcelain=v2 --branch` median 63.8ms | プロンプトごとに起動 | 表示が古くなるPWD/TTL cacheは使わず、stash取得と1プロセスへ統合 |
+| `dot_config/nushell/prompt.nu:117` | `git stash list` median 86.7ms, p95 104.5ms | プロンプトごとに全stash列挙 | `git status --show-stash`へ統合し、stash表示は維持 |
 | `PROMPT_COMMAND` 全体 | median 150.7ms, p95 165.6ms | Git repo内でプロンプト復帰を阻害 | 非repoでGit起動を避け、失敗コマンド後だけ更新 |
 | `dot_config/nushell/config.nu:23-36` | 補完14本の無条件sourceは +58.8ms (515KB, 7,672行) | 起動コスト | git/uv/cargo/ghからオンデマンド化 |
 
@@ -92,14 +92,14 @@ Gitリポジトリ内の実ファイルでVeryLazyを発火すると、同期部
 | 優先 | 箇所 | 根拠 | 改善案 |
 |---|---|---|---|
 | P0 | `plugins/*` の `event = "VeryLazy"` | 30プラグイン / 1,502.6ms同期ロード | イベントを分割し、キー/コマンド主体へ戻す |
-| P0 | `plugins/kotlin.lua:3-8` | Kotlin初回586.4ms。OilとTroubleを単なるdependencyとしてロード | Oil/Troubleを依存から外し、必要コマンドでロード |
-| P0 | `plugins/jdtls.lua:28-30` | Java初回でblink/LuaSnip等を引き込む | `require("blink.cmp")`を事前ロードしない。capabilityは遅延取得するか共通LSP設定へ |
-| P0 | `config/matlab/lsp.lua:13-14` | MATLAB初回668.8ms、matlab_lsが開いた時点で接続 | `matlabConnectionTiming`をonDemandにし、telemetryを無効化。明示接続にする |
-| P0 | `plugins/nvim-lint.lua:21-26` | InsertLeaveごとに外部lint | 保存時のみ、または変更時debounce |
-| P0 | `plugins/luasnip.lua:8-9` | TextChangedIごとに更新 | TextChangedのみ、autosnippet不要ならoff |
-| P1 | `init.lua:116-119` | `checktime`をBufEnter/WinEnter/FocusGainedで実行。ローカル100回3.221ms | FocusGainedのみへ限定 |
-| P1 | TS装飾群 | 全filetypeでTS、rainbow、context、hlchunk、mini.indentscope、hipatterns、cursorwordが重複 | indent guideを一本化し、残りをサイズ/ftで制限 |
-| P1 | `tiny-inline-diagnostic.lua:11-18` | cursorline全診断と複数行の表示 | multilineと全診断表示をoff |
+| P0 | `plugins/kotlin.lua:3-8` | Kotlin初回586.4ms。OilとTroubleをdependencyとしてロード | 連携機能を維持したまま、上流が対応する場合だけ内部requireをオンデマンド化 |
+| P0 | `plugins/jdtls.lua:28-30` | Java初回でblink/LuaSnip等を引き込む | capabilityを失わない静的生成経路へ移せるか検証。現状は完全なcapabilityを優先 |
+| P0 | `config/matlab/lsp.lua:13-14` | MATLAB初回668.8ms、matlab_lsが開いた時点で接続 | 自動接続を維持し、接続処理を非同期化できる上流APIを検証 |
+| P0 | `plugins/nvim-lint.lua:21-26` | InsertLeaveごとに外部lint | 表示タイミングを変えない範囲で同一changedtickの重複実行だけ抑止 |
+| P0 | `plugins/luasnip.lua:8-9` | TextChangedIごとに更新 | eventは維持し、LuaSnip側の重複更新有無をprofileしてから最適化 |
+| P1 | `init.lua:116-119` | `checktime`をBufEnter/WinEnter/FocusGainedで実行。ローカル100回3.221ms | 外部変更検知を維持するためイベントは残し、同一buffer/tickでの重複だけ抑止 |
+| P1 | TS装飾群 | 全filetypeでTS、rainbow、context、hlchunk、mini.indentscope、hipatterns、cursorwordが重複 | 機能は維持し、共有parse/callbackの重複と再描画回数をprofileして削減 |
+| P1 | `tiny-inline-diagnostic.lua:11-18` | cursorline全診断と複数行の表示 | 表示は維持し、診断未変更時の再計算・再描画を抑止できるか上流で検証 |
 | P1 | `tabby.lua:163-180` | tabline描画ごとにバッファ全走査、ディレクトリ判定、icon/HL生成 | バッファアイコン/HLをキャッシュ |
 | P1 | `shared/java_kotlin_package.lua:34-41` | Java/Kotlin初回Enterで全行取得し空行走査 | BufNewFile限定、既存ファイルで全走査しない |
 | P2 | `plugins/obsidian.lua:5-14` | `event`が二重テーブルでLazy specとして不正な形 | proper event specへ修正。性能前に意図した遅延ロードを保証 |
@@ -114,10 +114,10 @@ Gitリポジトリ内の実ファイルでVeryLazyを発火すると、同期部
 ### 補完・キー待機・描画ガード
 
 * 現在のBlink設定は全filetypeで `snippets`, `lazydev`, `copilot`, `buffer`, `path`, `lsp`, `mcdev` をsourceとして列挙する。標準はLSP/path/snippet/bufferの4本なので、Lua/Minecraft/Copilot以外でも追加provider判定をしている。`mcdev`はJava関連、`lazydev`はLua、Copilotは有効時だけに絞る。
-* `completion.documentation.auto_show=true` は候補選択時にTreesitterベースのdocumentation window描画を許可する。Blink自身の設定検証はdocumentationのupdate delayを50ms未満にすると「noticeable lag」と明示している。最上級の入力UXではauto_showをoffにし、必要時だけキーでdocumentationを開く。
+* `completion.documentation.auto_show=true` は候補選択時にTreesitterベースのdocumentation window描画を許可する。Blink自身の設定検証はdocumentationのupdate delayを50ms未満にすると「noticeable lag」と明示している。表示機能は維持し、既定delay未満へ短縮しない。
 * Blinkの公開ベンチマークは1文字ごと0.5--4ms（async, single core）をうたう。この値をcompletion coreの理論目標とし、設定側の初回InsertEnter 86--104ms、追加source、documentation、ghost textを別予算で監視する。
 * 実効設定は `timeoutlen=1000`, `ttimeoutlen=50`, `updatetime=4000`, `redrawtime=2000`。`timeoutlen`を明示していないため、曖昧な通常マッピングは最大1秒待機し得る。`mini.clue`は`g`、`[`, `]`, `<Leader>`を独自のkey-query triggerにし、既定window delayも1000msである。操作ガイドを残すならdelay 150--250ms、キー即応を最優先するならmini.clueの常時triggerを無効化する。
-* `redrawtime=2000` は複雑なsyntax/hlsearch/async Treesitter parseに最大2秒を許す安全弁である。Tree-sitter由来の長い停止を隠すのではなく、サイズ制限で先に回避する。目安は100KBまたは5,000行で補助装飾を切り、1MBまたは20,000行でTreesitter highlightまで切る（text object等の必要機能は別判定）。
+* `redrawtime=2000` は複雑なsyntax/hlsearch/async Treesitter parseに最大2秒を許す安全弁である。短縮するとhighlightが打ち切られるため維持する。large-bufferでも機能を切らず、上流のincremental parseと重複callback削減を優先する。
 
 ## 次の計測
 
@@ -127,16 +127,19 @@ Gitリポジトリ内の実ファイルでVeryLazyを発火すると、同期部
 
 ## 2026-07-21 実装した対策と再計測
 
-* `VeryLazy`一括群を、キー/コマンド/適切なイベントへ移動し、DAP/Overseer/Toggleterm/Flash/mini編集操作をオンデマンド化した。NoiceはCmdlineEnter、lualineはVimEnter、statuscolとgitsignsはBufReadPostへ移した。視覚効果だけのDropbar、Satellite、Neoscroll、mini.indentscopeを無効化した。
-* warm測定でVeryLazy同期ロードは **30プラグインから8プラグイン**、**177--193msから64.500ms** になった。まだ50msの厳格上限をわずかに超えるため、残ったmini操作系・marks・日本語word motionを必要キーまで細分化する余地がある。
-* Blink/LuaSnip/autopairs/wise-backspaceをBufReadPost/BufNewFileで準備し、最初の入力にロードを持ち込まないようにした。JSONのwarm InsertEnterは **17.839ms、ロード増分0**。16ms目標へほぼ到達しており、cold値はモジュール/OSキャッシュの影響を受ける。
-* KotlinからOil/ Troubleの不必要な依存を外し、JavaがBlinkを強制requireしないようにした。MATLABはon-demand接続・telemetry off・自動接続offへ変更した。
-* 大きいバッファ向けに、100KB/5,000行で補助装飾を切り、1MB/20,000行でTreesitter開始を抑止する共通policyを導入した。
-* Nushellは生成済み`mise.nu`が追加する最後の`pre_prompt` hookだけを設定側で除去し、初期化時+PWD変更時だけにした（生成ファイルやPATHは変更しない）。Git promptはPWD単位でキャッシュし、stash全列挙を削除した。実測では同一プロセス内の2回目のGit blockは **約112--166msから0.282ms** になった。
+ここまでの表には「速度だけを最大化する候補」も含むが、最終実装では表示・補完・診断・lint・format・LSP・Git signなどの機能を減らす候補は採用していない。大容量ファイルでも同じ機能を維持する。
+
+* `VeryLazy`一括群を、キー/コマンド/機能が必要になるイベントへ移動した。DAP/Overseer/Toggleterm/Flash/mini編集操作とNeoscrollは全対応モードの初回キーでロードし、そのキーをプラグインへ再送する。lualineはVimEnter、gitsigns/Dropbar/Satellite/tiny-inline-diagnosticはBufReadPost/BufNewFileでロードする。起動後の通知・command UI・空バッファのstatus columnを変えないため、Noice/statuscolはVeryLazyを維持する。
+* 機能維持後のwarm測定ではVeryLazy同期ロードが **30プラグインから12プラグイン**、**176.954/192.894msから122.643/151.675ms**（各n=2）になった。機能を無効化した過渡的な8プラグイン/64.500ms値は最終結果として採用しない。
+* Blink/LuaSnip/autopairs/wise-backspaceをBufReadPost/BufNewFileで準備し、最初の入力にロードを持ち込まない。Blinkのghost text、menu、documentation、source順序、全providerとJava capabilityは元の機能を維持する。最終設定でのJSON warm InsertEnterは **0.607ms、ロード増分0**（単発。直前の同条件値1.425ms/10.549ms）。
+* KotlinのOil/Trouble依存、JavaのBlink capability、MATLABの自動起動/onStart接続、InsertLeave lint、TextChangedI snippet更新、500ms formatter待機は元のまま維持する。
+* Treesitter、rainbow delimiters、mini.indentscope、mini.hipatterns、複数行diagnostic、untracked fileのgitsigns、undo animationはサイズやfiletypeによらず維持する。25,000行のLuaバッファでもTreesitter activeを確認した。
+* Tabbyのアイコン・highlight解決結果だけをバッファ単位でキャッシュし、表示内容は変えずに再描画コストを削減した。
+* Nushellのmise pre_prompt hookは、同一PWDでの`mise use`直後の環境反映を守るため維持した。Git promptは鮮度を落とすcacheを使わず、`git status --porcelain=v2 --branch --show-stash`一回でstatusとstash数を取得する。同一run各5回のmedianはstatus **394.231ms** + stash **322.636ms** 相当から統合 **299.274ms** となり、表示内容を保ったまま約 **417.6ms（58.3%）** 削減した（dirty worktreeでの補正計測）。
 
 ## 外部の基準・一次資料
 
 * [Google RAIL performance model](https://web.dev/articles/rail): 60Hzの1フレームは16msで、アプリ処理の目安は10ms。入力への見える反応は100ms以内。
 * [Neovim option reference](https://neovim.io/doc/user/options/): `redrawtime` はsyntax/hlsearch/async Tree-sitter parseを制限する安全弁で、現行既定値は2000ms。
 * [blink.cmp](https://github.com/Saghen/blink.cmp): core completionの公称値は1文字ごと0.5--4ms async/single core。これは設定全体ではなくBlink coreの目標値として扱う。
-* [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter): Tree-sitter highlightingはNeovim側の機能であり、設定はfiletypeごとにstartする。したがってlarge-file policyは本設定で明示する必要がある。
+* [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter): Tree-sitter highlightingはNeovim側の機能であり、設定はfiletypeごとにstartする。large-file無効化は高速化候補になるが、機能維持要件に反するため採用していない。

@@ -18,22 +18,6 @@
 # them for future reference.
 
 use ($nu.default-config-dir | path join mise.nu)
-
-# `mise activate nu` appends its hook last. Run it once for the initial PWD,
-# then remove only that pre-prompt hook; PWD changes continue to refresh mise.
-let mise_pwd_hooks = ($env.config.hooks.env_change.PWD? | default [])
-if (($mise_pwd_hooks | length) > 0) {
-    let mise_hook = ($mise_pwd_hooks | last)
-    if (do $mise_hook.condition) {
-        do $mise_hook.code
-    }
-}
-let pre_prompt_hooks = ($env.config.hooks.pre_prompt? | default [])
-if (($pre_prompt_hooks | length) > 0) {
-    let mise_hook_index = (($pre_prompt_hooks | length) - 1)
-    $env.config = ($env.config | upsert hooks.pre_prompt ($pre_prompt_hooks | drop nth $mise_hook_index))
-}
-
 source ($nu.default-config-dir | path join prompt.nu)
 source ($nu.default-config-dir | path join zoxide.nu)
 source ($nu.config-path | path dirname | path join completion bat-completions.nu)

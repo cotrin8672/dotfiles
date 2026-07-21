@@ -55,7 +55,7 @@ def prompt_theme [] {
 }
 
 def git_status_data [] {
-    let result = (^git status --porcelain=v2 --branch | complete)
+    let result = (^git status --porcelain=v2 --branch --show-stash | complete)
     if $result.exit_code != 0 {
         return null
     }
@@ -65,6 +65,7 @@ def git_status_data [] {
         commit: ''
         ahead: 0
         behind: 0
+        stash: 0
         staged: 0
         unstaged: 0
         conflicted: 0
@@ -92,6 +93,8 @@ def git_status_data [] {
                     $data.behind = (($item | str replace '-' '') | into int)
                 }
             }
+        } else if ($line | str starts-with '# stash ') {
+            $data.stash = (($line | str replace '# stash ' '' | str trim) | into int)
         } else if ($line | str starts-with '? ') {
             $data.untracked = ($data.untracked + 1)
         } else if ($line | str starts-with 'u ') {
@@ -113,21 +116,8 @@ def git_status_data [] {
     $data
 }
 
-def --env git_status_cached [] {
-    let cwd = (pwd)
-    let cached = ($env.GIT_PROMPT_CACHE? | default {})
-
-    if (($cached.cwd? | default '') == $cwd) {
-        return ($cached.data? | default null)
-    }
-
+def git_block [] {
     let data = (git_status_data)
-    $env.GIT_PROMPT_CACHE = { cwd: $cwd data: $data }
-    $data
-}
-
-def --env git_block [] {
-    let data = (git_status_cached)
     if $data == null {
         return ''
     }
@@ -154,6 +144,9 @@ def --env git_block [] {
     }
     if $data.ahead > 0 {
         $details = ($details | append ((ansi { fg: $clean bg: $git_bg }) + $"⇡($data.ahead)"))
+    }
+    if $data.stash > 0 {
+        $details = ($details | append ((ansi { fg: $clean bg: $git_bg }) + $"*($data.stash)"))
     }
 
     if $data.conflicted > 0 {

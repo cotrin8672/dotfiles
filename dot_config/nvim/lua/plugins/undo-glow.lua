@@ -17,7 +17,7 @@ return {
 		return {
 			fallback_for_transparency = fallback,
 			animation = {
-				enabled = false,
+				enabled = true,
 				duration = 300,
 				animation_type = "fade",
 				window_scoped = true,

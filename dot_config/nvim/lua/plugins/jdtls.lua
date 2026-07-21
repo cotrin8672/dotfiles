@@ -25,9 +25,9 @@ return {
 
 		local capabilities = vim.lsp.protocol.make_client_capabilities()
 
-			if package.loaded["blink.cmp"] then
-				capabilities = require("blink.cmp").get_lsp_capabilities(capabilities)
-			end
+		pcall(function()
+			capabilities = require("blink.cmp").get_lsp_capabilities(capabilities)
+		end)
 
 		local function start_or_attach(bufnr)
 			if not vim.api.nvim_buf_is_valid(bufnr) or vim.bo[bufnr].filetype ~= "java" then

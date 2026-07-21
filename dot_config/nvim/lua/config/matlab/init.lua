@@ -12,7 +12,7 @@ local function initialize_lsp_integration()
 	local cmdwin = require("config.matlab.command_window")
 	local exec = require("config.matlab.exec")
 	core.setup({
-		auto_start = false,
+		auto_start = true,
 		auto_start_delay = 500,
 	})
 

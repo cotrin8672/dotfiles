@@ -3,8 +3,14 @@ local vault = vim.fs.normalize(vim.fn.expand("~/vault"))
 return {
 	"obsidian-nvim/obsidian.nvim",
 	event = {
-		event = { "BufReadPre", "BufNewFile" },
-		pattern = { vault .. "/*.md", vault .. "/**/*.md" },
+		event = {
+			"BufReadPre",
+			"BufNewFile",
+		},
+		pattern = {
+			vault .. "/*.md",
+			vault .. "/**/*.md",
+		},
 	},
 	dependencies = {
 		"nvim-lua/plenary.nvim",

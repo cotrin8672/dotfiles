@@ -1,6 +1,6 @@
 return {
 	"rachartier/tiny-inline-diagnostic.nvim",
-	event = "LspAttach",
+	event = { "BufReadPost", "BufNewFile" },
 	opts = {
 		preset = "modern",
 		options = {
@@ -8,9 +8,9 @@ return {
 				vim.diagnostic.severity.ERROR,
 				vim.diagnostic.severity.WARN,
 			},
-			show_all_diags_on_cursorline = false,
+			show_all_diags_on_cursorline = true,
 			multilines = {
-				enabled = false,
+				enabled = true,
 			},
 			add_messages = {
 				messages = true,
