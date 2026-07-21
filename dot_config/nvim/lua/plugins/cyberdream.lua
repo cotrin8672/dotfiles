@@ -5,6 +5,23 @@ return {
 	opts = {
 		transparent = true,
 		italic_comments = false,
+		cache = true,
+		extensions = {
+			default = false,
+			blinkcmp = true,
+			dapui = true,
+			gitsigns = true,
+			lazy = true,
+			markdown = true,
+			mini = true,
+			noice = true,
+			notify = true,
+			rainbow_delimiters = true,
+			snacks = true,
+			treesitter = true,
+			treesittercontext = true,
+			trouble = true,
+		},
 		overrides = function(colors)
 			return {
 				NormalFloat = { fg = colors.fg, bg = colors.bg_alt },

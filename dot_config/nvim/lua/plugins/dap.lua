@@ -5,7 +5,10 @@ return {
 		{ "<F9>", function() require("dap").toggle_breakpoint() end, desc = "Toggle breakpoint" },
 	},
 	dependencies = {
-		"theHamsta/nvim-dap-virtual-text",
+		{
+			"theHamsta/nvim-dap-virtual-text",
+			opts = {},
+		},
 	},
 	config = function()
 		local _ = require("dap")

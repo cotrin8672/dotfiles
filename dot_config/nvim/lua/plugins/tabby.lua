@@ -128,7 +128,6 @@ return vim.tbl_extend("force", M, {
 	lazy = false,
 	dependencies = {
 		"mini.icons",
-		"mini.bufremove",
 	},
 	config = function()
 		apply_tabby_highlights()
@@ -219,9 +218,5 @@ return vim.tbl_extend("force", M, {
 		local key_opts = { noremap = true, silent = true }
 		vim.keymap.set("n", "<Tab>", M.next_buffer, key_opts)
 		vim.keymap.set("n", "<S-Tab>", M.previous_buffer, key_opts)
-		vim.keymap.set("n", "<leader>x", function()
-			vim.cmd("silent update")
-			require("mini.bufremove").delete(0, false)
-		end, key_opts)
 	end,
 })

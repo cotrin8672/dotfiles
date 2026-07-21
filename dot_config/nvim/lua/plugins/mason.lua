@@ -1,7 +1,14 @@
 return {
 	{
 		"mason-org/mason.nvim",
-		lazy = false,
+		cmd = {
+			"Mason",
+			"MasonInstall",
+			"MasonUninstall",
+			"MasonUninstallAll",
+			"MasonUpdate",
+			"MasonLog",
+		},
 		opts = {
 			PATH = "prepend",
 			registries = {

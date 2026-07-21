@@ -149,6 +149,20 @@ Gitリポジトリ内の実ファイルでVeryLazyを発火すると、同期部
 * Nushellのmiseは設定fingerprint方式へ変更し、通常promptでは外部プロセスを起動しない。PWD変更、設定ファイル変更、`mise use`等の明示的変更では同期更新するため、環境反映の鮮度は維持する。
 * Git promptは鮮度を落とすcacheを使わず、`git status --porcelain=v2 --branch --show-stash`一回でstatusとstash数を取得する。同一run各5回のmedianはstatus **394.231ms** + stash **322.636ms** 相当から統合 **299.274ms** となり、表示内容を保ったまま約 **417.6ms（58.3%）** 削減した（dirty worktreeでの補正計測）。
 
+## 2026-07-22 Neovim start pluginの追加最適化
+
+空バッファ起動300ms後のロード数を **17 / 108から11 / 107**へ削減した。Kensaku/Denops、配色、Starter、Tabby、Snacks、Lualine、Sessionsは維持し、用途が限定される以下の初期ロードだけを移動した。
+
+* `nvim-dap-virtual-text`の独立start specをDAPのdependencyへ統合した。起動時はDAP本体とも未ロードで、`nvim-dap`ロード時に両方がロード・setupされることを確認した。
+* `kross.nvim`をlazy化した。空バッファでは未ロード、`nvim-jdtls`ロード時にはKrossもロードされることを確認した。
+* `mason.nvim`をMason各commandとMason系plugin dependencyによるロードへ変更した。通常のLua fileでは`nvim-lspconfig`だけがロードされ、Masonは未ロードのままLSP設定が成立する。
+* `mini.bufremove`をTabbyの起動時dependencyから外し、既存の`<leader>x`でロードする。実キーcallbackによるロードとbuffer削除を確認した。
+* `mini.visits`は現在のMiniStarterから参照されていなかった。session表示は`MiniSessions.detected`、recent filesは`vim.v.oldfiles`を直接使っており、`MiniVisits`のsetup・参照が存在しないためspecを削除した。
+* Cyberdreamのcacheを有効化し、extensionを実際に使用するBlink/DAP UI/Gitsigns/Lazy/render-markdown/Mini/Noice/Notify/Rainbow delimiters/Snacks/Treesitter/Treesitter context/Troubleだけに限定した。各extensionの代表highlightが生成されることを確認した。
+* `init.lua`ですでに`loaded_*`を設定して無効化していた標準runtime pluginをlazy.nvimの`performance.rtp.disabled_plugins`にも登録し、無効なscriptを開いて即returnするファイルI/Oを除去した。OSC52とEditorConfigは従来どおり維持する。
+
+同一の空バッファheadless計測では、Neovim内部の`NVIM STARTED`が変更前 **169.387ms（単発）**から変更後 **median 114.629ms / p95 119.407ms（n=10）**になった。Windows process全体の同一コマンド計測は **median 646.408ms / p95 680.532ms**から **median 411.001ms / p95 450.132ms**（各n=10）へ短縮した。後者はOS file cacheや常駐状態の影響を含むため、plugin改善の比較には内部時刻を優先する。
+
 ## 外部の基準・一次資料
 
 * [Google RAIL performance model](https://web.dev/articles/rail): 60Hzの1フレームは16msで、アプリ処理の目安は10ms。入力への見える反応は100ms以内。

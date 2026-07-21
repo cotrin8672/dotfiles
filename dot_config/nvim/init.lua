@@ -150,4 +150,23 @@ require("lazy").setup("plugins", {
 	install = { missing = true },
 	checker = { enabled = false },
 	change_detection = { enabled = false },
+	performance = {
+		rtp = {
+			disabled_plugins = {
+				"gzip",
+				"man",
+				"matchit",
+				"matchparen",
+				"net",
+				"netrwPlugin",
+				"rplugin",
+				"shada",
+				"spellfile",
+				"tarPlugin",
+				"tohtml",
+				"tutor",
+				"zipPlugin",
+			},
+		},
+	},
 })
