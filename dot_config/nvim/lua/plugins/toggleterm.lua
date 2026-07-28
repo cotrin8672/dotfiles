@@ -1,5 +1,16 @@
 return {
 	"akinsho/toggleterm.nvim",
+	cmd = {
+		"TermSelect",
+		"TermExec",
+		"TermNew",
+		"ToggleTerm",
+		"ToggleTermToggleAll",
+		"ToggleTermSendVisualLines",
+		"ToggleTermSendVisualSelection",
+		"ToggleTermSendCurrentLine",
+		"ToggleTermSetName",
+	},
 	keys = {
 		{ "<leader>f", mode = "n", desc = "Float Terminal" },
 		{ "<leader>gg", mode = "n", desc = "LazyGit Float" },

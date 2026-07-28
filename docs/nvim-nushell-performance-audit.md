@@ -169,3 +169,13 @@ Gitリポジトリ内の実ファイルでVeryLazyを発火すると、同期部
 * [Neovim option reference](https://neovim.io/doc/user/options/): `redrawtime` はsyntax/hlsearch/async Tree-sitter parseを制限する安全弁で、現行既定値は2000ms。
 * [blink.cmp](https://github.com/Saghen/blink.cmp): core completionの公称値は1文字ごと0.5--4ms async/single core。これは設定全体ではなくBlink coreの目標値として扱う。
 * [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter): Tree-sitter highlightingはNeovim側の機能であり、設定はfiletypeごとにstartする。large-file無効化は高速化候補になるが、機能維持要件に反するため採用していない。
+
+## 2026-07-28 遅延ロード経路の回帰修正
+
+高速化後の実操作経路を再監査し、既存ファイルだけでなくMiniStarterの`enew`、名前付き新規ファイル、初回command実行を検証した。
+
+* Blink、nvim-autopairs、wise-backspaceは既存ファイルでは従来どおり`BufReadPost`、名前付き新規ファイルでは`BufNewFile`で先行ロードする。どちらも発火しない無名`enew`だけは`InsertEnter`をfallbackとして、最初の入力から機能を維持する。
+* Gitsigns、Dropbar、Satellite、tiny-inline-diagnosticへ新規bufferの命名を捕捉する`BufFilePost`経路を追加した。Gitsignsは`BufNewFile`も対象にし、tiny-inline-diagnosticは無名bufferへのLSP attachも捕捉する。
+* nvim-dapが提供する15個の標準commandをlazy.nvimのcommand triggerへ登録し、キーを先に使わなくても初回commandからロードできるようにした。
+* nvim-dap-ui自身は`DapUIOpen`等のcommandを提供しないため、spec `init`で実commandを定義し、各callbackからmodule-demand load後に`open`、`close`、`toggle`を呼ぶ。
+* Toggletermが提供する9個の標準commandをすべてtriggerへ登録し、既存の`<leader>f`と`<leader>gg`によるキーロードも維持した。

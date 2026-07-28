@@ -1,5 +1,22 @@
 return {
 	"mfussenegger/nvim-dap",
+	cmd = {
+		"DapSetLogLevel",
+		"DapShowLog",
+		"DapContinue",
+		"DapToggleBreakpoint",
+		"DapClearBreakpoints",
+		"DapToggleRepl",
+		"DapStepOver",
+		"DapStepInto",
+		"DapStepOut",
+		"DapPause",
+		"DapTerminate",
+		"DapDisconnect",
+		"DapRestartFrame",
+		"DapNew",
+		"DapEval",
+	},
 	keys = {
 		{ "<F5>", function() require("dap").continue() end, desc = "Debug continue" },
 		{ "<F9>", function() require("dap").toggle_breakpoint() end, desc = "Toggle breakpoint" },

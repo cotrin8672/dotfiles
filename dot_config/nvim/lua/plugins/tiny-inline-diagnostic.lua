@@ -1,6 +1,6 @@
 return {
 	"rachartier/tiny-inline-diagnostic.nvim",
-	event = { "BufReadPost", "BufNewFile" },
+	event = { "BufReadPost", "BufNewFile", "BufFilePost", "LspAttach" },
 	opts = {
 		preset = "modern",
 		options = {

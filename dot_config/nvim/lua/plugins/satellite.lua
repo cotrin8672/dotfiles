@@ -1,6 +1,6 @@
 return {
 	"lewis6991/satellite.nvim",
-	event = { "BufReadPost", "BufNewFile" },
+	event = { "BufReadPost", "BufNewFile", "BufFilePost" },
 	opts = {
 		current_only = false,
 		winblend = 0,
