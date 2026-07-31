@@ -2,6 +2,7 @@
 	editor = "nvim"
 	protectNTFS = false
 	sshCommand = C:/Windows/System32/OpenSSH/ssh.exe
+	symlinks = true
 [user]
 	name = cotrin8672
 	email = gummy8672@gmail.com
