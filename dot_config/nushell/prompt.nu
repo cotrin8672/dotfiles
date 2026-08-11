@@ -3,14 +3,14 @@ def host_os_name [] {
 }
 
 def os_icon [] {
-    let nu_os = ($nu.os-info.name | default '' | str downcase)
+    let nu_os = ($nu.os-info.name | default '' | str lowercase)
     let host_os = (host_os_name)
 
     if $nu_os == 'windows' {
         '󰖳'
     } else if $host_os == 'NixOS' {
         ''
-    } else if ('WSL_DISTRO_NAME' in $env) and (($env.WSL_DISTRO_NAME | str downcase) | str contains 'ubuntu') {
+    } else if ('WSL_DISTRO_NAME' in $env) and (($env.WSL_DISTRO_NAME | str lowercase) | str contains 'ubuntu') {
         ''
     } else if $nu_os == 'macos' {
         '󰀵'

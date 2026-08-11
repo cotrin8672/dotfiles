@@ -10,6 +10,7 @@ local parsers = {
 	"markdown",
 	"markdown_inline",
 	"nix",
+	"nu",
 	"rust",
 	"toml",
 	"tsx",

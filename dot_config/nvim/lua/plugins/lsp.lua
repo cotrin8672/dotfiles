@@ -100,6 +100,10 @@ return {
 			capabilities = capabilities,
 		})
 
+		vim.lsp.config("nushell", {
+			capabilities = capabilities,
+		})
+
 		vim.lsp.config("bashls", {
 			capabilities = capabilities,
 		})
@@ -138,6 +142,7 @@ return {
 			"html",
 			"lua_ls",
 			"marksman",
+			"nushell",
 			"rust_analyzer",
 			"taplo",
 			"texlab",

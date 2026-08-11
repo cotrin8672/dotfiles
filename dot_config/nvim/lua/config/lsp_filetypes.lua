@@ -11,6 +11,7 @@ return {
 	"markdown",
 	"matlab",
 	"nix",
+	"nu",
 	"plaintex",
 	"rust",
 	"sh",

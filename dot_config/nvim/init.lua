@@ -108,6 +108,7 @@ vim.api.nvim_create_autocmd("FileType", {
 	pattern = {
 		"java",
 		"kotlin",
+		"nu",
 		"rust",
 	},
 	callback = set_indent(4),
