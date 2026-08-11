@@ -18,16 +18,42 @@ local function apply_picker_winblend(picker)
 	end
 end
 
+local function enable_kitty_placeholders_for_wezterm()
+	local is_wezterm = vim.env.TERM_PROGRAM == "WezTerm"
+		or vim.env.WEZTERM_EXECUTABLE ~= nil
+		or vim.env.WEZTERM_PANE ~= nil
+	if not is_wezterm then
+		return
+	end
+
+	-- Make detection deterministic even when TERM_PROGRAM is not forwarded.
+	vim.env.SNACKS_WEZTERM = "true"
+
+	-- This WezTerm fork implements Kitty's Unicode placeholder protocol.
+	-- Snacks keeps placeholders disabled for upstream WezTerm, so opt in only
+	-- for this terminal instead of pretending that every terminal supports it.
+	local terminal = require("snacks.image.terminal")
+	for _, environment in ipairs(terminal.envs()) do
+		if environment.name == "wezterm" then
+			environment.placeholders = true
+		end
+	end
+end
+
 return {
 	"folke/snacks.nvim",
 	priority = 1000,
 	lazy = false,
+	config = function(_, opts)
+		enable_kitty_placeholders_for_wezterm()
+		require("snacks").setup(opts)
+	end,
 	opts = {
 		image = {
 			enabled = true,
 			doc = {
 				enabled = true,
-				inline = false,
+				inline = true,
 				float = true,
 				conceal = function(_, type)
 					return type == "math"
