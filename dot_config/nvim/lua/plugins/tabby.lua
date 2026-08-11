@@ -59,20 +59,22 @@ local function update_tabby_visibility()
 	vim.o.showtabline = 2
 end
 
-local function get_hl_attr(name, attr)
-	local hl = vim.api.nvim_get_hl(0, { name = name, link = true })
-	local value = hl[attr]
-	assert(value, string.format("missing highlight attribute: %s.%s", name, attr))
-	return value
+local function get_hl_attr(names, attr)
+	for _, name in ipairs(names) do
+		local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = name, link = false })
+		if ok and hl[attr] then
+			return hl[attr]
+		end
+	end
 end
 
 local function apply_tabby_highlights()
-	local normal_fg = get_hl_attr("Normal", "fg")
-	local muted_fg = get_hl_attr("StatusLineNC", "fg")
-	local active_bg = get_hl_attr("DiagnosticHint", "fg")
-	local active_fg = get_hl_attr("Search", "fg")
-	local inactive_bg = get_hl_attr("CursorLine", "bg")
-	local fill_bg = get_hl_attr("PmenuSel", "bg")
+	local normal_fg = get_hl_attr({ "Normal", "StatusLine" }, "fg")
+	local muted_fg = get_hl_attr({ "StatusLineNC", "Comment", "Normal" }, "fg")
+	local active_bg = get_hl_attr({ "DiagnosticHint", "Identifier", "Normal" }, "fg")
+	local active_fg = get_hl_attr({ "Search", "Normal", "StatusLine" }, "fg")
+	local inactive_bg = get_hl_attr({ "CursorLine", "StatusLine", "Pmenu", "Normal" }, "bg")
+	local fill_bg = get_hl_attr({ "PmenuSel", "StatusLineNC", "Pmenu", "CursorLine", "Normal" }, "bg")
 
 	vim.api.nvim_set_hl(0, "TabbyFill", {
 		fg = muted_fg,
@@ -93,7 +95,7 @@ local function apply_tabby_highlights()
 		bg = inactive_bg,
 	})
 	vim.api.nvim_set_hl(0, "TabbyTail", {
-		fg = get_hl_attr("DiagnosticOk", "fg"),
+		fg = get_hl_attr({ "DiagnosticOk", "String", "DiagnosticHint", "Normal" }, "fg"),
 		bg = fill_bg,
 		bold = true,
 	})
@@ -115,7 +117,7 @@ local function buffer_file_icon(bufnr, bg_hl)
 	local hl = "TabbyIcon" .. icon_hl .. bg_hl
 	vim.api.nvim_set_hl(0, hl, {
 		fg = icon_hl_data.fg,
-		bg = get_hl_attr(bg_hl, "bg"),
+		bg = get_hl_attr({ bg_hl, "Normal" }, "bg"),
 	})
 
 	local value = { icon, hl = hl }
