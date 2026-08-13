@@ -98,9 +98,7 @@ return {
 				mcdev = {
 					name = "mcdev",
 					module = "mcdev.blink",
-					enabled = function()
-						return vim.bo.filetype == "java"
-					end,
+					score_offset = 100,
 				},
 			},
 		},

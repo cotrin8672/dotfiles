@@ -29,7 +29,7 @@ return {
 	"cotrin8672/mc-dev-lsp",
 	name = "mcdev-nvim",
 	event = "VeryLazy",
-	version = "*",
+	version = "v0.7.7",
 	build = "gradle :mcdev-jdtls-extension:jar --no-daemon",
 	init = function(plugin)
 		vim.opt.rtp:prepend(plugin.dir .. "/mcdev-nvim")

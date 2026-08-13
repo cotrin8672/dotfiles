@@ -2,7 +2,11 @@ return {
 	"mfussenegger/nvim-jdtls",
 	ft = { "java" },
 	dependencies = {
-		"cotrin8672/mcdev-nvim",
+		{
+			"cotrin8672/mc-dev-lsp",
+			name = "mcdev-nvim",
+			version = "v0.7.7",
+		},
 		"neovim/nvim-lspconfig",
 		"cotrin8672/kross.nvim",
 	},

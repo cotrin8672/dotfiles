@@ -57,6 +57,8 @@ return {
 					exclude = {
 						-- kotlin.nvim manages the official kotlin-lsp itself as `kotlin_ls`.
 						"kotlin_lsp",
+						-- nvim-jdtls starts JDTLS with the mcdev bundle and project workspace.
+						"jdtls",
 					},
 				},
 			}

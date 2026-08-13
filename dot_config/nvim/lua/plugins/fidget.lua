@@ -3,9 +3,12 @@ return {
 	event = "LspAttach",
 	opts = {
 		progress = {
+			poll_rate = 0.5,
+			suppress_on_insert = true,
+			ignore_done_already = true,
 			display = {
-				progress_ttl = 10,
-				done_ttl = 3,
+				progress_ttl = 3,
+				done_ttl = 1,
 			},
 		},
 		notification = {
