@@ -306,6 +306,38 @@ describe("MATLAB execution client", function()
 		assert.same({ method = "textDocument/documentSymbol", params = { test = true }, bufnr = 3 }, requested)
 	end)
 
+	it("keeps diagnostic requests independent while execution is in flight", function()
+		assert.is_true(core.enqueue_eval("pause(10)"))
+		core.handle_mvm_state_change({ state = "connected", release = "R2024a" }, 41)
+		local inflight_request_id = core._snapshot().inflight_request_id
+		assert.is_not_nil(inflight_request_id)
+
+		local requested = nil
+		local diagnostic = {
+			id = 7,
+			name = "matlab_ls",
+			request = function(_, method, params, _, bufnr)
+				requested = { method = method, params = params, bufnr = bufnr }
+				return true, 89
+			end,
+		}
+		local original_get_clients = vim.lsp.get_clients
+		vim.lsp.get_clients = function(filter)
+			assert.are.equal("matlab_ls", filter.name)
+			assert.are.equal(3, filter.bufnr)
+			return { diagnostic }
+		end
+
+		local request_id, err = core.request_diagnostic("textDocument/definition", { test = true }, function() end, 3)
+		vim.lsp.get_clients = original_get_clients
+
+		assert.is_nil(err)
+		assert.are.equal(89, request_id)
+		assert.same({ method = "textDocument/definition", params = { test = true }, bufnr = 3 }, requested)
+		assert.are.equal(inflight_request_id, core._snapshot().inflight_request_id)
+		assert.are.equal(1, #sent)
+	end)
+
 	it("tracks the session root and rejects explicit work from another project", function()
 		roots[1] = "C:/repo-one"
 		roots[2] = "C:/repo-two"

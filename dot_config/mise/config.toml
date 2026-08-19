@@ -36,6 +36,7 @@ tree-sitter = "latest"
 lefthook = "latest"
 gradle = "latest"
 carapace = "latest"
+"npm:nb.sh" = "latest"
 
 [tasks.nvim-startuptime-install]
 description = "Install vim-startuptime via go install"

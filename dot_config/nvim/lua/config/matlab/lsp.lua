@@ -2,13 +2,13 @@ local M = {}
 
 local configured_capabilities = nil
 
-local function matlab_settings(connection_timing)
+local function matlab_settings(connection_timing, index_workspace)
 	local matlab_exe = vim.fn.exepath("matlab")
 	local matlab_install_path = matlab_exe ~= "" and vim.fn.fnamemodify(matlab_exe, ":h:h") or ""
 
 	return {
 		MATLAB = {
-			indexWorkspace = false,
+			indexWorkspace = index_workspace,
 			installPath = matlab_install_path,
 			matlabConnectionTiming = connection_timing,
 			telemetry = true,
@@ -21,7 +21,7 @@ function M.setup(capabilities)
 
 	vim.lsp.config("matlab_ls", {
 		capabilities = capabilities,
-		settings = matlab_settings("never"),
+		settings = matlab_settings("onStart", true),
 	})
 end
 
@@ -38,7 +38,7 @@ function M.exec_config(bufnr, handlers, on_exit)
 		cmd = { "matlab-language-server", "--stdio" },
 		root_dir = M.execution_root(bufnr),
 		capabilities = configured_capabilities or vim.lsp.protocol.make_client_capabilities(),
-		settings = matlab_settings("onStart"),
+		settings = matlab_settings("onStart", false),
 		handlers = handlers,
 		on_exit = on_exit,
 	}
