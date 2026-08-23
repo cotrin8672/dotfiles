@@ -54,12 +54,101 @@ def prompt_theme [] {
     }
 }
 
-def git_status_data [] {
-    let result = (^git status --porcelain=v2 --branch --show-stash | complete)
-    if $result.exit_code != 0 {
+def parent-dirs [start: path] {
+    mut current = ($start | path expand)
+    let home = ($nu.home-dir | path expand)
+    mut dirs = []
+
+    loop {
+        $dirs = ($dirs | append $current)
+        if $current == $home {
+            break
+        }
+        let parent = ($current | path dirname)
+        if $parent == $current {
+            break
+        }
+        $current = $parent
+    }
+
+    $dirs
+}
+
+def path-stamp [path: path] {
+    if not ($path | path exists) {
+        return $"($path)|missing"
+    }
+
+    let entry = (try { ls -a $path | first } catch { null })
+    if $entry == null {
+        $"($path)|unreadable"
+    } else {
+        $"($path)|($entry.modified? | default '')|($entry.size? | default 0)"
+    }
+}
+
+def git-repo-root [] {
+    for dir in (parent-dirs (pwd | path expand)) {
+        if ($dir | path join ".git" | path exists) {
+            return $dir
+        }
+    }
+
+    null
+}
+
+def git-dir [repo_root: path] {
+    let dot_git = ($repo_root | path join ".git")
+    if not ($dot_git | path exists) {
         return null
     }
 
+    if ($dot_git | path type) == "dir" {
+        return $dot_git
+    }
+
+    let content = (try { open -r $dot_git | lines | first | default "" } catch { "" })
+    if ($content | str starts-with "gitdir: ") {
+        ($content | str replace "gitdir: " "" | str trim | path expand)
+    } else {
+        null
+    }
+}
+
+def git-metadata-paths [repo_root: path] {
+    let git_dir = (git-dir $repo_root)
+    if $git_dir == null {
+        return []
+    }
+
+    mut paths = [
+        ($git_dir | path join "HEAD")
+        ($git_dir | path join "index")
+        ($git_dir | path join "MERGE_HEAD")
+        ($git_dir | path join "CHERRY_PICK_HEAD")
+        ($git_dir | path join "REBASE_HEAD")
+        ($git_dir | path join "ORIG_HEAD")
+        ($git_dir | path join "FETCH_HEAD")
+        ($git_dir | path join "packed-refs")
+        ($git_dir | path join "logs/refs/stash")
+        ($git_dir | path join "rebase-merge")
+        ($git_dir | path join "rebase-apply")
+    ]
+
+    let origin = ($git_dir | path join "refs/remotes/origin")
+    if ($origin | path exists) {
+        let origin_refs = (try { glob ($origin | path join "*") --no-dir } catch { [] })
+        $paths = ($paths | append $origin_refs)
+    }
+
+    $paths | uniq | sort
+}
+
+def git-fingerprint [repo_root: path] {
+    (git-metadata-paths $repo_root | each { |path| path-stamp $path } | str join (char nl))
+}
+
+def git-parse-status-output [stdout: string] {
     mut data = {
         branch: ''
         commit: ''
@@ -72,7 +161,7 @@ def git_status_data [] {
         untracked: 0
     }
 
-    for line in ($result.stdout | lines) {
+    for line in ($stdout | lines) {
         if ($line | str starts-with '# branch.head ') {
             let branch = ($line | str replace '# branch.head ' '' | str trim)
             if $branch != '(detached)' {
@@ -113,6 +202,69 @@ def git_status_data [] {
         }
     }
 
+    $data
+}
+
+def git-prompt-cache-path [] {
+    ($nu.cache-dir | path join "git-prompt-cache.nuon")
+}
+
+def git-prompt-cache-read [] {
+    let path = (git-prompt-cache-path)
+    if not ($path | path exists) {
+        return null
+    }
+
+    try {
+        open $path
+    } catch {
+        null
+    }
+}
+
+def git-prompt-cache-write [entry: record] {
+    mkdir $nu.cache-dir
+    $entry | to nuon | save -f (git-prompt-cache-path)
+}
+
+def git-prompt-cache-clear [] {
+    let path = (git-prompt-cache-path)
+    if ($path | path exists) {
+        rm $path
+    }
+}
+
+def git-fetch-status-data [] {
+    let result = (^git status --porcelain=v2 --branch --show-stash | complete)
+    if $result.exit_code != 0 {
+        return null
+    }
+
+    git-parse-status-output $result.stdout
+}
+
+def git_status_data [] {
+    let repo_root = (git-repo-root)
+    if $repo_root == null {
+        git-prompt-cache-clear
+        return null
+    }
+
+    let repo_key = ($repo_root | into string)
+    let fingerprint = (git-fingerprint $repo_root)
+    let cached = (git-prompt-cache-read)
+    if ($cached != null) and ($cached.repo_root == $repo_key) and ($cached.fingerprint == $fingerprint) {
+        return $cached.data
+    }
+
+    let data = (git-fetch-status-data)
+    if $data != null {
+        git-prompt-cache-write {
+            repo_root: $repo_key
+            fingerprint: $fingerprint
+            data: $data
+        }
+    }
     $data
 }
 
