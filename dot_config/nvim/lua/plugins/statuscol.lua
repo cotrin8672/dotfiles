@@ -17,6 +17,9 @@ return {
 					click = "v:lua.ScSa",
 				},
 				{
+					sign = { namespace = { "MatlabCurrentSection" }, maxwidth = 1, colwidth = 1, auto = true },
+				},
+				{
 					sign = {
 						namespace = { "gitsigns" },
 						name = { "Dap.*", ".*" },

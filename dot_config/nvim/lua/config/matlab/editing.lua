@@ -1,6 +1,80 @@
 local M = {}
 
 local group = vim.api.nvim_create_augroup("MatlabEditing", { clear = true })
+local section_namespace = vim.api.nvim_create_namespace("MatlabSections")
+local current_section_namespace = vim.api.nvim_create_namespace("MatlabCurrentSection")
+local current_sections = {}
+
+local function is_section_break(line)
+	return line:find("^%s*%%%%") ~= nil
+end
+
+local function highlight_sections(bufnr)
+	vim.api.nvim_buf_clear_namespace(bufnr, section_namespace, 0, -1)
+	for row, line in ipairs(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)) do
+		if is_section_break(line) then
+			vim.api.nvim_buf_set_extmark(bufnr, section_namespace, row - 1, 0, {
+				line_hl_group = "MatlabSectionOverline",
+			})
+		end
+	end
+end
+
+local function highlight_current_section(bufnr)
+	if vim.bo[bufnr].filetype ~= "matlab" then
+		return
+	end
+
+	local cursor_row = vim.api.nvim_win_get_cursor(0)[1]
+	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+	local start_row = 1
+	local end_row = #lines
+	local has_sections = false
+
+	for row, line in ipairs(lines) do
+		if is_section_break(line) then
+			has_sections = true
+			if row <= cursor_row then
+				start_row = row
+			elseif row > cursor_row then
+				end_row = row - 1
+				break
+			end
+		end
+	end
+
+	local current = current_sections[bufnr]
+	if
+		current
+		and current.start_row == start_row
+		and current.end_row == end_row
+		and current.visible == has_sections
+	then
+		return
+	end
+
+	current_sections[bufnr] = { start_row = start_row, end_row = end_row, visible = has_sections }
+	vim.api.nvim_buf_clear_namespace(bufnr, current_section_namespace, 0, -1)
+	if not has_sections then
+		return
+	end
+
+	for row = start_row, end_row do
+		vim.api.nvim_buf_set_extmark(bufnr, current_section_namespace, row - 1, 0, {
+			sign_hl_group = "DiagnosticInfo",
+			sign_text = "█",
+		})
+	end
+end
+
+local function define_section_highlight()
+	local title = vim.api.nvim_get_hl(0, { name = "Title", link = false })
+	vim.api.nvim_set_hl(0, "MatlabSectionOverline", {
+		bold = true,
+		fg = title.fg,
+		overline = true,
+	})
+end
 
 local function rstrip(text)
 	return (text:gsub("%s+$", ""))
@@ -95,6 +169,11 @@ function M.toggle_split_join()
 end
 
 local function configure_buffer(bufnr)
+	highlight_sections(bufnr)
+	if vim.api.nvim_get_current_buf() == bufnr then
+		highlight_current_section(bufnr)
+	end
+
 	vim.keymap.set("i", "<CR>", function()
 		return M.confirm_completion_or_newline()
 	end, { buffer = bufnr, expr = true, replace_keycodes = true, desc = "Matlab continuation newline" })
@@ -134,18 +213,42 @@ local function configure_buffer(bufnr)
 		desc = "Matlab toggle command window",
 	})
 
-	vim.keymap.set("n", "<leader>mv", "<Cmd>MatlabWorkspace<CR>", {
+	vim.keymap.set("n", "<leader>fm", "<Cmd>MatlabWorkspace<CR>", {
 		buffer = bufnr,
 		desc = "Matlab toggle workspace",
 	})
 end
 
 function M.setup()
+	define_section_highlight()
+	vim.api.nvim_create_autocmd("ColorScheme", {
+		group = group,
+		callback = define_section_highlight,
+	})
+
 	vim.api.nvim_create_autocmd("FileType", {
 		group = group,
 		pattern = "matlab",
 		callback = function(event)
 			configure_buffer(event.buf)
+		end,
+	})
+
+	vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
+		group = group,
+		pattern = "*.m",
+		callback = function(event)
+			highlight_sections(event.buf)
+			current_sections[event.buf] = nil
+			highlight_current_section(event.buf)
+		end,
+	})
+
+	vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
+		group = group,
+		pattern = "*.m",
+		callback = function(event)
+			highlight_current_section(event.buf)
 		end,
 	})
 

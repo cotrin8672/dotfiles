@@ -13,10 +13,11 @@ describe("MATLAB editing keymaps", function()
 		package.loaded["blink.cmp"] = nil
 	end)
 
-	it("maps the workspace variable browser to leader mv", function()
-		local mapping = vim.fn.maparg(" mv", "n", false, true)
+	it("maps the workspace variable browser to leader fm", function()
+		local mapping = vim.fn.maparg(" fm", "n", false, true)
 
 		assert.are.equal("<Cmd>MatlabWorkspace<CR>", mapping.rhs)
+		assert.same({}, vim.fn.maparg(" mv", "n", false, true))
 		assert.same({}, vim.fn.maparg(" mW", "n", false, true))
 	end)
 
