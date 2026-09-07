@@ -31,7 +31,7 @@ export-env {
 #
 
 def "nu-complete zoxide path" [context: string] {
-    let parts = $context | str trim --left | split row " " | skip 1 | each { str downcase }
+    let parts = $context | str trim --left | split row " " | skip 1 | each { str lowercase }
     let completions = (
         ^zoxide query --list --exclude $env.PWD -- ...$parts
             | lines
@@ -39,7 +39,7 @@ def "nu-complete zoxide path" [context: string] {
                 if ($parts | length) <= 1 {
                     $dir
                 } else {
-                    let dir_lower = $dir | str downcase
+                    let dir_lower = $dir | str lowercase
                     let rem_start = $parts | drop 1 | reduce --fold 0 { |part, rem_start|
                         ($dir_lower | str index-of --range $rem_start.. $part) + ($part | str length)
                     }
