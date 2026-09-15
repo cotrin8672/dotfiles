@@ -57,15 +57,17 @@ return {
 			},
 		},
 		sources = {
-			default = {
-				"snippets",
-				"lazydev",
-				"copilot",
-				"buffer",
-				"path",
-				"lsp",
-				"mcdev",
-			},
+			default = function()
+				return require("mcdev.blink").route_sources({
+					"snippets",
+					"lazydev",
+					"copilot",
+					"buffer",
+					"path",
+					"lsp",
+					"mcdev",
+				})()
+			end,
 			providers = {
 				lazydev = {
 					name = "LazyDev",

@@ -5,7 +5,8 @@ return {
 		{
 			"cotrin8672/mc-dev-lsp",
 			name = "mcdev-nvim",
-			version = "v0.7.7",
+			version = false,
+			branch = "main",
 		},
 		"neovim/nvim-lspconfig",
 		"cotrin8672/kross.nvim",
@@ -55,6 +56,13 @@ return {
 				},
 				root_dir = root_dir,
 				capabilities = capabilities,
+				on_attach = function(_, attached_bufnr)
+					vim.schedule(function()
+						if vim.api.nvim_buf_is_valid(attached_bufnr) then
+							require("mcdev.attach").setup(attached_bufnr)
+						end
+					end)
+				end,
 				settings = {
 					java = {
 						format = {

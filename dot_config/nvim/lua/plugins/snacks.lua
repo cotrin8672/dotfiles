@@ -38,6 +38,23 @@ local function enable_kitty_placeholders_for_wezterm()
 			environment.placeholders = true
 		end
 	end
+
+	-- Snacks currently sends the loop index instead of the actual placement ID
+	-- when deleting Unicode-placeholder placements. Keep the workaround in our
+	-- config so the plugin checkout remains clean and can still be updated.
+	local image = require("snacks.image.image")
+	function image:del(pid)
+		for _, placement_id in ipairs(pid and { pid } or vim.tbl_keys(self.placements)) do
+			if self.placements[placement_id] then
+				terminal.request({ a = "d", d = "i", i = self.id, p = placement_id })
+				self.placements[placement_id] = nil
+			end
+		end
+
+		if not next(self.placements) then
+			terminal.request({ a = "d", d = "i", i = self.id })
+		end
+	end
 end
 
 return {

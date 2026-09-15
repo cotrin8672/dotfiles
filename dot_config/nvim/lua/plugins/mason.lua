@@ -73,7 +73,8 @@ return {
 		opts = {
 			ensure_installed = {
 				"jdtls",
-				"kotlin-lsp",
+				-- Match kotlin.nvim v1.1.0's legacy kotlin-lsp launcher.
+				{ "kotlin-lsp", version = "kotlin-lsp/v261.13587.0" },
 				"google-java-format",
 				"ktfmt",
 				"ktlint",

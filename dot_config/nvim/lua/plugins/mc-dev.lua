@@ -29,13 +29,17 @@ return {
 	"cotrin8672/mc-dev-lsp",
 	name = "mcdev-nvim",
 	event = "VeryLazy",
-	version = "v0.7.7",
+	version = false,
+	branch = "main",
 	build = "gradle :mcdev-jdtls-extension:jar --no-daemon",
 	init = function(plugin)
 		vim.opt.rtp:prepend(plugin.dir .. "/mcdev-nvim")
 	end,
 	opts = function(plugin)
 		return {
+			navigation = { enable = true },
+			code_action = { enable = true },
+			diagnostics = { enabled = true },
 			jdtls = {
 				extension_jar = latest_mcdev_jdtls_jar(plugin.dir),
 			},

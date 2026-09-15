@@ -22,10 +22,15 @@ return {
 			typescript = { "prettier" },
 			typescriptreact = { "prettier" },
 		},
-		format_on_save = {
-			timeout_ms = 500,
-			lsp_format = "fallback",
-		},
+		format_on_save = function(bufnr)
+			-- ktfmt starts a JVM for every invocation.  On Windows its cold
+			-- start is commonly slower than Conform's default 1s timeout.
+			local timeout_ms = vim.bo[bufnr].filetype == "kotlin" and 5000 or 500
+			return {
+				timeout_ms = timeout_ms,
+				lsp_format = "fallback",
+			}
+		end,
 		formatters = {
 			ktfmt = {
 				stdin = false,
