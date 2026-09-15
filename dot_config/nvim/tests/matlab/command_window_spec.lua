@@ -41,22 +41,46 @@ describe("MATLAB command window", function()
 		cmdwin.open()
 		local winid = cmdwin._snapshot().winid
 		assert.are.equal("", cmdwin._snapshot().prompt)
-		assert.are.equal(" MATLAB DISCONNECTED ", vim.wo[winid].winbar)
+		assert.are.equal(" MATLAB 1/1 · DISCONNECTED ", vim.wo[winid].winbar)
 		assert.same({}, vim.api.nvim_buf_get_extmarks(cmdwin._snapshot().bufnr, -1, 0, -1, { details = true }))
 
 		cmdwin.handle_connection_state("connecting")
 		assert.are.equal("MATLAB STARTING…", cmdwin._snapshot().status_text)
 		assert.are.equal("", cmdwin._snapshot().prompt)
-		assert.are.equal(" MATLAB STARTING… ", vim.wo[winid].winbar)
+		assert.are.equal(" MATLAB 1/1 · STARTING… ", vim.wo[winid].winbar)
 
 		cmdwin.handle_connection_state("connected", { release = "R2024a" })
 		cmdwin.handle_prompt_change("BUSY", false)
 		assert.are.equal("MATLAB RUNNING…", cmdwin._snapshot().status_text)
-		assert.are.equal(" MATLAB RUNNING… ", vim.wo[winid].winbar)
+		assert.are.equal(" MATLAB 1/1 · RUNNING… ", vim.wo[winid].winbar)
 		cmdwin.handle_prompt_change("READY", true)
 		assert.are.equal(">> ", cmdwin._snapshot().prompt)
 		assert.is_nil(cmdwin._snapshot().status_text)
-		assert.are.equal(" MATLAB R2024a ", vim.wo[winid].winbar)
+		assert.are.equal(" MATLAB 1/1 · R2024a ", vim.wo[winid].winbar)
+	end)
+
+	it("keeps one command buffer per session and swaps it in the existing window", function()
+		cmdwin.handle_connection_state("connected", { release = "R2024a", session_id = 1 })
+		cmdwin.open()
+		local winid = cmdwin._snapshot().winid
+		local first_bufnr = cmdwin._snapshot().bufnr
+		cmdwin.handle_text("session one\n", 0, 1)
+
+		cmdwin.select_session(2, 2, 2)
+		cmdwin.handle_connection_state("connected", { release = "R2024a", session_id = 2 })
+		cmdwin.handle_prompt_change("READY", true, 2)
+		local second_bufnr = cmdwin._snapshot().bufnr
+		assert.are_not.equal(first_bufnr, second_bufnr)
+		assert.are.equal(second_bufnr, vim.api.nvim_win_get_buf(winid))
+		assert.are.equal(" MATLAB 2/2 · R2024a ", vim.wo[winid].winbar)
+
+		cmdwin.handle_text("background one\n", 0, 1)
+		cmdwin.select_session(1, 2, 1)
+		assert.are.equal(first_bufnr, vim.api.nvim_win_get_buf(winid))
+		assert.same(
+			{ "session one", "background one", "" },
+			vim.api.nvim_buf_get_lines(first_bufnr, 0, -1, false)
+		)
 	end)
 
 	it("forwards source options and still echoes submitted commands", function()

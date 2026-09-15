@@ -174,6 +174,29 @@ vim.api.nvim_create_user_command("MatlabRestartHere", function()
 	end
 end, { force = true })
 
+vim.api.nvim_create_user_command("MatlabNew", function()
+	local ok, err = core.new_session(vim.api.nvim_get_current_buf())
+	if ok == false then
+		notify_error(err)
+		return
+	end
+	require("config.matlab.command_window").open()
+end, { force = true })
+
+vim.api.nvim_create_user_command("MatlabNext", function()
+	local ok, err = core.next_session()
+	if ok == false then
+		notify_error(err)
+	end
+end, { force = true })
+
+vim.api.nvim_create_user_command("MatlabPrev", function()
+	local ok, err = core.previous_session()
+	if ok == false then
+		notify_error(err)
+	end
+end, { force = true })
+
 vim.api.nvim_create_user_command("MatlabOpenCommandWindow", function()
 	require("config.matlab.command_window").open()
 end, { force = true })

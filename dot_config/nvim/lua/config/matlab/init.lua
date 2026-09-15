@@ -62,6 +62,10 @@ function M.setup()
 	cmdwin.set_interrupt_callback(function()
 		exec.interrupt()
 	end)
+
+	vim.keymap.set("n", "<leader>mn", "<Cmd>MatlabNew<CR>", { desc = "Matlab new session" })
+	vim.keymap.set("n", "<leader>m]", "<Cmd>MatlabNext<CR>", { desc = "Matlab next session" })
+	vim.keymap.set("n", "<leader>m[", "<Cmd>MatlabPrev<CR>", { desc = "Matlab previous session" })
 end
 
 return M

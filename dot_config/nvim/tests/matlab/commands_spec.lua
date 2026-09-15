@@ -6,18 +6,32 @@ describe("MATLAB user commands", function()
 	local submitted
 	local notifications
 	local original_notify
+	local session_actions
 
 	before_each(function()
 		next_cell_line = nil
 		submit_ok = true
 		submitted = {}
 		notifications = {}
+		session_actions = {}
 		original_notify = vim.notify
 		vim.notify = function(message, level)
 			table.insert(notifications, { message = message, level = level })
 		end
 
 		package.loaded["config.matlab.core"] = {
+			new_session = function(target_bufnr)
+				table.insert(session_actions, { "new", target_bufnr })
+				return true, nil
+			end,
+			next_session = function()
+				table.insert(session_actions, { "next" })
+				return true, nil
+			end,
+			previous_session = function()
+				table.insert(session_actions, { "previous" })
+				return true, nil
+			end,
 			get_diagnostic_client = function()
 				return nil
 			end,
@@ -40,6 +54,9 @@ describe("MATLAB user commands", function()
 			end,
 		}
 		package.loaded["config.matlab.command_window"] = {
+			open = function()
+				table.insert(session_actions, { "open" })
+			end,
 			submit = function(command, opts)
 				table.insert(submitted, { command = command, opts = opts })
 				if submit_ok then
@@ -96,5 +113,12 @@ describe("MATLAB user commands", function()
 		assert.is_true(commands.run_visual_selection())
 		assert.are.equal("selected", submitted[1].command)
 		assert.are.equal(bufnr, submitted[1].opts.bufnr)
+	end)
+
+	it("exposes minimal new, next, and previous session commands", function()
+		vim.cmd.MatlabNew()
+		vim.cmd.MatlabNext()
+		vim.cmd.MatlabPrev()
+		assert.same({ { "new", bufnr }, { "open" }, { "next" }, { "previous" } }, session_actions)
 	end)
 end)

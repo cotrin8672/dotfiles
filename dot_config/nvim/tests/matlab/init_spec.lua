@@ -58,4 +58,13 @@ describe("MATLAB integration setup", function()
 
 		assert.same({}, ensured_buffers)
 	end)
+
+	it("uses leader MATLAB mappings for session management", function()
+		assert.are.equal("<Cmd>MatlabNew<CR>", vim.fn.maparg("<leader>mn", "n"))
+		assert.are.equal("<Cmd>MatlabNext<CR>", vim.fn.maparg("<leader>m]", "n"))
+		assert.are.equal("<Cmd>MatlabPrev<CR>", vim.fn.maparg("<leader>m[", "n"))
+		assert.are.equal(2, vim.fn.exists(":MatlabNew"))
+		assert.are.equal(2, vim.fn.exists(":MatlabNext"))
+		assert.are.equal(2, vim.fn.exists(":MatlabPrev"))
+	end)
 end)

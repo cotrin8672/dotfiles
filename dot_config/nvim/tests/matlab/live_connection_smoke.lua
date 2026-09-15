@@ -141,7 +141,7 @@ local function run()
 	assert(marks[1][4].line_hl_group == nil, "stderr used a full-line highlight")
 
 	local winid = command_window.open({ focus = false })
-	assert(vim.wo[winid].winbar == " MATLAB R2024a ", "MATLAB lifecycle state was not shown in the winbar")
+	assert(vim.wo[winid].winbar == " MATLAB 1/1 · R2024a ", "MATLAB lifecycle state was not shown in the winbar")
 
 	local stopped, stop_err = core.stop_session()
 	assert(stopped, stop_err)

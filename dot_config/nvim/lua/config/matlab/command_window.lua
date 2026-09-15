@@ -10,23 +10,35 @@ local control_marker_chars = {
 	["}"] = true,
 }
 
-local state = {
-	bufnr = nil,
-	winid = nil,
-	connection = "disconnected",
-	release = nil,
-	prompt_kind = nil,
-	prompt = "",
-	status_text = nil,
-	input_prompt = "? ",
-	is_idle = true,
-	output_tail = "",
-	output_tail_severity = "normal",
-	warning_active = false,
-	control_marker_tail = "",
-	on_submit = nil,
-	on_interrupt = nil,
-}
+local function new_state(session_id)
+	return {
+		session_id = session_id,
+		session_index = 1,
+		session_count = 1,
+		bufnr = nil,
+		winid = nil,
+		connection = "disconnected",
+		release = nil,
+		prompt_kind = nil,
+		prompt = "",
+		status_text = nil,
+		input_prompt = "? ",
+		is_idle = true,
+		output_tail = "",
+		output_tail_severity = "normal",
+		warning_active = false,
+		control_marker_tail = "",
+		history = {},
+		history_index = nil,
+		history_draft = "",
+	}
+end
+
+local states = { [1] = new_state(1) }
+local active_session_id = 1
+local state = states[active_session_id]
+local on_submit = nil
+local on_interrupt = nil
 
 local prompt_map = {
 	READY = ">> ",
@@ -58,10 +70,6 @@ local severity_rank = {
 	warning = 2,
 	error = 3,
 }
-
-local history = {}
-local history_index = nil
-local history_draft = ""
 
 local function is_visible()
 	return state.winid ~= nil and vim.api.nvim_win_is_valid(state.winid)
@@ -96,8 +104,8 @@ local function set_current_input(input)
 end
 
 local function clear_history_state()
-	history_draft = ""
-	history_index = nil
+	state.history_draft = ""
+	state.history_index = nil
 end
 
 local function find_history(delta)
@@ -106,17 +114,17 @@ local function find_history(delta)
 		return
 	end
 
-	if not history_index then
-		history_draft = query
-		history_index = #history + 1
+	if not state.history_index then
+		state.history_draft = query
+		state.history_index = #state.history + 1
 	end
 
-	local i = history_index + delta
-	local normalized_draft = history_draft:lower()
-	while i >= 1 and i <= #history do
-		local item = history[i]
-		if history_draft == "" or vim.startswith(item:lower(), normalized_draft) then
-			history_index = i
+	local i = state.history_index + delta
+	local normalized_draft = state.history_draft:lower()
+	while i >= 1 and i <= #state.history do
+		local item = state.history[i]
+		if state.history_draft == "" or vim.startswith(item:lower(), normalized_draft) then
+			state.history_index = i
 			set_current_input(item)
 			return
 		end
@@ -124,7 +132,7 @@ local function find_history(delta)
 	end
 
 	if delta > 0 then
-		set_current_input(history_draft)
+		set_current_input(state.history_draft)
 		clear_history_state()
 	end
 end
@@ -195,8 +203,11 @@ local function render_winbar()
 
 	local text = state.status_text
 	if not text then
-		text = state.release and ("MATLAB " .. state.release) or "MATLAB"
+		text = state.release or "DISCONNECTED"
+	else
+		text = text:gsub("^MATLAB%s+", "")
 	end
+	text = ("MATLAB %d/%d · %s"):format(state.session_index, state.session_count, text)
 	vim.api.nvim_set_option_value("winbar", " " .. text .. " ", { win = state.winid })
 end
 
@@ -222,20 +233,20 @@ local function configure_buffer(bufnr)
 
 	for _, mode in ipairs({ "n", "i" }) do
 		vim.keymap.set(mode, "<C-c>", function()
-			if state.on_interrupt then
-				state.on_interrupt()
+			if on_interrupt then
+				on_interrupt()
 			end
 		end, { buffer = bufnr, noremap = true, silent = true })
 	end
 
 	vim.keymap.set("i", "<Up>", function()
-		if #history > 0 then
+		if #state.history > 0 then
 			find_history(-1)
 		end
 	end, { buffer = bufnr, noremap = true, silent = true })
 
 	vim.keymap.set("i", "<Down>", function()
-		if #history > 0 then
+		if #state.history > 0 then
 			find_history(1)
 		end
 	end, { buffer = bufnr, noremap = true, silent = true })
@@ -256,7 +267,7 @@ local function ensure_buffer()
 	end
 
 	local bufnr = vim.api.nvim_create_buf(false, true)
-	vim.api.nvim_buf_set_name(bufnr, "[MATLAB Command Window]")
+	vim.api.nvim_buf_set_name(bufnr, ("[MATLAB Command Window %d]"):format(state.session_id))
 	state.bufnr = bufnr
 	configure_buffer(bufnr)
 	return bufnr
@@ -424,8 +435,8 @@ local function add_history(command)
 	if command == "" then
 		return
 	end
-	if history[#history] ~= command then
-		table.insert(history, command)
+	if state.history[#state.history] ~= command then
+		table.insert(state.history, command)
 	end
 	clear_history_state()
 end
@@ -472,11 +483,11 @@ function M.is_command_window(winid)
 end
 
 function M.set_submit_callback(fn)
-	state.on_submit = fn
+	on_submit = fn
 end
 
 function M.set_interrupt_callback(fn)
-	state.on_interrupt = fn
+	on_interrupt = fn
 end
 
 function M.submit(command, opts)
@@ -485,8 +496,8 @@ function M.submit(command, opts)
 	end
 
 	ensure_buffer()
-	if state.on_submit then
-		local ok, err = state.on_submit(command, opts)
+	if on_submit then
+		local ok, err = on_submit(command, opts)
 		if ok == false then
 			return false, err
 		end
@@ -499,71 +510,101 @@ function M.submit(command, opts)
 	return true, nil
 end
 
-function M.handle_text(chunk, stream)
-	assert(type(chunk) == "string", "MATLAB text chunk must be a string")
-	assert(type(stream) == "number", "MATLAB text stream must be a number")
-	local text, severity = normalize_text_event(chunk:gsub("\r\n", "\n"):gsub("\r", "\n"), stream)
-	if text == "" then
-		return
+local function with_session(session_id, callback)
+	if session_id == nil or session_id == active_session_id then
+		return callback()
 	end
-	append_text(text, severity)
-	if severity == "error" and not is_visible() then
-		M.open({ focus = false })
+	local previous = state
+	state = states[session_id] or new_state(session_id)
+	states[session_id] = state
+	local ok, result = xpcall(callback, debug.traceback)
+	state = previous
+	if not ok then
+		error(result, 0)
 	end
+	return result
 end
 
-function M.handle_clc()
-	local bufnr = ensure_buffer()
-	state.output_tail = ""
-	state.output_tail_severity = "normal"
-	state.warning_active = false
-	state.control_marker_tail = ""
-	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {})
-	vim.api.nvim_buf_clear_namespace(bufnr, output_namespace, 0, -1)
-	clear_history_state()
-	render_prompt(bufnr)
+function M.handle_text(chunk, stream, session_id)
+	return with_session(session_id, function()
+		assert(type(chunk) == "string", "MATLAB text chunk must be a string")
+		assert(type(stream) == "number", "MATLAB text stream must be a number")
+		local text, severity = normalize_text_event(chunk:gsub("\r\n", "\n"):gsub("\r", "\n"), stream)
+		if text == "" then
+			return
+		end
+		append_text(text, severity)
+		if severity == "error" and state.session_id == active_session_id and not is_visible() then
+			M.open({ focus = false })
+		end
+	end)
+end
+
+function M.handle_clc(session_id)
+	return with_session(session_id, function()
+		local bufnr = ensure_buffer()
+		state.output_tail = ""
+		state.output_tail_severity = "normal"
+		state.warning_active = false
+		state.control_marker_tail = ""
+		vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {})
+		vim.api.nvim_buf_clear_namespace(bufnr, output_namespace, 0, -1)
+		clear_history_state()
+		render_prompt(bufnr)
+	end)
 end
 
 function M.handle_connection_state(connection, opts)
-	assert(connection == "disconnected" or connection == "connecting" or connection == "connected")
-	state.connection = connection
-	state.release = opts and opts.release or nil
-	if connection == "disconnected" then
-		state.prompt_kind = nil
-		state.input_prompt = "? "
-		state.is_idle = true
-	elseif connection == "connecting" then
-		state.prompt_kind = "INITIALIZING"
-	elseif state.prompt_kind == nil then
-		state.prompt_kind = "INITIALIZING"
-	end
+	local session_id = opts and opts.session_id or nil
+	return with_session(session_id, function()
+		assert(connection == "disconnected" or connection == "connecting" or connection == "connected")
+		state.connection = connection
+		state.release = opts and opts.release or nil
+		if connection == "disconnected" then
+			state.prompt_kind = nil
+			state.input_prompt = "? "
+			state.is_idle = true
+		elseif connection == "connecting" then
+			state.prompt_kind = "INITIALIZING"
+		elseif state.prompt_kind == nil then
+			state.prompt_kind = "INITIALIZING"
+		end
 
-	if state.bufnr and vim.api.nvim_buf_is_valid(state.bufnr) then
-		render_prompt(state.bufnr)
-	end
+		if state.bufnr and vim.api.nvim_buf_is_valid(state.bufnr) then
+			render_prompt(state.bufnr)
+		end
+	end)
 end
 
-function M.handle_input_prompt(prompt)
-	assert(type(prompt) == "string", "MATLAB input prompt must be a string")
-	state.input_prompt = prompt
-	if state.prompt_kind == "INPUT" and state.bufnr and vim.api.nvim_buf_is_valid(state.bufnr) then
-		render_prompt(state.bufnr)
-	end
+function M.handle_input_prompt(prompt, session_id)
+	return with_session(session_id, function()
+		assert(type(prompt) == "string", "MATLAB input prompt must be a string")
+		state.input_prompt = prompt
+		if state.prompt_kind == "INPUT" and state.bufnr and vim.api.nvim_buf_is_valid(state.bufnr) then
+			render_prompt(state.bufnr)
+		end
+	end)
 end
 
-function M.handle_prompt_change(kind, is_idle)
-	assert(valid_prompt_states[kind], "unknown MATLAB prompt state: " .. tostring(kind))
-	assert(type(is_idle) == "boolean", "MATLAB prompt idle state must be a boolean")
-	if kind ~= "BUSY" and kind ~= "INITIALIZING" then
-		flush_output_tail()
-	end
-	state.prompt_kind = kind
-	state.is_idle = is_idle
-	local bufnr = ensure_buffer()
-	render_prompt(bufnr)
-	if (kind == "INPUT" or kind == "MORE" or kind == "PAUSE") and not is_visible() then
-		M.open()
-	end
+function M.handle_prompt_change(kind, is_idle, session_id)
+	return with_session(session_id, function()
+		assert(valid_prompt_states[kind], "unknown MATLAB prompt state: " .. tostring(kind))
+		assert(type(is_idle) == "boolean", "MATLAB prompt idle state must be a boolean")
+		if kind ~= "BUSY" and kind ~= "INITIALIZING" then
+			flush_output_tail()
+		end
+		state.prompt_kind = kind
+		state.is_idle = is_idle
+		local bufnr = ensure_buffer()
+		render_prompt(bufnr)
+		if
+			state.session_id == active_session_id
+			and (kind == "INPUT" or kind == "MORE" or kind == "PAUSE")
+			and not is_visible()
+		then
+			M.open()
+		end
+	end)
 end
 
 function M.severity_from_text_event(text, stream)
@@ -585,31 +626,58 @@ function M._snapshot()
 		prompt = state.prompt,
 		status_text = state.status_text,
 		output_tail = state.output_tail,
-		history = vim.deepcopy(history),
+		history = vim.deepcopy(state.history),
+		session_id = state.session_id,
+		session_index = state.session_index,
+		session_count = state.session_count,
 	}
 end
 
-function M._reset_for_tests()
+function M.select_session(session_id, session_count, session_index)
+	local winid = is_visible() and state.winid or nil
+	state.winid = nil
+	active_session_id = session_id
+	state = states[session_id] or new_state(session_id)
+	states[session_id] = state
+	state.session_index = session_index or session_id
+	state.session_count = session_count
+	if winid then
+		state.winid = winid
+		vim.api.nvim_set_option_value("winfixbuf", false, { win = winid })
+		vim.api.nvim_win_set_buf(winid, ensure_buffer())
+		vim.api.nvim_set_option_value("winfixbuf", true, { win = winid })
+		render_prompt(state.bufnr)
+	end
+end
+
+function M.remove_session(session_id)
+	local session_state = states[session_id]
+	if not session_state then
+		return
+	end
+	local previous = state
+	state = session_state
 	close_window()
 	if state.bufnr and vim.api.nvim_buf_is_valid(state.bufnr) then
 		vim.api.nvim_buf_delete(state.bufnr, { force = true })
 	end
-	state.bufnr = nil
-	state.connection = "disconnected"
-	state.release = nil
-	state.prompt_kind = nil
-	state.prompt = ""
-	state.status_text = nil
-	state.input_prompt = "? "
-	state.is_idle = true
-	state.output_tail = ""
-	state.output_tail_severity = "normal"
-	state.warning_active = false
-	state.control_marker_tail = ""
-	state.on_submit = nil
-	state.on_interrupt = nil
-	history = {}
-	clear_history_state()
+	states[session_id] = nil
+	state = previous
+end
+
+function M._reset_for_tests()
+	for _, session_state in pairs(states) do
+		state = session_state
+		close_window()
+		if state.bufnr and vim.api.nvim_buf_is_valid(state.bufnr) then
+			vim.api.nvim_buf_delete(state.bufnr, { force = true })
+		end
+	end
+	states = { [1] = new_state(1) }
+	active_session_id = 1
+	state = states[1]
+	on_submit = nil
+	on_interrupt = nil
 end
 
 return M
