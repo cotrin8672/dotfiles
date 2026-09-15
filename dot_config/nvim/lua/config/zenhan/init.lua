@@ -54,7 +54,6 @@ function M.setup(opts)
 	})
 
 	vim.api.nvim_create_autocmd({
-		"VimEnter",
 		"FocusGained",
 		"InsertLeave",
 		"CmdlineEnter",

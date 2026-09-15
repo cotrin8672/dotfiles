@@ -127,7 +127,7 @@ end
 
 return vim.tbl_extend("force", M, {
 	"nanozuki/tabby.nvim",
-	lazy = false,
+	event = "VeryLazy",
 	dependencies = {
 		"mini.icons",
 	},

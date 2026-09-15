@@ -68,7 +68,8 @@ def --env add-mason-bin-to-path [] {
 add-mason-bin-to-path
 
 def nvim [...args] {
+    let nvim = ($nu.home-dir | path join "scoop" "apps" "neovim" "current" "bin" "nvim.exe")
     with-env { LANG: "C" } {
-        ^nvim ...$args
+        ^$nvim ...$args
     }
 }

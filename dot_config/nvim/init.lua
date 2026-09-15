@@ -35,7 +35,7 @@ vim.keymap.set({ "n", "i", "v", "c", "t" }, "<RightMouse>", "<Nop>", { silent = 
 
 local float = require("shared.float")
 require("config.zenhan").setup({
-	command = "zenhan.exe",
+	command = vim.fs.joinpath(vim.fn.expand("~"), "scoop", "apps", "zenhan", "current", "zenhan.exe"),
 	off_arg = "0",
 })
 
