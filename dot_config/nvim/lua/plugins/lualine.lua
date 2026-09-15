@@ -1,6 +1,6 @@
 return {
 	"nvim-lualine/lualine.nvim",
-	event = "VimEnter",
+	event = "VeryLazy",
 	dependencies = {
 		"mini.icons",
 	},
