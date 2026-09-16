@@ -21,9 +21,22 @@ describe("MATLAB editing keymaps", function()
 		assert.same({}, vim.fn.maparg(" mW", "n", false, true))
 	end)
 
+	it("maps the MATLAB session picker to leader fc", function()
+		local mapping = vim.fn.maparg(" fc", "n", false, true)
+
+		assert.are.equal("<Cmd>MatlabSessions<CR>", mapping.rhs)
+		assert.are.equal("Matlab sessions", mapping.desc)
+	end)
+
 	it("maps exact selection execution and interrupt", function()
 		assert.are.equal(":<C-u>MatlabRunVisual<CR>", vim.fn.maparg(" ms", "x", false, true).rhs)
 		assert.are.equal("<Cmd>MatlabInterrupt<CR>", vim.fn.maparg(" mi", "n", false, true).rhs)
+	end)
+
+	it("maps K to MATLAB help", function()
+		local mapping = vim.fn.maparg("K", "n", false, true)
+		assert.are.equal("Matlab help", mapping.desc)
+		assert.is_function(mapping.callback)
 	end)
 
 	it("repairs a missing split join mapping in an already open MATLAB buffer", function()
