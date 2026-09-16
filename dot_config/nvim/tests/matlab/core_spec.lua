@@ -123,6 +123,25 @@ describe("MATLAB execution client", function()
 		assert.same({ { "first", true }, { "second", true } }, completed)
 	end)
 
+	it("lists sessions and sends work to a session without selecting it", function()
+		core.ensure_client()
+		core.handle_mvm_state_change({ state = "connected", release = "R2024a" }, 41)
+		core.new_session()
+		core.handle_mvm_state_change({ state = "connected", release = "R2024b" }, 42)
+
+		local sessions = core.list_sessions()
+		assert.are.equal(2, #sessions)
+		assert.is_false(sessions[1].current)
+		assert.is_true(sessions[2].current)
+
+		assert.is_true(core.enqueue_eval("first session", {}, sessions[1].id))
+		assert.are.equal(41, sent[#sent].client_id)
+		assert.are.equal(2, core._snapshot().session_id)
+
+		assert.is_true(core.select_session(sessions[1].id))
+		assert.are.equal(sessions[1].id, core._snapshot().session_id)
+	end)
+
 	it("ignores state and eval notifications from stale clients", function()
 		core.enqueue_eval("first")
 		core.handle_mvm_state_change({ state = "connected" }, 999)

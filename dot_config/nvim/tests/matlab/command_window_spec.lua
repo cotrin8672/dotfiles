@@ -10,6 +10,10 @@ describe("MATLAB command window", function()
 		return vim.api.nvim_buf_get_extmarks(cmdwin._snapshot().bufnr, namespace, 0, -1, { details = true })
 	end
 
+	local function plain_winbar(winid)
+		return vim.wo[winid].winbar:gsub("%%#.-#", ""):gsub("%%%*", "")
+	end
+
 	before_each(function()
 		connection = "disconnected"
 		release = nil
@@ -41,26 +45,37 @@ describe("MATLAB command window", function()
 		cmdwin.open()
 		local winid = cmdwin._snapshot().winid
 		assert.are.equal("", cmdwin._snapshot().prompt)
-		assert.are.equal(" MATLAB 1/1 · DISCONNECTED ", vim.wo[winid].winbar)
+		assert.matches("^%%#MatlabWinbarFill# ", vim.wo[winid].winbar)
+		assert.matches("%%#MatlabWinbarFill#%%=$", vim.wo[winid].winbar)
+		assert.matches("󰿈", plain_winbar(winid))
+		assert.not_matches("MATLAB ", plain_winbar(winid))
+		assert.matches("1 ○", plain_winbar(winid))
 		assert.same({}, vim.api.nvim_buf_get_extmarks(cmdwin._snapshot().bufnr, -1, 0, -1, { details = true }))
 
 		cmdwin.handle_connection_state("connecting")
 		assert.are.equal("MATLAB STARTING…", cmdwin._snapshot().status_text)
 		assert.are.equal("", cmdwin._snapshot().prompt)
-		assert.are.equal(" MATLAB 1/1 · STARTING… ", vim.wo[winid].winbar)
+		assert.matches("1 ◐", plain_winbar(winid))
+		cmdwin._advance_animation_for_tests()
+		assert.matches("1 ◓", plain_winbar(winid))
 
 		cmdwin.handle_connection_state("connected", { release = "R2024a" })
 		cmdwin.handle_prompt_change("BUSY", false)
 		assert.are.equal("MATLAB RUNNING…", cmdwin._snapshot().status_text)
-		assert.are.equal(" MATLAB 1/1 · RUNNING… ", vim.wo[winid].winbar)
+		local busy_winbar = plain_winbar(winid)
+		assert.matches("1 ⠙", busy_winbar)
+		cmdwin._advance_animation_for_tests()
+		assert.are_not.equal(busy_winbar, plain_winbar(winid))
+		assert.matches("1 ⠹", plain_winbar(winid))
 		cmdwin.handle_prompt_change("READY", true)
 		assert.are.equal(">> ", cmdwin._snapshot().prompt)
 		assert.is_nil(cmdwin._snapshot().status_text)
-		assert.are.equal(" MATLAB 1/1 · R2024a ", vim.wo[winid].winbar)
+		assert.matches("1 ●", plain_winbar(winid))
 	end)
 
 	it("keeps one command buffer per session and swaps it in the existing window", function()
-		cmdwin.handle_connection_state("connected", { release = "R2024a", session_id = 1 })
+		connection = "connected"
+		release = "R2024a"
 		cmdwin.open()
 		local winid = cmdwin._snapshot().winid
 		local first_bufnr = cmdwin._snapshot().bufnr
@@ -72,13 +87,17 @@ describe("MATLAB command window", function()
 		local second_bufnr = cmdwin._snapshot().bufnr
 		assert.are_not.equal(first_bufnr, second_bufnr)
 		assert.are.equal(second_bufnr, vim.api.nvim_win_get_buf(winid))
-		assert.are.equal(" MATLAB 2/2 · R2024a ", vim.wo[winid].winbar)
+		assert.matches("1 ◐", plain_winbar(winid))
+		assert.matches("2 ●", plain_winbar(winid))
+		assert.matches("%%#MatlabWinbarActive# 2 ●", vim.wo[winid].winbar)
+		cmdwin.handle_prompt_change("READY", true, 1)
+		assert.matches("%%#MatlabWinbarInactive# 1 ●", vim.wo[winid].winbar)
 
 		cmdwin.handle_text("background one\n", 0, 1)
 		cmdwin.select_session(1, 2, 1)
 		assert.are.equal(first_bufnr, vim.api.nvim_win_get_buf(winid))
 		assert.same(
-			{ "session one", "background one", "" },
+			{ "session one", "background one", ">> " },
 			vim.api.nvim_buf_get_lines(first_bufnr, 0, -1, false)
 		)
 	end)
@@ -96,6 +115,25 @@ describe("MATLAB command window", function()
 			{ ">> x = 1;", "" },
 			vim.api.nvim_buf_get_lines(cmdwin._snapshot().bufnr, 0, -1, false)
 		)
+	end)
+
+	it("keeps preview submissions bound to their command buffer session", function()
+		local received = {}
+		cmdwin.set_submit_callback(function(command, _, session_id)
+			table.insert(received, { command, session_id })
+			return true, nil
+		end)
+
+		cmdwin.select_session(2, 2, 2)
+		local second_bufnr = cmdwin.buffer_for_session(2)
+		local first_bufnr = cmdwin.buffer_for_session(1)
+		assert.is_true(cmdwin.submit("from one", nil, 1))
+		assert.is_true(cmdwin.submit("from two", nil, 2))
+
+		assert.same({ { "from one", 1 }, { "from two", 2 } }, received)
+		assert.are.equal(">> from one", vim.api.nvim_buf_get_lines(first_bufnr, 0, 1, false)[1])
+		assert.are.equal(">> from two", vim.api.nvim_buf_get_lines(second_bufnr, 0, 1, false)[1])
+		assert.are.equal(2, cmdwin._snapshot().session_id)
 	end)
 
 	it("strips warning sentinels and highlights warnings without opening", function()
@@ -199,5 +237,15 @@ describe("MATLAB command window", function()
 		assert.is_true(vim.fn.maparg("q", "n", false, true).buffer == 1)
 		assert.are.equal("", vim.fn.maparg("<Esc>", "n"))
 		assert.are.equal(bufnr, vim.api.nvim_win_get_buf(cmdwin._snapshot().winid))
+	end)
+
+	it("uses buffer-local Tab keys for session navigation", function()
+		cmdwin.open()
+		local next_mapping = vim.fn.maparg("<Tab>", "n", false, true)
+		local previous_mapping = vim.fn.maparg("<S-Tab>", "n", false, true)
+		assert.are.equal("<Cmd>MatlabNext<CR>", next_mapping.rhs)
+		assert.are.equal(1, next_mapping.buffer)
+		assert.are.equal("<Cmd>MatlabPrev<CR>", previous_mapping.rhs)
+		assert.are.equal(1, previous_mapping.buffer)
 	end)
 end)

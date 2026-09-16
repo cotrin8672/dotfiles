@@ -347,7 +347,7 @@ return {
 				component_separators = { left = "╲", right = "╲" },
 				disabled_filetypes = {
 					statusline = { "ministarter" },
-					winbar = { "ministarter" },
+					winbar = { "ministarter", "matlab-command-window" },
 				},
 			},
 			sections = {

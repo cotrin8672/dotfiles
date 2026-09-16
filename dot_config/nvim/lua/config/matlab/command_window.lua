@@ -39,6 +39,11 @@ local active_session_id = 1
 local state = states[active_session_id]
 local on_submit = nil
 local on_interrupt = nil
+local animation_timer = nil
+local animation_tick = 0
+local busy_frames = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }
+local initializing_frames = { "◐", "◓", "◑", "◒" }
+local sync_animation
 
 local prompt_map = {
 	READY = ">> ",
@@ -70,6 +75,65 @@ local severity_rank = {
 	warning = 2,
 	error = 3,
 }
+
+local function get_hl_attr(groups, attr)
+	for _, group in ipairs(groups) do
+		local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = group, link = false })
+		if ok and hl[attr] then
+			return hl[attr]
+		end
+	end
+end
+
+local function apply_winbar_highlights()
+	vim.api.nvim_set_hl(0, "MatlabWinbarHead", { link = "TabbyHead" })
+	vim.api.nvim_set_hl(0, "MatlabWinbarActive", { link = "TabbyActive" })
+	vim.api.nvim_set_hl(0, "MatlabWinbarInactive", { link = "TabbyInactive" })
+	vim.api.nvim_set_hl(0, "MatlabWinbarFill", { link = "TabbyFill" })
+
+	local fill_bg = get_hl_attr({ "TabbyFill", "StatusLineNC", "Normal" }, "bg")
+	vim.api.nvim_set_hl(0, "MatlabWinbarHeadSep", {
+		fg = get_hl_attr({ "TabbyHead", "DiagnosticHint", "Normal" }, "bg"),
+		bg = fill_bg,
+	})
+	vim.api.nvim_set_hl(0, "MatlabWinbarActiveSep", {
+		fg = get_hl_attr({ "TabbyActive", "DiagnosticHint", "Normal" }, "bg"),
+		bg = fill_bg,
+	})
+	vim.api.nvim_set_hl(0, "MatlabWinbarInactiveSep", {
+		fg = get_hl_attr({ "TabbyInactive", "StatusLine", "Normal" }, "bg"),
+		bg = fill_bg,
+	})
+end
+
+apply_winbar_highlights()
+local winbar_highlight_group = vim.api.nvim_create_augroup("MatlabCommandWindowWinbar", { clear = true })
+vim.api.nvim_create_autocmd("ColorScheme", {
+	group = winbar_highlight_group,
+	callback = apply_winbar_highlights,
+})
+
+local function status_icon(session_state)
+	if session_state.connection == "disconnected" then
+		return "○"
+	end
+	if session_state.connection == "connecting" or session_state.prompt_kind == "INITIALIZING" then
+		return initializing_frames[animation_tick % #initializing_frames + 1]
+	end
+	if session_state.prompt_kind == "BUSY" or session_state.prompt_kind == "COMPLETING_BLOCK" then
+		return busy_frames[animation_tick % #busy_frames + 1]
+	end
+	if session_state.prompt_kind == "DEBUG" then
+		return "◆"
+	end
+	if session_state.prompt_kind == "INPUT" or session_state.prompt_kind == "MORE" then
+		return "?"
+	end
+	if session_state.prompt_kind == "PAUSE" then
+		return "Ⅱ"
+	end
+	return "●"
+end
 
 local function is_visible()
 	return state.winid ~= nil and vim.api.nvim_win_is_valid(state.winid)
@@ -196,19 +260,84 @@ local function current_prompt()
 	return "", "MATLAB CONNECTED…"
 end
 
+local function winbar_text()
+	apply_winbar_highlights()
+
+	local ordered = {}
+	for _, session_state in pairs(states) do
+		table.insert(ordered, session_state)
+	end
+	table.sort(ordered, function(left, right)
+		return left.session_id < right.session_id
+	end)
+	local sessions_text = { "%#MatlabWinbarHead# 󰿈 %#MatlabWinbarHeadSep#" }
+	for _, session_state in ipairs(ordered) do
+		local active = session_state.session_id == active_session_id
+		local body = active and "MatlabWinbarActive" or "MatlabWinbarInactive"
+		local separator = active and "MatlabWinbarActiveSep" or "MatlabWinbarInactiveSep"
+		local item = (" %%#%s#%%#%s# %d %s %%#%s#"):format(
+			separator,
+			body,
+			session_state.session_id,
+			status_icon(session_state),
+			separator
+		)
+		table.insert(sessions_text, item)
+	end
+	return "%#MatlabWinbarFill# " .. table.concat(sessions_text) .. "%#MatlabWinbarFill#%="
+end
+
 local function render_winbar()
 	if not is_visible() then
 		return
 	end
+	vim.api.nvim_set_option_value("winbar", winbar_text(), { win = state.winid })
+	sync_animation()
+end
 
-	local text = state.status_text
-	if not text then
-		text = state.release or "DISCONNECTED"
-	else
-		text = text:gsub("^MATLAB%s+", "")
+local function stop_animation()
+	if animation_timer then
+		animation_timer:stop()
+		animation_timer:close()
+		animation_timer = nil
 	end
-	text = ("MATLAB %d/%d · %s"):format(state.session_index, state.session_count, text)
-	vim.api.nvim_set_option_value("winbar", " " .. text .. " ", { win = state.winid })
+	animation_tick = 0
+end
+
+local function has_animated_session()
+	if not is_visible() then
+		return false
+	end
+	for _, session_state in pairs(states) do
+		if
+			session_state.connection == "connecting"
+			or session_state.prompt_kind == "INITIALIZING"
+			or session_state.prompt_kind == "BUSY"
+			or session_state.prompt_kind == "COMPLETING_BLOCK"
+		then
+			return true
+		end
+	end
+	return false
+end
+
+sync_animation = function()
+	if not has_animated_session() then
+		stop_animation()
+		return
+	end
+	if animation_timer then
+		return
+	end
+	animation_timer = assert(vim.uv.new_timer(), "failed to create MATLAB status animation timer")
+	animation_timer:start(80, 80, vim.schedule_wrap(function()
+		if not has_animated_session() then
+			stop_animation()
+			return
+		end
+		animation_tick = (animation_tick + 1) % 30
+		render_winbar()
+	end))
 end
 
 local function render_prompt(bufnr)
@@ -217,7 +346,26 @@ local function render_prompt(bufnr)
 	render_winbar()
 end
 
+local function with_session(session_id, callback)
+	if session_id == nil or session_id == active_session_id then
+		return callback()
+	end
+	local previous = state
+	state = states[session_id] or new_state(session_id)
+	states[session_id] = state
+	local ok, result, extra = xpcall(callback, debug.traceback)
+	state = previous
+	if not ok then
+		error(result, 0)
+	end
+	if is_visible() then
+		render_winbar()
+	end
+	return result, extra
+end
+
 local function configure_buffer(bufnr)
+	local session_id = state.session_id
 	vim.bo[bufnr].buftype = "prompt"
 	vim.bo[bufnr].bufhidden = "hide"
 	vim.bo[bufnr].swapfile = false
@@ -230,29 +378,45 @@ local function configure_buffer(bufnr)
 	vim.keymap.set("n", "[e", function()
 		jump_to_error(-1)
 	end, { buffer = bufnr, noremap = true, silent = true })
+	vim.keymap.set("n", "<Tab>", "<Cmd>MatlabNext<CR>", {
+		buffer = bufnr,
+		noremap = true,
+		silent = true,
+		desc = "Matlab next session",
+	})
+	vim.keymap.set("n", "<S-Tab>", "<Cmd>MatlabPrev<CR>", {
+		buffer = bufnr,
+		noremap = true,
+		silent = true,
+		desc = "Matlab previous session",
+	})
 
 	for _, mode in ipairs({ "n", "i" }) do
 		vim.keymap.set(mode, "<C-c>", function()
 			if on_interrupt then
-				on_interrupt()
+				on_interrupt(session_id)
 			end
 		end, { buffer = bufnr, noremap = true, silent = true })
 	end
 
 	vim.keymap.set("i", "<Up>", function()
-		if #state.history > 0 then
-			find_history(-1)
-		end
+		with_session(session_id, function()
+			if #state.history > 0 then
+				find_history(-1)
+			end
+		end)
 	end, { buffer = bufnr, noremap = true, silent = true })
 
 	vim.keymap.set("i", "<Down>", function()
-		if #state.history > 0 then
-			find_history(1)
-		end
+		with_session(session_id, function()
+			if #state.history > 0 then
+				find_history(1)
+			end
+		end)
 	end, { buffer = bufnr, noremap = true, silent = true })
 
 	vim.fn.prompt_setcallback(bufnr, function(input)
-		local ok, err = M.submit(input, { echo = false })
+		local ok, err = M.submit(input, { echo = false }, session_id)
 		if ok == false then
 			vim.notify(tostring(err), vim.log.levels.ERROR)
 		end
@@ -490,39 +654,26 @@ function M.set_interrupt_callback(fn)
 	on_interrupt = fn
 end
 
-function M.submit(command, opts)
-	if command == "" then
-		return true, nil
-	end
-
-	ensure_buffer()
-	if on_submit then
-		local ok, err = on_submit(command, opts)
-		if ok == false then
-			return false, err
+function M.submit(command, opts, session_id)
+	return with_session(session_id, function()
+		if command == "" then
+			return true, nil
 		end
-	end
 
-	if opts == nil or opts.echo ~= false then
-		append_input(command)
-	end
-	add_history(command)
-	return true, nil
-end
+		ensure_buffer()
+		if on_submit then
+			local ok, err = on_submit(command, opts, state.session_id)
+			if ok == false then
+				return false, err
+			end
+		end
 
-local function with_session(session_id, callback)
-	if session_id == nil or session_id == active_session_id then
-		return callback()
-	end
-	local previous = state
-	state = states[session_id] or new_state(session_id)
-	states[session_id] = state
-	local ok, result = xpcall(callback, debug.traceback)
-	state = previous
-	if not ok then
-		error(result, 0)
-	end
-	return result
+		if opts == nil or opts.echo ~= false then
+			append_input(command)
+		end
+		add_history(command)
+		return true, nil
+	end)
 end
 
 function M.handle_text(chunk, stream, session_id)
@@ -633,6 +784,15 @@ function M._snapshot()
 	}
 end
 
+function M._advance_animation_for_tests(steps)
+	animation_tick = (animation_tick + (steps or 1)) % 30
+	render_winbar()
+end
+
+function M.buffer_for_session(session_id)
+	return with_session(session_id, ensure_buffer)
+end
+
 function M.select_session(session_id, session_count, session_index)
 	local winid = is_visible() and state.winid or nil
 	state.winid = nil
@@ -663,9 +823,13 @@ function M.remove_session(session_id)
 	end
 	states[session_id] = nil
 	state = previous
+	if is_visible() then
+		render_winbar()
+	end
 end
 
 function M._reset_for_tests()
+	stop_animation()
 	for _, session_state in pairs(states) do
 		state = session_state
 		close_window()

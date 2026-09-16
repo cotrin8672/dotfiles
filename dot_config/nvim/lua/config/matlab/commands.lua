@@ -213,4 +213,8 @@ vim.api.nvim_create_user_command("MatlabWorkspace", function()
 	require("config.matlab.workspace").toggle()
 end, { force = true })
 
+vim.api.nvim_create_user_command("MatlabSessions", function()
+	require("config.matlab.session_picker").open()
+end, { force = true })
+
 return M

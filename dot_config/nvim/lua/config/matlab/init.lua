@@ -52,20 +52,18 @@ function M.setup()
 	require("config.matlab.commands")
 	setup_auto_start(core)
 
-	cmdwin.set_submit_callback(function(input, opts)
+	cmdwin.set_submit_callback(function(input, opts, session_id)
 		if input ~= "" then
-			return exec.eval(input, opts)
+			return exec.eval(input, opts, session_id)
 		end
 		return true, nil
 	end)
 
-	cmdwin.set_interrupt_callback(function()
-		exec.interrupt()
+	cmdwin.set_interrupt_callback(function(session_id)
+		exec.interrupt(session_id)
 	end)
 
 	vim.keymap.set("n", "<leader>mn", "<Cmd>MatlabNew<CR>", { desc = "Matlab new session" })
-	vim.keymap.set("n", "<leader>m]", "<Cmd>MatlabNext<CR>", { desc = "Matlab next session" })
-	vim.keymap.set("n", "<leader>m[", "<Cmd>MatlabPrev<CR>", { desc = "Matlab previous session" })
 end
 
 return M

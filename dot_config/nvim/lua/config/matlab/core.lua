@@ -36,6 +36,15 @@ local function connection_for_client(client_id)
 	return nil, nil
 end
 
+local function connection_for_session(session_id)
+	for index, connection in ipairs(sessions) do
+		if connection.id == session_id then
+			return connection, index
+		end
+	end
+	return nil, nil
+end
+
 local function status()
 	return require("config.matlab.status")
 end
@@ -368,16 +377,24 @@ dispatch_next = function(connection)
 	return true, nil
 end
 
-function M.enqueue_eval(command, opts)
+function M.enqueue_eval(command, opts, session_id)
 	opts = opts or {}
 	if type(command) ~= "string" or vim.trim(command) == "" then
 		return false, "MATLAB command is empty"
 	end
-	local ok, err = M.ensure_client(opts.bufnr)
-	if not ok then
-		return false, err
+	local connection
+	if session_id ~= nil then
+		connection = connection_for_session(session_id)
+		if not connection then
+			return false, "MATLAB session not found"
+		end
+	else
+		local ok, err = M.ensure_client(opts.bufnr)
+		if not ok then
+			return false, err
+		end
+		connection = assert(active_connection())
 	end
-	local connection = assert(active_connection())
 	table.insert(connection.queue, {
 		request_id = M.new_request_id(),
 		command = command,
@@ -461,14 +478,15 @@ function M.handle_client_exit(client_id, code, signal)
 	end
 end
 
-function M.notify_exec(method, params)
-	local connection = active_connection()
+function M.notify_exec(method, params, session_id)
+	local connection = session_id ~= nil and connection_for_session(session_id) or active_connection()
 	if not connection or connection.state ~= "connected" then
-		return false, M.connection_error()
+		return false, connection and connection.state == "connecting" and "MATLAB is still connecting"
+			or "MATLAB is not connected"
 	end
-	local client, err = M.get_exec_client()
-	if not client then
-		return false, err
+	local client = options.get_client(connection.client_id)
+	if not client_is_active(client) then
+		return false, "matlab_ls_exec client not found"
 	end
 	if not client:notify(method, params or {}) then
 		reset_connection(connection, "Failed to send " .. method .. " to MATLAB", connection.client_id, true)
@@ -477,8 +495,8 @@ function M.notify_exec(method, params)
 	return true, nil
 end
 
-function M.interrupt()
-	return M.notify_exec("interruptRequest", {})
+function M.interrupt(session_id)
+	return M.notify_exec("interruptRequest", {}, session_id)
 end
 
 function M.cancel_queued()
@@ -531,6 +549,31 @@ local function select_index(index)
 		workspace().on_connected(connection.release)
 	end
 	return true, nil
+end
+
+function M.list_sessions()
+	local result = {}
+	for index, connection in ipairs(sessions) do
+		result[index] = {
+			id = connection.id,
+			index = index,
+			current = index == active_index,
+			state = connection.state,
+			release = connection.release,
+			root_dir = connection.root_dir,
+			queue_length = #connection.queue,
+			busy = connection.inflight ~= nil,
+		}
+	end
+	return result
+end
+
+function M.select_session(session_id)
+	local _, index = connection_for_session(session_id)
+	if not index then
+		return false, "MATLAB session not found"
+	end
+	return select_index(index)
 end
 
 function M.new_session(bufnr)

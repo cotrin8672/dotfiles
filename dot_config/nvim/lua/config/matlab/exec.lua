@@ -84,12 +84,12 @@ function M.visual_selection_command(start_pos, end_pos, selection_type)
 	return command, nil
 end
 
-function M.eval(command, opts)
-	return core.enqueue_eval(command, opts)
+function M.eval(command, opts, session_id)
+	return core.enqueue_eval(command, opts, session_id)
 end
 
-function M.interrupt()
-	local ok, err = core.interrupt()
+function M.interrupt(session_id)
+	local ok, err = core.interrupt(session_id)
 
 	if not ok then
 		require("config.matlab.status").blocked(err)
