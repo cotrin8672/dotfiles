@@ -481,16 +481,6 @@ return {
       pattern = "MiniStarterOpened",
       callback = function()
         local buf = vim.api.nvim_get_current_buf()
-        local map_opts = { noremap = true, silent = true, buffer = buf }
-
-        vim.keymap.set("n", "j", function()
-          MiniStarter.update_current_item("next", buf)
-        end, map_opts)
-
-        vim.keymap.set("n", "k", function()
-          MiniStarter.update_current_item("prev", buf)
-        end, map_opts)
-
         repaint_starter_buffer(buf, { force = true })
         queue_repaint(buf, { force = true })
       end,
