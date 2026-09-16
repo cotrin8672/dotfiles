@@ -22,6 +22,9 @@ function M.setup(capabilities)
 	vim.lsp.config("matlab_ls", {
 		capabilities = capabilities,
 		settings = matlab_settings("onStart", true),
+		handlers = {
+			fevalResponse = require("config.matlab.help").handle_response,
+		},
 	})
 end
 

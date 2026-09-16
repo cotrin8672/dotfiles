@@ -7,7 +7,7 @@ describe("MATLAB LSP roles", function()
 
 		assert.equals("onStart", vim.lsp.config.matlab_ls.settings.MATLAB.matlabConnectionTiming)
 		assert.is_true(vim.lsp.config.matlab_ls.settings.MATLAB.indexWorkspace)
-		assert.is_nil(vim.lsp.config.matlab_ls.handlers)
+		assert.is_function(vim.lsp.config.matlab_ls.handlers.fevalResponse)
 
 		local exec_config = lsp.exec_config(vim.api.nvim_get_current_buf(), {}, function() end)
 		assert.equals("matlab_ls_exec", exec_config.name)

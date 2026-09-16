@@ -70,7 +70,9 @@ return {
 				map("gd", vim.lsp.buf.definition)
 				map("gr", vim.lsp.buf.references)
 				map("gi", vim.lsp.buf.implementation)
-				map("K", vim.lsp.buf.hover)
+				if vim.bo[bufnr].filetype ~= "matlab" then
+					map("K", vim.lsp.buf.hover)
+				end
 				vim.keymap.set("n", "<leader>rn", function()
 					return ":IncRename " .. vim.fn.expand("<cword>")
 				end, { buffer = bufnr, silent = true, expr = true })

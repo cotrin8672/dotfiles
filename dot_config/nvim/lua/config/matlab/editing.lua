@@ -217,6 +217,18 @@ local function configure_buffer(bufnr)
 		buffer = bufnr,
 		desc = "Matlab toggle workspace",
 	})
+
+	vim.keymap.set("n", "<leader>fc", "<Cmd>MatlabSessions<CR>", {
+		buffer = bufnr,
+		desc = "Matlab sessions",
+	})
+
+	vim.keymap.set("n", "K", function()
+		require("config.matlab.help").hover(bufnr)
+	end, {
+		buffer = bufnr,
+		desc = "Matlab help",
+	})
 end
 
 function M.setup()
