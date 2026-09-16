@@ -1,6 +1,6 @@
 ﻿return {
 	"nvim-mini/mini.indentscope",
-	event = { "BufReadPost", "BufNewFile" },
+	event = "User LazyFile",
 
 	opts = function()
 		local indentscope = require("mini.indentscope")

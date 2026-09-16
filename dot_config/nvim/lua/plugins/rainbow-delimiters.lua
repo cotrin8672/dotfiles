@@ -1,6 +1,6 @@
 return {
 	"HiPhish/rainbow-delimiters.nvim",
-	event = { "BufReadPost", "BufNewFile" },
+	event = "User LazyFile",
 	dependencies = {
 		"nvim-treesitter/nvim-treesitter",
 	},

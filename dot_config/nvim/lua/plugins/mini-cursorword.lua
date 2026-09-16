@@ -1,5 +1,5 @@
 return {
 	"nvim-mini/mini.cursorword",
-	event = { "BufReadPost", "BufNewFile" },
+	event = "User LazyFile",
 	opts = {},
 }

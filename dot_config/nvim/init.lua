@@ -123,6 +123,21 @@ vim.api.nvim_create_autocmd({ "WinEnter", "FocusGained", "BufEnter" }, {
 
 require("shared.java_kotlin_package").setup()
 require("config.matlab").setup()
+
+vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile" }, {
+	group = vim.api.nvim_create_augroup("LazyFile", { clear = true }),
+	once = true,
+	callback = function(args)
+		vim.defer_fn(function()
+			vim.api.nvim_exec_autocmds("User", {
+				pattern = "LazyFile",
+				modeline = false,
+				data = { buf = args.buf },
+			})
+		end, 50)
+	end,
+})
+
 vim.api.nvim_create_autocmd("User", {
 	pattern = "VeryLazy",
 	once = true,

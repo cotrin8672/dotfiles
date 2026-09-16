@@ -1,6 +1,6 @@
 return {
 	"Bekaboo/dropbar.nvim",
-	event = { "BufReadPost", "BufNewFile", "BufFilePost" },
+	event = "User LazyFile",
 	config = function()
 		local sources = require("dropbar.sources")
 		local utils = require("dropbar.utils")

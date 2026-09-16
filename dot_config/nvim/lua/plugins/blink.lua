@@ -12,7 +12,7 @@ return {
 		"erooke/blink-cmp-latex",
 		"mcdev-nvim",
 	},
-	event = { "BufReadPost", "BufNewFile", "InsertEnter" },
+	event = "VeryLazy",
 	opts = {
 		keymap = {
 			preset = "enter",
