@@ -1,6 +1,6 @@
 ﻿return {
 	"shellRaining/hlchunk.nvim",
-	event = { "BufReadPost", "BufNewFile" },
+	event = "User LazyFile",
 	config = function()
 		local ts = require("hlchunk.utils.ts_node_type")
 

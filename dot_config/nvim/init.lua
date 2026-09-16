@@ -123,17 +123,45 @@ vim.api.nvim_create_autocmd({ "WinEnter", "FocusGained", "BufEnter" }, {
 require("shared.java_kotlin_package").setup()
 require("config.matlab").setup()
 
+local lazy_file_group = vim.api.nvim_create_augroup("LazyFile", { clear = true })
+
+local function paint_buffer_early(buf)
+	if not vim.api.nvim_buf_is_valid(buf) or vim.bo[buf].buftype ~= "" then
+		return
+	end
+
+	local name = vim.api.nvim_buf_get_name(buf)
+	local size = name == "" and -1 or vim.fn.getfsize(name)
+	if vim.bo[buf].filetype ~= "bigfile" and (size < 0 or size <= 1024 * 1024) then
+		local filetype = vim.filetype.match({ buf = buf })
+		if filetype and vim.bo[buf].syntax == "" then
+			pcall(vim.cmd, "syntax enable")
+			pcall(function()
+				vim.bo[buf].syntax = filetype
+			end)
+		end
+	end
+
+	-- BufReadPost runs before the first normal redraw. Flush the file contents
+	-- and basic syntax now so later plugin loading cannot leave a blank frame or
+	-- unhighlighted text on screen.
+	vim.cmd("redraw")
+end
+
 vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile" }, {
-	group = vim.api.nvim_create_augroup("LazyFile", { clear = true }),
+	group = lazy_file_group,
 	once = true,
 	callback = function(args)
-		vim.defer_fn(function()
-			vim.api.nvim_exec_autocmds("User", {
-				pattern = "LazyFile",
-				modeline = false,
-				data = { buf = args.buf },
-			})
-		end, 50)
+		paint_buffer_early(args.buf)
+		vim.schedule(function()
+			if vim.api.nvim_buf_is_valid(args.buf) then
+				vim.api.nvim_exec_autocmds("User", {
+					pattern = "LazyFile",
+					modeline = false,
+					data = { buf = args.buf },
+				})
+			end
+		end)
 	end,
 })
 
