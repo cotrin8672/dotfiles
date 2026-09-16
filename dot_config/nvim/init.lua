@@ -34,10 +34,6 @@ vim.keymap.set("n", ";", ":", { desc = "Command-line mode" })
 vim.keymap.set({ "n", "i", "v", "c", "t" }, "<RightMouse>", "<Nop>", { silent = true })
 
 local float = require("shared.float")
-require("config.zenhan").setup({
-	command = vim.fs.joinpath(vim.fn.expand("~"), "scoop", "apps", "zenhan", "current", "zenhan.exe"),
-	off_arg = "0",
-})
 
 vim.opt.number = true
 vim.opt.relativenumber = true
@@ -55,6 +51,7 @@ vim.opt.copyindent = true
 vim.opt.preserveindent = true
 vim.opt.winborder = "rounded"
 vim.opt.pumborder = "rounded"
+vim.opt.cmdheight = 0
 vim.opt.cursorline = true
 vim.opt.winblend = float.blend
 vim.opt.belloff = "all"
@@ -71,6 +68,8 @@ vim.opt.virtualedit = "block"
 vim.opt.autoread = true
 vim.opt.sessionoptions:remove({ "blank", "terminal" })
 vim.o.showtabline = 2
+
+require("vim._core.ui2").enable()
 
 local indent_group = vim.api.nvim_create_augroup("IndentDefaults", { clear = true })
 

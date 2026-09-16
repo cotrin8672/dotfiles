@@ -14,7 +14,6 @@ return {
 			lazy = true,
 			markdown = true,
 			mini = true,
-			noice = true,
 			notify = true,
 			rainbow_delimiters = true,
 			snacks = true,
