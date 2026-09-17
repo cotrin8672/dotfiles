@@ -152,9 +152,9 @@ vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile" }, {
 	group = lazy_file_group,
 	once = true,
 	callback = function(args)
-		paint_buffer_early(args.buf)
 		vim.schedule(function()
 			if vim.api.nvim_buf_is_valid(args.buf) then
+				paint_buffer_early(args.buf)
 				vim.api.nvim_exec_autocmds("User", {
 					pattern = "LazyFile",
 					modeline = false,
