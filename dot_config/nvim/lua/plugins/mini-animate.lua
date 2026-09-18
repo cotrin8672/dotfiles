@@ -7,13 +7,7 @@ return {
 
 		return {
 			cursor = {
-				enable = true,
-				timing = timing,
-				path = animate.gen_path.line({
-					predicate = function(destination)
-						return destination[1] ~= 0 or destination[2] ~= 0
-					end,
-				}),
+				enable = false,
 			},
 			scroll = {
 				enable = true,
