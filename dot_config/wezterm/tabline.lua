@@ -28,8 +28,8 @@ function M.setup(config)
 			},
 		},
 		sections = {
-			tabline_x = { "ram" },
-			tabline_y = { "cpu" },
+			tabline_x = {},
+			tabline_y = {},
 			tab_active = {
 				"index",
 				{
