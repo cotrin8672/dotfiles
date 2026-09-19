@@ -26,20 +26,10 @@ return {
 	priority = 1000,
 	build = ":TSUpdate",
 	config = function()
-		local install = require("nvim-treesitter.install")
 		local treesitter = require("nvim-treesitter")
 
-		install.compilers = {
-			"zig",
-			"clang",
-			"gcc",
-			"cc",
-		}
-
 		treesitter.setup({
-			ensure_installed = parsers,
-			auto_install = false,
-			sync_install = false,
+			install_dir = vim.fn.stdpath("data") .. "/site",
 		})
 
 		local group = vim.api.nvim_create_augroup("NvimTreesitter", { clear = true })
@@ -52,6 +42,8 @@ return {
 		})
 
 		vim.schedule(function()
+			treesitter.install(parsers)
+
 			for _, buf in ipairs(vim.api.nvim_list_bufs()) do
 				if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].filetype ~= "" then
 					pcall(vim.treesitter.start, buf)
