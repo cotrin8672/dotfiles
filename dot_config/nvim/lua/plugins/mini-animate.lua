@@ -10,7 +10,7 @@ return {
 				enable = false,
 			},
 			scroll = {
-				enable = true,
+				enable = false,
 				timing = timing,
 			},
 			resize = {
