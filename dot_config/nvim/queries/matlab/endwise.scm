@@ -52,3 +52,59 @@
    name: (identifier)
    (superclasses) @cursor) @endable
  (#endwise! "end"))
+
+; Incomplete control-flow headers are represented by an ERROR node until
+; their body or closing `end` is typed.
+((ERROR
+   "if" @indent
+   (_) @cursor)
+ (#endwise! "end"))
+
+((ERROR
+   "for" @indent
+   (_) @cursor)
+ (#endwise! "end"))
+
+((ERROR
+   "parfor" @indent
+   (_) @cursor)
+ (#endwise! "end"))
+
+((ERROR
+   "while" @indent
+   (_) @cursor)
+ (#endwise! "end"))
+
+((ERROR
+   "switch" @indent
+   (_) @cursor)
+ (#endwise! "end"))
+
+((ERROR
+   "try" @indent @cursor)
+ (#endwise! "end"))
+
+((ERROR) @indent @cursor
+ (#match? @cursor "^classdef")
+ (#endwise! "end"))
+
+; MATLAB class sections are parsed as a command or identifier while their
+; body is still empty.
+((command
+   (command_name) @indent) @cursor
+ (#match? @indent "^(properties|methods|events|enumeration|arguments)$")
+ (#endwise! "end"))
+
+((function_call
+   name: (identifier) @indent
+   (arguments)) @cursor
+ (#match? @indent "^(properties|methods|events|enumeration|arguments)$")
+ (#endwise! "end"))
+
+((identifier) @indent @cursor
+ (#match? @cursor "^(properties|methods|events|enumeration|arguments)$")
+ (#endwise! "end"))
+
+((ERROR) @indent @cursor
+ (#match? @cursor "^spmd")
+ (#endwise! "end"))
