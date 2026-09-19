@@ -65,7 +65,6 @@ return {
 					"snippets",
 					"lazydev",
 					"copilot",
-					"buffer",
 					"path",
 					"lsp",
 					"mcdev",
