@@ -32,6 +32,7 @@ vim.keymap.set("n", "<C-w>", "<Cmd>update<CR>", { desc = "Write if modified" })
 vim.keymap.set("n", "<leader>W", "<Cmd>wall<CR>", { desc = "Write all modified buffers" })
 vim.keymap.set("n", ";", ":", { desc = "Command-line mode" })
 vim.keymap.set({ "n", "i", "v", "c", "t" }, "<RightMouse>", "<Nop>", { silent = true })
+vim.keymap.set({ "n", "i", "v", "c", "t" }, "<MiddleMouse>", "<Nop>", { silent = true })
 
 local float = require("shared.float")
 

@@ -205,6 +205,15 @@ config.colors.tab_bar = {
 	background = "none",
 }
 
+-- Do not paste the primary selection on a middle-click.
+config.mouse_bindings = {
+	{
+		event = { Down = { streak = 1, button = "Middle" } },
+		mods = "NONE",
+		action = wezterm.action.DisableDefaultAssignment,
+	},
+}
+
 tabline.setup(config)
 
 return config
