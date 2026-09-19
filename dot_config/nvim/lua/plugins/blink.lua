@@ -2,7 +2,10 @@ local float = require("shared.float")
 
 return {
 	"Saghen/blink.cmp",
-	version = "1.*",
+	version = false,
+	build = function()
+		require("blink.cmp").build():pwait()
+	end,
 	dependencies = {
 		{
 			"Saghen/blink.lib",
