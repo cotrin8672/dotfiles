@@ -325,12 +325,7 @@ return {
         if ms == 0 and type(stats.times) == "table" then
           ms = stats.times.LazyDone or stats.times.LazyStart or 0
         end
-        return string.format(
-          "Loaded %d / %d plugins in %.2f ms",
-          stats.loaded,
-          stats.count,
-          ms
-        )
+        return string.format("Loaded %d / %d plugins in %.2f ms", stats.loaded, stats.count, ms)
       end,
     }
   end,
@@ -437,13 +432,7 @@ return {
       for i, line in ipairs(lines) do
         local s, e = line:find("%d+%.%d+ ms")
         if line:find("Loaded ", 1, true) and s and e then
-          vim.hl.range(
-            buf,
-            starter_footer_ns,
-            "MiniStarterFooterNumber",
-            { i - 1, s - 1 },
-            { i - 1, e }
-          )
+          vim.hl.range(buf, starter_footer_ns, "MiniStarterFooterNumber", { i - 1, s - 1 }, { i - 1, e })
         end
       end
 
@@ -465,11 +454,33 @@ return {
       end)
     end
 
+    local group = vim.api.nvim_create_augroup("MiniStarterCustom", { clear = true })
+
+    -- mini.starter assigns its buffer name before applying `noswapfile`.
+    -- Disable swap creation for that startup buffer first so stale starter
+    -- swap files cannot trigger E325 during `nvim_buf_set_name()`.
+    vim.api.nvim_create_autocmd("VimEnter", {
+      group = group,
+      callback = function()
+        local buf = vim.api.nvim_get_current_buf()
+        local global_swapfile = vim.o.swapfile
+        local buffer_swapfile = vim.bo[buf].swapfile
+
+        vim.o.swapfile = false
+        vim.bo[buf].swapfile = false
+
+        vim.schedule(function()
+          vim.o.swapfile = global_swapfile
+          if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].filetype ~= "ministarter" then
+            vim.bo[buf].swapfile = buffer_swapfile
+          end
+        end)
+      end,
+    })
+
     MiniStarter.setup(opts)
 
     apply_starter_hl()
-
-    local group = vim.api.nvim_create_augroup("MiniStarterCustom", { clear = true })
 
     vim.api.nvim_create_autocmd("ColorScheme", {
       group = group,
