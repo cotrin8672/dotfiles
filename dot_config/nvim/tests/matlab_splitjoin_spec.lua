@@ -164,6 +164,21 @@ describe("MATLAB split/join", function()
 		end)
 	end
 
+	it("does not fail when the MATLAB parser is unavailable", function()
+		local bufnr = create_buffer("x = foo(a, b);", 1, 10)
+		local get_parser = vim.treesitter.get_parser
+		vim.treesitter.get_parser = function()
+			return nil
+		end
+
+		local ok, result = pcall(splitjoin.toggle, bufnr)
+		vim.treesitter.get_parser = get_parser
+
+		assert.is_true(ok)
+		assert.is_false(result)
+		vim.api.nvim_buf_delete(bufnr, { force = true })
+	end)
+
 	it("round-trips when the initial state is already split", function()
 		local text = "x = foo(a, ...\n      b, ...\n      c);"
 		local bufnr = create_buffer(text, 1, 10)

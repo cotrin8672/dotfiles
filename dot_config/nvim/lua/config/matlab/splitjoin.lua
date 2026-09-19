@@ -187,11 +187,7 @@ end
 local function target_from_node(node, row)
 	local binary_target
 	while node do
-		if
-			container_types[node:type()]
-			and container_has_multiple_items(node)
-			and target_contains_row(node, row)
-		then
+		if container_types[node:type()] and container_has_multiple_items(node) and target_contains_row(node, row) then
 			return node
 		end
 		local wrapped = wrapped_target(node)
@@ -211,7 +207,11 @@ local function target_from_node(node, row)
 end
 
 local function find_target(bufnr)
-	local parser = vim.treesitter.get_parser(bufnr, "matlab")
+	local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "matlab")
+	if not ok or not parser then
+		notify("MATLAB Tree-sitter parser is unavailable. Run :TSInstall matlab.")
+		return nil
+	end
 	parser:parse(true)
 
 	local cursor = vim.api.nvim_win_get_cursor(0)
