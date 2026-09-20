@@ -1,23 +1,23 @@
 ((function_definition
    "function" @indent
-   name: (identifier) @cursor) @endable
+   name: (identifier) @cursor)
  (#endwise! "end"))
 
 ((function_definition
    "function" @indent
    name: (identifier)
-   (function_arguments) @cursor) @endable
+   (function_arguments) @cursor)
  (#endwise! "end"))
 
 ((function_definition
    "function" @indent
-   name: (property_name) @cursor) @endable
+   name: (property_name) @cursor)
  (#endwise! "end"))
 
 ((function_definition
    "function" @indent
    name: (property_name)
-   (function_arguments) @cursor) @endable
+   (function_arguments) @cursor)
  (#endwise! "end"))
 
 ((for_statement
@@ -110,6 +110,10 @@
    name: (identifier) @indent
    (arguments)) @cursor
  (#match? @indent "^(properties|methods|events|enumeration|arguments)$")
+ (#endwise! "end"))
+
+((arguments_statement
+   "arguments" @indent) @cursor
  (#endwise! "end"))
 
 ((identifier) @indent @cursor
