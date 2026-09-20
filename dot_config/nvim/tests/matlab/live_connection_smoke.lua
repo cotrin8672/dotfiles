@@ -26,6 +26,9 @@ local function run()
 	local stderr_marker = "NVIM_MATLAB_STDERR_PROBE"
 	local after_stderr_marker = "NVIM_MATLAB_STDOUT_AFTER_STDERR"
 
+	local started, start_err = core.ensure_client(vim.api.nvim_get_current_buf())
+	assert(started, start_err)
+
 	local connected = vim.wait(180000, function()
 		return core._snapshot().state == "connected"
 	end, 100)
