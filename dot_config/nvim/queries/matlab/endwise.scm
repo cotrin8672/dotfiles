@@ -9,6 +9,17 @@
    (function_arguments) @cursor) @endable
  (#endwise! "end"))
 
+((function_definition
+   "function" @indent
+   name: (property_name) @cursor) @endable
+ (#endwise! "end"))
+
+((function_definition
+   "function" @indent
+   name: (property_name)
+   (function_arguments) @cursor) @endable
+ (#endwise! "end"))
+
 ((for_statement
    ["for" "parfor"] @indent
    (iterator) @cursor) @endable
