@@ -214,7 +214,9 @@ local function reset_connection(connection, message, client_id, stop_client, opt
 	local old_client_id = connection.client_id
 	local active, queued = take_work(connection)
 	connection.client_id = nil
-	connection.root_dir = nil
+	if opts.clear_root then
+		connection.root_dir = nil
+	end
 	clear_timer(connection)
 	set_connection_state(connection, "disconnected", {
 		message = work_summary(message, active and 1 or 0, #queued),
@@ -299,8 +301,7 @@ function M.get_exec_client()
 	return client, nil
 end
 
-function M.ensure_client(bufnr)
-	local connection = ensure_active_session()
+local function ensure_connection_client(connection, bufnr)
 	local requested_root = bufnr ~= nil and require("config.matlab.lsp").execution_root(bufnr) or nil
 	if connection.client_id then
 		local client = options.get_client(connection.client_id)
@@ -353,6 +354,10 @@ function M.ensure_client(bufnr)
 	return true, nil
 end
 
+function M.ensure_client(bufnr)
+	return ensure_connection_client(ensure_active_session(), bufnr)
+end
+
 dispatch_next = function(connection)
 	if connection.state ~= "connected" or connection.inflight or #connection.queue == 0 then
 		return true, nil
@@ -385,8 +390,17 @@ function M.enqueue_eval(command, opts, session_id)
 	local connection
 	if session_id ~= nil then
 		connection = connection_for_session(session_id)
+		-- The command window exists before its first execution client. Materialize
+		-- its matching logical session on first submit without launching eagerly.
+		if not connection and #sessions == 0 and session_id == next_session_id then
+			connection = ensure_active_session()
+		end
 		if not connection then
 			return false, "MATLAB session not found"
+		end
+		local ok, err = ensure_connection_client(connection, opts.bufnr)
+		if not ok then
+			return false, err
 		end
 	else
 		local ok, err = M.ensure_client(opts.bufnr)
@@ -452,9 +466,6 @@ function M.handle_mvm_state_change(result, client_id)
 		end
 	elseif result.state == "disconnected" then
 		reset_connection(connection, "MATLAB disconnected", client_id, true)
-		if not connection.client_id then
-			remove_connection(connection)
-		end
 	else
 		reset_connection(connection, "Unknown MATLAB connection state: " .. result.state, client_id, true)
 	end
@@ -472,9 +483,6 @@ function M.handle_client_exit(client_id, code, signal)
 	local connection = connection_for_client(client_id)
 	if connection then
 		reset_connection(connection, ("MATLAB execution client exited (code %s, signal %s)"):format(code, signal), client_id, false)
-		if not connection.client_id then
-			remove_connection(connection)
-		end
 	end
 end
 
@@ -518,8 +526,9 @@ function M.stop_session()
 	reset_connection(connection, "MATLAB session stopped", connection.client_id, true, {
 		level = vim.log.levels.INFO,
 		workspace_error = false,
+		clear_root = true,
 	})
-	if not connection.client_id then
+	if not connection.client_id and #sessions > 1 then
 		remove_connection(connection)
 	end
 	return true, nil
@@ -531,6 +540,7 @@ function M.restart_here(bufnr)
 		reset_connection(connection, "MATLAB session restarted", connection.client_id, true, {
 			level = vim.log.levels.INFO,
 			workspace_error = false,
+			clear_root = true,
 		})
 	end
 	return M.ensure_client(bufnr)
@@ -578,6 +588,9 @@ end
 
 function M.new_session(bufnr)
 	local previous = active_connection()
+	if previous and not previous.client_id then
+		return ensure_connection_client(previous, bufnr)
+	end
 	local connection = new_connection()
 	if previous then
 		connection.root_dir = previous.root_dir

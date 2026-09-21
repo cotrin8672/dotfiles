@@ -178,6 +178,45 @@ describe("MATLAB execution client", function()
 		assert.are.equal(2, #starts)
 	end)
 
+	it("keeps the logical session across client exits and reconnects its command window", function()
+		roots[1] = "C:/repo-one"
+		assert.is_true(core.ensure_client(1))
+		local session_id = core._snapshot().session_id
+		core.handle_mvm_state_change({ state = "connected", release = "R2024a" }, 41)
+
+		core.handle_client_exit(41, 1, 0)
+
+		assert.are.equal(1, core._snapshot().session_count)
+		assert.are.equal(session_id, core._snapshot().session_id)
+		roots[vim.api.nvim_get_current_buf()] = "C:/unrelated-current-buffer"
+		assert.is_true(core.enqueue_eval("reconnect", {}, session_id))
+		assert.are.equal(session_id, core._snapshot().session_id)
+		assert.are.equal(42, core._snapshot().client_id)
+		assert.are.equal("C:/repo-one", starts[2].config.root_dir)
+		assert.are.equal("connecting", core._snapshot().state)
+	end)
+
+	it("reconnects a disconnected session instead of assigning a new id", function()
+		assert.is_true(core.ensure_client(1))
+		local session_id = core._snapshot().session_id
+		core.handle_mvm_state_change({ state = "connected", release = "R2024a" }, 41)
+		core.handle_mvm_state_change({ state = "disconnected" }, 41)
+
+		assert.is_true(core.new_session(1))
+
+		assert.are.equal(session_id, core._snapshot().session_id)
+		assert.are.equal(1, core._snapshot().session_count)
+		assert.are.equal(42, core._snapshot().client_id)
+	end)
+
+	it("materializes the initial command window session on first submit", function()
+		assert.is_nil(core._snapshot().session_id)
+		assert.is_true(core.enqueue_eval("first", { bufnr = 1 }, 1))
+		assert.are.equal(41, core._snapshot().client_id)
+		assert.are.equal(1, core._snapshot().session_id)
+		assert.are.equal(1, core._snapshot().session_count)
+	end)
+
 	it("treats a failed notification as a transport failure", function()
 		core.enqueue_eval("first")
 		clients[41].notify = function()
@@ -202,13 +241,18 @@ describe("MATLAB execution client", function()
 		assert.are.equal("disconnected", core._snapshot().state)
 	end)
 
-	it("stops the execution client after a MATLAB disconnect notification", function()
+	it("stops only the client after a MATLAB disconnect notification", function()
 		core.enqueue_eval("first")
 		core.handle_mvm_state_change({ state = "connected", release = "R2024a" }, 41)
+		local session_id = core._snapshot().session_id
 		core.handle_mvm_state_change({ state = "disconnected" }, 41)
 
 		assert.are.equal("disconnected", core._snapshot().state)
 		assert.same({ 41 }, stopped)
+		assert.are.equal(session_id, core._snapshot().session_id)
+		assert.are.equal(1, core._snapshot().session_count)
+		assert.is_true(core.enqueue_eval("reconnect", {}, session_id))
+		assert.are.equal(42, core._snapshot().client_id)
 	end)
 
 	it("keeps a replacement client when the old client exits late", function()
