@@ -17,8 +17,6 @@ vim.g.loaded_python3_provider = 1
 vim.g.loaded_ruby_provider = 1
 vim.g.loaded_perl_provider = 1
 vim.g.termfeatures = vim.tbl_extend("force", vim.g.termfeatures or {}, { osc52 = false })
-vim.g.smart_splits_multiplexer_integration = "wezterm"
-
 if vim.loader then
 	vim.loader.enable()
 end
@@ -28,6 +26,10 @@ vim.g.maplocalleader = " "
 
 vim.keymap.set("i", "<M-o>", "<C-g>u<C-o>o", { desc = "Open line below" })
 vim.keymap.set("n", "<M-m>", "`", { desc = "Jump to mark line" })
+vim.keymap.set("n", "<C-h>", "<C-w>h", { desc = "Move to left window" })
+vim.keymap.set("n", "<C-j>", "<C-w>j", { desc = "Move to lower window" })
+vim.keymap.set("n", "<C-k>", "<C-w>k", { desc = "Move to upper window" })
+vim.keymap.set("n", "<C-l>", "<C-w>l", { desc = "Move to right window" })
 vim.keymap.set("n", "<C-w>", "<Cmd>update<CR>", { desc = "Write if modified" })
 vim.keymap.set("n", "<leader>W", "<Cmd>wall<CR>", { desc = "Write all modified buffers" })
 vim.keymap.set("n", ";", ":", { desc = "Command-line mode" })
