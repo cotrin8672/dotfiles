@@ -122,6 +122,11 @@ return {
 			capabilities = capabilities,
 		})
 
+		vim.lsp.config("clangd", {
+			capabilities = capabilities,
+			cmd = { "clangd", "--background-index", "--clang-tidy", "--header-insertion=never" },
+		})
+
 		vim.lsp.config("rust_analyzer", {
 			capabilities = capabilities,
 		})
@@ -140,6 +145,7 @@ return {
 
 		local servers = {
 			"bashls",
+			"clangd",
 			"cssls",
 			"html",
 			"lua_ls",

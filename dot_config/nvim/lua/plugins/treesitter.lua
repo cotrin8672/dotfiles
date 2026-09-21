@@ -1,5 +1,7 @@
 local parsers = {
 	"bash",
+	"c",
+	"cpp",
 	"css",
 	"html",
 	"java",

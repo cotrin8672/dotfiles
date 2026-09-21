@@ -1,5 +1,7 @@
 return {
 	"bash",
+	"c",
+	"cpp",
 	"css",
 	"html",
 	"javascript",

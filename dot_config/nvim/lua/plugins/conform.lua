@@ -3,6 +3,8 @@ return {
 	event = { "BufWritePre" },
 	opts = {
 		formatters_by_ft = {
+			c = { "clang_format" },
+			cpp = { "clang_format" },
 			java = { "google-java-format" },
 			kotlin = { "ktfmt" },
 			lua = { "stylua" },

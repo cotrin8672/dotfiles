@@ -34,6 +34,7 @@ return {
 		},
 		opts = function()
 			local ensure_installed = {
+				"clangd",
 				"lua_ls",
 				"bashls",
 				"jsonls",
@@ -72,6 +73,7 @@ return {
 		},
 		opts = {
 			ensure_installed = {
+				"clang-format",
 				"jdtls",
 				-- Match kotlin.nvim v1.1.0's legacy kotlin-lsp launcher.
 				{ "kotlin-lsp", version = "kotlin-lsp/v261.13587.0" },
