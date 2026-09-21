@@ -87,6 +87,8 @@ vim.api.nvim_create_autocmd("FileType", {
 	group = indent_group,
 	pattern = {
 		"bash",
+		"c",
+		"cpp",
 		"css",
 		"html",
 		"javascript",
