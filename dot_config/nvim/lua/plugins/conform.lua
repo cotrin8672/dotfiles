@@ -1,6 +1,6 @@
 return {
 	"stevearc/conform.nvim",
-	event = { "BufWritePre" },
+	event = { "BufWritePost" },
 	opts = {
 		formatters_by_ft = {
 			c = { "clang_format" },
@@ -24,7 +24,7 @@ return {
 			typescript = { "prettier" },
 			typescriptreact = { "prettier" },
 		},
-		format_on_save = function(bufnr)
+		format_after_save = function(bufnr)
 			-- matlab_ls formatting requires a live MATLAB connection and otherwise
 			-- blocks every save while the server waits for MATLAB.
 			if vim.bo[bufnr].filetype == "matlab" then
@@ -32,7 +32,6 @@ return {
 			end
 
 			return {
-				timeout_ms = 300000,
 				lsp_format = "fallback",
 			}
 		end,
