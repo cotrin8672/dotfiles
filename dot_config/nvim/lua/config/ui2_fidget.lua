@@ -1,14 +1,5 @@
 local M = {}
 
-local routed_kinds = {
-	[""] = true,
-	echo = true,
-	echomsg = true,
-	lua_print = true,
-	quickfix = true,
-	undo = true,
-}
-
 local installed = false
 
 local function message_text(content)
@@ -25,6 +16,7 @@ function M.setup()
 	end
 
 	local ui2_messages = require("vim._core.ui2.messages")
+	local ui2 = require("vim._core.ui2")
 	local original_msg_show = ui2_messages.msg_show
 	local original_msg_clear = ui2_messages.msg_clear
 	local last_key
@@ -32,8 +24,12 @@ function M.setup()
 
 	ui2_messages.msg_show = function(kind, content, replace_last, history, append, id, trigger)
 		local text = message_text(content)
-		local routed = routed_kinds[kind] or (kind == "list_cmd" and trigger == "")
-		if not routed or text:find("\n", 1, true) then
+		local targets = ui2.cfg.msg.targets
+		local target = targets[trigger] or targets[kind] or ui2.cfg.msg.target
+		local cmd = ui2.cmd
+		local special = kind == "search_cmd" or kind == "search_count" or kind == "empty" or kind == "wildlist"
+		local blocked = cmd and (cmd.prompt or cmd.level > 0 or cmd.expand > 0)
+		if target ~= "cmd" or special or blocked or text:find("\n", 1, true) then
 			last_key = nil
 			last_text = nil
 			return original_msg_show(kind, content, replace_last, history, append, id, trigger)

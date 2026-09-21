@@ -71,6 +71,20 @@ return {
 				})()
 			end,
 			providers = {
+				lsp = {
+					transform_items = function(ctx, items)
+						if not ctx.line:match('^%s*#%s*include%s+[<"]') then
+							return items
+						end
+						for _, item in ipairs(items) do
+							local edit = item.textEdit
+							if edit and edit.insert and edit.replace then
+								edit.replace = edit.insert
+							end
+						end
+						return items
+					end,
+				},
 				lazydev = {
 					name = "LazyDev",
 					module = "lazydev.integrations.blink",

@@ -1,6 +1,7 @@
 describe("ui2 to Fidget message routing", function()
 	local ui2_messages
 	local original_ui2_messages
+	local original_ui2
 	local original_fidget
 	local notifications
 	local forwarded
@@ -18,8 +19,13 @@ describe("ui2 to Fidget message routing", function()
 		}
 
 		original_ui2_messages = package.loaded["vim._core.ui2.messages"]
+		original_ui2 = package.loaded["vim._core.ui2"]
 		original_fidget = package.loaded.fidget
 		package.loaded["vim._core.ui2.messages"] = ui2_messages
+		package.loaded["vim._core.ui2"] = {
+			cfg = { msg = { target = "cmd", targets = {} } },
+			cmd = { level = 0, expand = 0 },
+		}
 		package.loaded.fidget = {
 			notify = function(message, level, opts)
 				notifications[#notifications + 1] = { message = message, level = level, opts = opts }
@@ -31,6 +37,7 @@ describe("ui2 to Fidget message routing", function()
 
 	after_each(function()
 		package.loaded["vim._core.ui2.messages"] = original_ui2_messages
+		package.loaded["vim._core.ui2"] = original_ui2
 		package.loaded.fidget = original_fidget
 		package.loaded["config.ui2_fidget"] = nil
 	end)
@@ -47,12 +54,19 @@ describe("ui2 to Fidget message routing", function()
 		assert.are.equal("ui2:7", notifications[1].opts.key)
 	end)
 
-	it("keeps errors and long command output in ui2", function()
-		ui2_messages.msg_show("emsg", { { 0, "failure", 0 } }, false, true, false, 8, "")
-		ui2_messages.msg_show("list_cmd", { { 0, "long output", 0 } }, false, true, false, 9, "typed_cmd")
+	it("keeps multiline and special messages in ui2", function()
 		ui2_messages.msg_show("", { { 0, "first\nsecond", 0 } }, false, true, false, 10, "")
+		ui2_messages.msg_show("search_cmd", { { 0, "/needle", 0 } }, false, false, false, 11, "")
 
-		assert.are.equal(3, #forwarded)
+		assert.are.equal(2, #forwarded)
+		assert.are.equal(0, #notifications)
+	end)
+
+	it("follows ui2 message target configuration", function()
+		package.loaded["vim._core.ui2"].cfg.msg.targets.emsg = "msg"
+		ui2_messages.msg_show("emsg", { { 0, "failure", 0 } }, false, true, false, 8, "")
+
+		assert.are.equal(1, #forwarded)
 		assert.are.equal(0, #notifications)
 	end)
 
