@@ -31,11 +31,8 @@ return {
 				return false
 			end
 
-			-- ktfmt starts a JVM for every invocation.  On Windows its cold
-			-- start is commonly slower than Conform's default 1s timeout.
-			local timeout_ms = vim.bo[bufnr].filetype == "kotlin" and 5000 or 500
 			return {
-				timeout_ms = timeout_ms,
+				timeout_ms = 300000,
 				lsp_format = "fallback",
 			}
 		end,

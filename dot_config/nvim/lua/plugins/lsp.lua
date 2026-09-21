@@ -122,9 +122,11 @@ return {
 			capabilities = capabilities,
 		})
 
+		local matlab_include = require("config.matlab.toolchain").clang_include_flag()
 		vim.lsp.config("clangd", {
 			capabilities = capabilities,
-			cmd = { "clangd", "--background-index", "--clang-tidy", "--header-insertion=never" },
+			cmd = { "clangd", "--background-index", "--header-insertion=never" },
+			init_options = matlab_include and { fallbackFlags = { matlab_include } } or nil,
 		})
 
 		vim.lsp.config("rust_analyzer", {
