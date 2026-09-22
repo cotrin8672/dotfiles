@@ -1,5 +1,19 @@
 local M = {}
 local icon_cache = {}
+local tabline_cache
+
+local function invalidate_tabline()
+	tabline_cache = nil
+end
+
+local function render_tabline()
+	if require("tabby.feature.tab_jumper").is_start then
+		return require("tabby.tabline").render()
+	end
+
+	tabline_cache = tabline_cache or require("tabby.tabline").render()
+	return tabline_cache
+end
 
 local function is_jdtls_class_buffer(bufnr)
 	if vim.bo[bufnr].buftype ~= "nofile" or vim.bo[bufnr].filetype ~= "java" then
@@ -206,6 +220,32 @@ return vim.tbl_extend("force", M, {
 					mode = "unique",
 				},
 			},
+		})
+		_G.TabbyRenderCached = render_tabline
+		vim.o.tabline = "%!v:lua.TabbyRenderCached()"
+
+		local cache_group = vim.api.nvim_create_augroup("TabbyRenderCache", { clear = true })
+		vim.api.nvim_create_autocmd({
+			"BufAdd",
+			"BufDelete",
+			"BufEnter",
+			"BufFilePost",
+			"BufModifiedSet",
+			"BufWipeout",
+			"ColorScheme",
+			"FileType",
+			"SessionLoadPost",
+			"TabClosed",
+			"TabEnter",
+			"TabNew",
+		}, {
+			group = cache_group,
+			callback = invalidate_tabline,
+		})
+		vim.api.nvim_create_autocmd("OptionSet", {
+			group = cache_group,
+			pattern = "buflisted",
+			callback = invalidate_tabline,
 		})
 
 		vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter", "FileType" }, {
