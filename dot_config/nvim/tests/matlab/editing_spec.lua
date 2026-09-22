@@ -39,6 +39,56 @@ describe("MATLAB editing keymaps", function()
 		assert.is_function(mapping.callback)
 	end)
 
+	it("does not rescan the buffer while moving inside a MATLAB section", function()
+		vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname() .. ".m")
+		vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "%% first", "a = 1;", "b = 2;", "%% second", "c = 3;" })
+		vim.api.nvim_exec_autocmds("TextChanged", { buffer = bufnr })
+		vim.api.nvim_win_set_cursor(0, { 2, 0 })
+		vim.api.nvim_exec_autocmds("CursorMoved", { buffer = bufnr })
+
+		local get_lines = vim.api.nvim_buf_get_lines
+		local calls = 0
+		vim.api.nvim_buf_get_lines = function(...)
+			calls = calls + 1
+			return get_lines(...)
+		end
+		vim.api.nvim_win_set_cursor(0, { 3, 0 })
+		vim.api.nvim_exec_autocmds("CursorMoved", { buffer = bufnr })
+		vim.api.nvim_buf_get_lines = get_lines
+
+		assert.are.equal(0, calls)
+
+		vim.api.nvim_win_set_cursor(0, { 5, 0 })
+		vim.api.nvim_exec_autocmds("CursorMoved", { buffer = bufnr })
+		local namespace = vim.api.nvim_create_namespace("MatlabCurrentSection")
+		local marks = vim.api.nvim_buf_get_extmarks(bufnr, namespace, 0, -1, {})
+		assert.same({ 3, 4 }, vim.tbl_map(function(mark)
+			return mark[2]
+		end, marks))
+	end)
+
+	it("rescans during insert only when section boundaries change", function()
+		vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname() .. ".m")
+		vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "%% first", "a = 1;", "%% second" })
+		vim.api.nvim_exec_autocmds("TextChanged", { buffer = bufnr })
+		vim.api.nvim_win_set_cursor(0, { 2, 0 })
+
+		local get_lines = vim.api.nvim_buf_get_lines
+		local calls = 0
+		vim.api.nvim_buf_get_lines = function(...)
+			calls = calls + 1
+			return get_lines(...)
+		end
+		vim.api.nvim_set_current_line("a = 2;")
+		vim.api.nvim_exec_autocmds("TextChangedI", { buffer = bufnr })
+		assert.are.equal(0, calls)
+
+		vim.api.nvim_set_current_line("%% inserted")
+		vim.api.nvim_exec_autocmds("TextChangedI", { buffer = bufnr })
+		vim.api.nvim_buf_get_lines = get_lines
+		assert.are.equal(1, calls)
+	end)
+
 	it("repairs a missing split join mapping in an already open MATLAB buffer", function()
 		vim.keymap.del("n", "<leader>s", { buffer = bufnr })
 
