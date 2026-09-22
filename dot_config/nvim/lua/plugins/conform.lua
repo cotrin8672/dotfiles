@@ -24,13 +24,7 @@ return {
 			typescript = { "prettier" },
 			typescriptreact = { "prettier" },
 		},
-		format_after_save = function(bufnr)
-			-- matlab_ls formatting requires a live MATLAB connection and otherwise
-			-- blocks every save while the server waits for MATLAB.
-			if vim.bo[bufnr].filetype == "matlab" then
-				return false
-			end
-
+		format_after_save = function()
 			return {
 				lsp_format = "fallback",
 			}
