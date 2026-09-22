@@ -113,7 +113,7 @@
  (#endwise! "end"))
 
 ((arguments_statement
-   "arguments" @indent) @cursor
+   "arguments" @indent @cursor)
  (#endwise! "end"))
 
 ((identifier) @indent @cursor

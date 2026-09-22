@@ -45,6 +45,41 @@ describe("MATLAB endwise", function()
 		}, vim.api.nvim_buf_get_lines(bufnr, 0, -1, false))
 	end)
 
+	it("does not insert end after an argument declaration", function()
+		local outer_indent = string.rep(" ", vim.fn.shiftwidth())
+		local body_indent = outer_indent .. outer_indent
+		local endwise_ran = false
+		vim.api.nvim_create_autocmd("User", {
+			pattern = "PostNvimTreesitterEndwiseCR",
+			once = true,
+			callback = function()
+				endwise_ran = true
+			end,
+		})
+		vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {
+			"function keys = getKey(id)",
+			outer_indent .. "arguments",
+			body_indent .. "id (1, 1) string",
+			outer_indent .. "end",
+			"end",
+		})
+		vim.treesitter.get_parser(bufnr, "matlab"):parse()
+		vim.api.nvim_win_set_cursor(0, { 3, #body_indent + #"id (1, 1) string" - 1 })
+		vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("a<CR>", true, false, true), "xt", false)
+
+		assert.is_true(vim.wait(1000, function()
+			return endwise_ran
+		end, 10))
+		assert.same({
+			"function keys = getKey(id)",
+			outer_indent .. "arguments",
+			body_indent .. "id (1, 1) string",
+			"",
+			outer_indent .. "end",
+			"end",
+		}, vim.api.nvim_buf_get_lines(bufnr, 0, -1, false))
+	end)
+
 	it("inserts end after a function header", function()
 		vim.api.nvim_buf_delete(bufnr, { force = true })
 		bufnr = vim.api.nvim_create_buf(false, true)
