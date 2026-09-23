@@ -4,6 +4,7 @@ return {
 	"Saghen/blink.cmp",
 	version = false,
 	build = function()
+		package.loaded["blink.cmp"] = nil
 		require("blink.cmp").build():pwait()
 	end,
 	dependencies = {
