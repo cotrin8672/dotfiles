@@ -151,14 +151,19 @@ config.colors.tab_bar = {
 	background = "none",
 }
 
--- Do not paste the primary selection on a middle-click.
-config.mouse_bindings = {
-	{
-		event = { Down = { streak = 1, button = "Middle" } },
-		mods = "NONE",
-		action = wezterm.action.DisableDefaultAssignment,
-	},
-}
+config.mouse_bindings = {}
+for _, button in ipairs({ "Middle", "Right" }) do
+	for _, event in ipairs({ "Down", "Up" }) do
+		for _, mouse_reporting in ipairs({ false, true }) do
+			table.insert(config.mouse_bindings, {
+				event = { [event] = { streak = 1, button = button } },
+				mods = "NONE",
+				mouse_reporting = mouse_reporting,
+				action = wezterm.action.Nop,
+			})
+		end
+	end
+end
 
 tabline.setup(config)
 
