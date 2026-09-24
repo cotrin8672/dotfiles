@@ -35,6 +35,12 @@ vim.keymap.set("n", "<leader>W", "<Cmd>wall<CR>", { desc = "Write all modified b
 vim.keymap.set("n", ";", ":", { desc = "Command-line mode" })
 vim.keymap.set({ "n", "i", "v", "c", "t" }, "<RightMouse>", "<Nop>", { silent = true })
 vim.keymap.set({ "n", "i", "v", "c", "t" }, "<MiddleMouse>", "<Nop>", { silent = true })
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = { "matlab", "rust" },
+	callback = function(args)
+		vim.keymap.set("i", "<C-;>", "<End>;", { buffer = args.buf, desc = "Append semicolon at line end" })
+	end,
+})
 
 local float = require("shared.float")
 
