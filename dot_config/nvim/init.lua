@@ -38,7 +38,7 @@ vim.keymap.set({ "n", "i", "v", "c", "t" }, "<MiddleMouse>", "<Nop>", { silent =
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = { "matlab", "rust" },
 	callback = function(args)
-		vim.keymap.set("i", "<C-;>", "<End>;", { buffer = args.buf, desc = "Append semicolon at line end" })
+		vim.keymap.set("i", "<M-;>", "<End>;", { buffer = args.buf, desc = "Append semicolon at line end" })
 	end,
 })
 
