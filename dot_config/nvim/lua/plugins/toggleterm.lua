@@ -12,7 +12,7 @@ return {
 		"ToggleTermSetName",
 	},
 	keys = {
-		{ "<leader>f", mode = "n", desc = "Float Terminal" },
+		{ "<leader>z", mode = "n", desc = "Float Terminal" },
 		{ "<leader>gg", mode = "n", desc = "LazyGit Float" },
 	},
 	config = function()
@@ -52,6 +52,7 @@ return {
 		end
 
 		require("toggleterm").setup({
+			shell = "nu",
 			open_mapping = nil,
 			shade_terminals = false,
 			direction = "float",
@@ -98,7 +99,7 @@ return {
 			},
 		})
 
-		vim.keymap.set("n", "<leader>f", function()
+		vim.keymap.set("n", "<leader>z", function()
 			shell:toggle()
 		end, { desc = "Float Terminal" })
 

@@ -35,6 +35,7 @@ lefthook = "latest"
 gradle = "latest"
 carapace = "latest"
 "github:anomalyco/opencode" = "latest"
+"github:cordx56/rustowl" = "0.4.0"
 
 [tasks.nvim-startuptime-install]
 description = "Install vim-startuptime via go install"

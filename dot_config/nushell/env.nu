@@ -70,6 +70,10 @@ add-mason-bin-to-path
 def nvim [...args] {
     let nvim = ($nu.home-dir | path join "scoop" "apps" "neovim" "current" "bin" "nvim.exe")
     with-env { LANG: "C" } {
-        ^$nvim ...$args
+        if "NVIM" in $env {
+            ^$nvim --headless --server $env.NVIM --remote ...$args
+        } else {
+            ^$nvim ...$args
+        }
     }
 }
