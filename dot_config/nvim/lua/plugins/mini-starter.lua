@@ -70,12 +70,34 @@ return {
           }
         end
 
+        local sessions = {}
+        local session_dir = _G.MiniSessions.config.directory or ""
+        if session_dir ~= "" then
+          session_dir = vim.fs.normalize(vim.fn.expand(session_dir))
+        end
+        local scan = session_dir ~= "" and vim.uv.fs_scandir(session_dir)
+        while scan do
+          local session_name = vim.uv.fs_scandir_next(scan)
+          if not session_name then
+            break
+          end
+          local root = decode_session_root(session_name)
+          if root then
+            local path = vim.fs.joinpath(session_dir, session_name)
+            local stat = vim.uv.fs_stat(path)
+            if stat and stat.type == "file" then
+              sessions[session_name] = { type = "global", mtime = stat.mtime, root = root }
+            end
+          end
+        end
+
         local items = {}
-        for session_name, session in pairs(_G.MiniSessions.detected or {}) do
+        for session_name, session in pairs(sessions) do
           if session.type == "global" then
-            local root = decode_session_root(session_name)
+            local root = session.root
             if root ~= nil then
               local dir_name = vim.fn.fnamemodify(root, ":t")
+              local name = session_name
               table.insert(items, {
                 name = dir_name,
                 section = SECTION_SESSIONS,
@@ -84,8 +106,9 @@ return {
                 _icon_virtual = true,
                 _emph_text = dir_name,
                 _session = session,
+                _session_name = session_name,
                 action = function()
-                  _G.MiniSessions.read(session_name, { force = true, verbose = false })
+                  _G.MiniSessions.read(name, { force = true, verbose = false })
                 end,
               })
             end
@@ -93,7 +116,15 @@ return {
         end
 
         table.sort(items, function(a, b)
-          return (a._session.modify_time or 0) > (b._session.modify_time or 0)
+          local a_time, b_time = a._session.mtime, b._session.mtime
+          if a_time.sec ~= b_time.sec then
+            return a_time.sec > b_time.sec
+          end
+          local a_nsec, b_nsec = a_time.nsec or 0, b_time.nsec or 0
+          if a_nsec ~= b_nsec then
+            return a_nsec > b_nsec
+          end
+          return a._session_name < b._session_name
         end)
 
         if #items == 0 then
@@ -112,6 +143,7 @@ return {
 
         return vim.tbl_map(function(item)
           item._session = nil
+          item._session_name = nil
           return item
         end, vim.list_slice(items, 1, limit))
       end
