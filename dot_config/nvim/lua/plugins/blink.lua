@@ -13,6 +13,7 @@ return {
 			lazy = true,
 		},
 		"L3MON4D3/LuaSnip",
+		"abecodes/tabout.nvim",
 		"erooke/blink-cmp-latex",
 		"mcdev-nvim",
 	},
@@ -74,6 +75,7 @@ return {
 			providers = {
 				lsp = {
 					transform_items = function(ctx, items)
+						items = require("config.rust.completion")(ctx, items)
 						if not ctx.line:match('^%s*#%s*include%s+[<"]') then
 							return items
 						end

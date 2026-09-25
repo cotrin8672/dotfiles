@@ -24,6 +24,8 @@ end
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
+vim.keymap.set("i", "<M-s>", "<C-o>^", { desc = "Move to first non-blank character" })
+vim.keymap.set("i", "<M-e>", "<End>", { desc = "Move to end of line" })
 vim.keymap.set("i", "<M-o>", "<C-g>u<C-o>o", { desc = "Open line below" })
 vim.keymap.set("n", "<M-m>", "`", { desc = "Jump to mark line" })
 vim.keymap.set("n", "<C-h>", "<C-w>h", { desc = "Move to left window" })
