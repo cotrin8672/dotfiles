@@ -17,6 +17,7 @@
 # You can remove these comments if you want or leave
 # them for future reference.
 $env.PYTHONUTF8 = "1"
+$env.MATLABROOT = "C:/Program Files/MATLAB/R2024a"
 
 if $nu.os-info.name == "windows" and ("SSH_AUTH_SOCK" in $env) {
     hide-env SSH_AUTH_SOCK
