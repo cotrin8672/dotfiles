@@ -63,6 +63,10 @@ return {
 		vim.api.nvim_create_autocmd("LspAttach", {
 			callback = function(args)
 				local bufnr = args.buf
+				local client = vim.lsp.get_client_by_id(args.data.client_id)
+				if client and client.name == "rust_analyzer" then
+					vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
+				end
 				local map = function(lhs, rhs)
 					vim.keymap.set("n", lhs, rhs, { buffer = bufnr, silent = true })
 				end

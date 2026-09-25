@@ -10,20 +10,12 @@ return {
 	},
 	keys = {
 		{
-			"s",
+			"ss",
 			function()
 				require("undo-glow").substitute_action(require("substitute").operator)
 			end,
 			mode = "n",
 			desc = "Substitute with motion",
-		},
-		{
-			"ss",
-			function()
-				require("undo-glow").substitute_action(require("substitute").line)
-			end,
-			mode = "n",
-			desc = "Substitute line",
 		},
 		{
 			"S",
@@ -34,7 +26,7 @@ return {
 			desc = "Substitute to EOL",
 		},
 		{
-			"s",
+			"ss",
 			function()
 				require("undo-glow").substitute_action(require("substitute").visual)
 			end,
