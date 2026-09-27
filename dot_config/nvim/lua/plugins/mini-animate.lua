@@ -10,8 +10,9 @@ return {
 				enable = false,
 			},
 			scroll = {
-				enable = false,
-				timing = timing,
+				enable = true,
+				timing = animate.gen_timing.linear({ duration = 40, unit = "total" }),
+				subscroll = animate.gen_subscroll.equal({ max_output_steps = 4 }),
 			},
 			resize = {
 				enable = true,
