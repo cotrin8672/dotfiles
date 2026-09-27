@@ -11,7 +11,7 @@ return function(pattern)
 		async:resume()
 	end
 
-	async:schedule(function()
+	vim.schedule(function()
 		if async:aborted() then
 			return
 		end
