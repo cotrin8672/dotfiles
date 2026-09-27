@@ -77,7 +77,6 @@ return {
 				"jdtls",
 				"kotlin-lsp",
 				"google-java-format",
-				"ktfmt",
 				"ktlint",
 				"prettier",
 				"stylua",

@@ -6,7 +6,7 @@ return {
 			c = { "clang_format" },
 			cpp = { "clang_format" },
 			java = { "google-java-format" },
-			kotlin = { "ktfmt" },
+			kotlin = { "ktlint" },
 			lua = { "stylua" },
 			nix = { "alejandra" },
 			css = { "prettier" },
@@ -29,12 +29,6 @@ return {
 				lsp_format = "fallback",
 			}, require("config.lint").format_started(bufnr)
 		end,
-		formatters = {
-			ktfmt = {
-				stdin = false,
-				args = { "$FILENAME" },
-			},
-		},
 	},
 	config = function(_, opts)
 		require("conform").setup(opts)
