@@ -24,10 +24,10 @@ return {
 			typescript = { "prettier" },
 			typescriptreact = { "prettier" },
 		},
-		format_after_save = function()
+		format_after_save = function(bufnr)
 			return {
 				lsp_format = "fallback",
-			}
+			}, require("config.lint").format_started(bufnr)
 		end,
 		formatters = {
 			ktfmt = {

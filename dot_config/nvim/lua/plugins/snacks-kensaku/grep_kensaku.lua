@@ -73,12 +73,9 @@ local function get_cmd(opts, filter)
 	local pattern, pargs = Snacks.picker.util.parse(filter.search)
 	vim.list_extend(args, pargs)
 
-	local kensaku_pattern = vim.fn["kensaku#query"](pattern, {
-		rxop = vim.g["kensaku#rxop#javascript"],
-	})
-
 	args[#args + 1] = "--"
-	table.insert(args, kensaku_pattern)
+	table.insert(args, pattern)
+	local pattern_index = #args
 
 	local paths = {} ---@type string[]
 
@@ -101,7 +98,7 @@ local function get_cmd(opts, filter)
 		vim.list_extend(args, paths)
 	end
 
-	return cmd, args
+	return cmd, args, pattern_index
 end
 
 ---@param opts snacks.picker.grep.Config
@@ -112,11 +109,8 @@ function M.finder(opts, ctx)
 	end
 	local absolute = (opts.dirs and #opts.dirs > 0) or opts.buffers or opts.rtp
 	local cwd = not absolute and svim.fs.normalize(opts and opts.cwd or uv.cwd() or ".") or nil
-	local cmd, args = get_cmd(opts, ctx.filter)
-	if opts.debug.grep then
-		Snacks.notify.info("grep: " .. cmd .. " " .. table.concat(args, " "))
-	end
-	return require("snacks.picker.source.proc").proc(
+	local cmd, args, pattern_index = get_cmd(opts, ctx.filter)
+	local find = require("snacks.picker.source.proc").proc(
 		ctx:opts({
 			notify = false, -- never notify on grep errors, since it's impossible to know if the error is due to the search pattern
 			cmd = cmd,
@@ -176,6 +170,13 @@ function M.finder(opts, ctx)
 		}),
 		ctx
 	)
+	return function(cb)
+		args[pattern_index] = require("plugins.snacks-kensaku.query")(args[pattern_index])
+		if opts.debug.grep then
+			Snacks.notify.info("grep: " .. cmd .. " " .. table.concat(args, " "))
+		end
+		find(cb)
+	end
 end
 
 M.regex = true

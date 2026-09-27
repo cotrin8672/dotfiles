@@ -135,6 +135,7 @@ return {
 
 		vim.lsp.config("rust_analyzer", {
 			capabilities = capabilities,
+			settings = require("config.rust.lsp"),
 		})
 
 		vim.lsp.config("taplo", {

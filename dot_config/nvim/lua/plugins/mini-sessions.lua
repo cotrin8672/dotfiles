@@ -16,6 +16,7 @@ return {
 	config = function(_, opts)
 		local sessions = require("mini.sessions")
 		local managed_session_name = nil
+		local last_written_path
 
 		local function is_diffview_session_block(block)
 			for _, line in ipairs(block) do
@@ -43,6 +44,9 @@ return {
 
 		local function prune_diffview_tabs_from_session(data)
 			local lines = vim.fn.readfile(data.path)
+			if not is_diffview_session_block(lines) then
+				return
+			end
 			local tabrewind_idx
 
 			for i, line in ipairs(lines) do
@@ -129,15 +133,25 @@ return {
 			return vim.fn.argc() == 0
 		end
 
+		local group = vim.api.nvim_create_augroup("MiniSessionsRepoAutowrite", { clear = true })
+		-- Register before mini.sessions' autowrite so only this exit's completed writes count.
+		vim.api.nvim_create_autocmd("VimLeavePre", {
+			group = group,
+			callback = function()
+				last_written_path = nil
+			end,
+		})
+
 		opts.hooks = vim.tbl_deep_extend("force", opts.hooks or {}, {
 			post = {
-				write = prune_diffview_tabs_from_session,
+				write = function(data)
+					prune_diffview_tabs_from_session(data)
+					last_written_path = vim.fs.normalize(data.path)
+				end,
 			},
 		})
 
 		sessions.setup(opts)
-
-		local group = vim.api.nvim_create_augroup("MiniSessionsRepoAutowrite", { clear = true })
 
 		vim.api.nvim_create_autocmd("VimLeavePre", {
 			group = group,
@@ -155,7 +169,13 @@ return {
 					managed_session_name = session_name(root)
 				end
 
-				sessions.write(managed_session_name, { force = true, verbose = false })
+				local path = vim.fs.normalize(vim.fn.fnamemodify(
+					sessions.config.directory .. "/" .. managed_session_name,
+					":p"
+				))
+				if last_written_path ~= path then
+					sessions.write(managed_session_name, { force = true, verbose = false })
+				end
 			end,
 		})
 	end,

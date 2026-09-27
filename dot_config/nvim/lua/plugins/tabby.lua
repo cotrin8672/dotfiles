@@ -118,11 +118,18 @@ end
 local function buffer_file_icon(bufnr, bg_hl)
 	local path = vim.api.nvim_buf_get_name(bufnr)
 	local cached = icon_cache[bufnr]
-	if cached and cached.path == path and cached.bg_hl == bg_hl then
-		return cached.value
+	if not cached or cached.path ~= path then
+		cached = {
+			path = path,
+			category = vim.fn.isdirectory(path) == 1 and "directory" or "file",
+			values = {},
+		}
+		icon_cache[bufnr] = cached
 	end
-	local category = vim.fn.isdirectory(path) == 1 and "directory" or "file"
-	local ok, icon, icon_hl = pcall(require("mini.icons").get, category, path)
+	if cached.values[bg_hl] then
+		return cached.values[bg_hl]
+	end
+	local ok, icon, icon_hl = pcall(require("mini.icons").get, cached.category, path)
 	if not ok then
 		return ""
 	end
@@ -135,7 +142,7 @@ local function buffer_file_icon(bufnr, bg_hl)
 	})
 
 	local value = { icon, hl = hl }
-	icon_cache[bufnr] = { path = path, bg_hl = bg_hl, value = value }
+	cached.values[bg_hl] = value
 	return value
 end
 

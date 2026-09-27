@@ -31,7 +31,6 @@ return {
 			markdown = { "markdownlint" },
 			sh = { "shellcheck" },
 			zsh = { "shellcheck" },
-			rust = { "clippy" },
 			java = { "checklint" },
 			kotlin = { "ktlint" },
 		}
@@ -40,8 +39,13 @@ return {
 		vim.api.nvim_create_autocmd({ "BufWritePost", "InsertLeave" }, {
 			group = group,
 			pattern = "*",
-			callback = function()
-				lint.try_lint()
+			callback = function(event)
+				local coordinator = require("config.lint")
+				if event.event == "InsertLeave" then
+					coordinator.insert_leave(event.buf)
+				elseif not vim.b[event.buf].conform_applying_formatting then
+					coordinator.after_save(event.buf)
+				end
 			end,
 		})
 	end,

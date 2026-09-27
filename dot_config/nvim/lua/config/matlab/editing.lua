@@ -6,6 +6,8 @@ local current_section_namespace = vim.api.nvim_create_namespace("MatlabCurrentSe
 local current_sections = {}
 local section_rows = {}
 local section_line_counts = {}
+local section_changes = {}
+local section_attached = {}
 
 local function is_section_break(line)
 	return line:find("^%s*%%%%") ~= nil
@@ -89,6 +91,24 @@ local function insert_changed_section_boundaries(bufnr)
 	local section_index = section_index_at_or_before(rows, cursor_row)
 	local was_section = rows[section_index] == cursor_row
 	return was_section ~= is_section_break(vim.api.nvim_get_current_line())
+end
+
+local function normal_changed_section_boundaries(bufnr)
+	local changed = section_changes[bufnr]
+	if not changed or changed.lines or section_line_counts[bufnr] ~= vim.api.nvim_buf_line_count(bufnr) then
+		return true
+	end
+	local rows = section_rows[bufnr] or {}
+	local last_section = rows[section_index_at_or_before(rows, changed.last)]
+	if last_section and last_section > changed.first then
+		return true
+	end
+	for _, line in ipairs(vim.api.nvim_buf_get_lines(bufnr, changed.first, changed.last, false)) do
+		if is_section_break(line) then
+			return true
+		end
+	end
+	return false
 end
 
 local function define_section_highlight()
@@ -193,7 +213,30 @@ function M.toggle_split_join()
 end
 
 local function configure_buffer(bufnr)
+	if not section_attached[bufnr] then
+		section_attached[bufnr] = true
+		vim.api.nvim_buf_attach(bufnr, false, {
+			on_lines = function(_, _, _, first, last, new_last)
+				local changed = section_changes[bufnr] or { first = first, last = new_last }
+				if changed.lines then
+					return
+				end
+				changed.first = math.min(changed.first, first)
+				changed.last = math.max(changed.last, new_last)
+				changed.lines = changed.lines or last ~= new_last
+				section_changes[bufnr] = changed
+			end,
+			on_reload = function()
+				section_changes[bufnr] = { lines = true }
+			end,
+			on_detach = function()
+				section_changes[bufnr], section_attached[bufnr] = nil, nil
+				section_rows[bufnr], section_line_counts[bufnr], current_sections[bufnr] = nil, nil, nil
+			end,
+		})
+	end
 	highlight_sections(bufnr)
+	section_changes[bufnr] = nil
 	if vim.api.nvim_get_current_buf() == bufnr then
 		highlight_current_section(bufnr)
 	end
@@ -274,7 +317,12 @@ function M.setup()
 		group = group,
 		pattern = "*.m",
 		callback = function(event)
-			highlight_sections(event.buf)
+			if normal_changed_section_boundaries(event.buf) then
+				highlight_sections(event.buf)
+			else
+				current_sections[event.buf] = nil
+			end
+			section_changes[event.buf] = nil
 			highlight_current_section(event.buf)
 		end,
 	})
@@ -286,6 +334,7 @@ function M.setup()
 			if insert_changed_section_boundaries(event.buf) then
 				highlight_sections(event.buf)
 			end
+			section_changes[event.buf] = nil
 			highlight_current_section(event.buf)
 		end,
 	})

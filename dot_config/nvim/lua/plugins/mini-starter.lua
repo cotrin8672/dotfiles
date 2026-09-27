@@ -160,8 +160,8 @@ return {
         local items = {}
 
         for _, f in ipairs(vim.v.oldfiles or {}) do
-          local stat = vim.uv.fs_stat(f)
-          if stat and stat.type == "file" and vim.startswith(f, cwd_prefix) then
+          local stat = vim.startswith(f, cwd_prefix) and vim.uv.fs_stat(f)
+          if stat and stat.type == "file" then
             local basename = vim.fn.fnamemodify(f, ":t")
             local icon, icon_hl = icons.get("file", f)
 

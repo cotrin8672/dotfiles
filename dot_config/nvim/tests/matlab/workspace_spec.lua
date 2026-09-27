@@ -1,23 +1,33 @@
-local function workspace_buffer()
-	for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-		if vim.api.nvim_buf_is_valid(bufnr) and vim.api.nvim_buf_get_name(bufnr):match("%[MATLAB Workspace%]$") then
-			return bufnr
-		end
-	end
-end
-
-local function buffer_text()
-	local bufnr = assert(workspace_buffer())
-	return table.concat(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), "\n")
-end
-
-describe("MATLAB workspace float", function()
+describe("MATLAB workspace picker", function()
 	local workspace
 	local fake_core
 	local notifications
 	local evals
+	local picker, previous_snacks
+	local function buffer_text()
+		return table.concat(vim.tbl_map(function(item)
+			return item.message or item.text
+		end, picker.items), "\n")
+	end
 
 	before_each(function()
+		previous_snacks = _G.Snacks
+		_G.Snacks = { picker = function(opts)
+			picker = {
+				closed = false,
+				refreshes = 0,
+				items = opts.finder(),
+				refresh = function(self)
+					self.refreshes = self.refreshes + 1
+					self.items = opts.finder()
+				end,
+				close = function(self)
+					self.closed = true
+					opts.on_close(self)
+				end,
+			}
+			return picker
+		end }
 		notifications = {}
 		evals = {}
 		fake_core = {
@@ -49,15 +59,8 @@ describe("MATLAB workspace float", function()
 	end)
 
 	after_each(function()
-		local bufnr = workspace_buffer()
-		if bufnr and vim.api.nvim_buf_is_valid(bufnr) then
-			for _, winid in ipairs(vim.fn.win_findbuf(bufnr)) do
-				if vim.api.nvim_win_is_valid(winid) then
-					vim.api.nvim_win_close(winid, true)
-				end
-			end
-			vim.api.nvim_buf_delete(bufnr, { force = true })
-		end
+		picker:close()
+		_G.Snacks = previous_snacks
 		package.loaded["config.matlab.core"] = nil
 		package.loaded["config.matlab.workspace"] = nil
 	end)
@@ -114,6 +117,25 @@ describe("MATLAB workspace float", function()
 		workspace.toggle()
 		assert.is_true(#notifications > before)
 		assert.same({ type = "GetSize" }, notifications[#notifications].params)
+	end)
+
+	it("keeps identical data stable and refreshes changed values and error recovery", function()
+		workspace.toggle()
+		evals[1].opts.on_complete(true, {})
+		local data = { type = "Data", data = { { data = { "x", "1", "1x1", "double" } } } }
+		workspace.handle_server_message(data, 42)
+		local before, items = picker.refreshes, picker.items
+		workspace.handle_server_message(vim.deepcopy(data), 42)
+		assert.are.equal(before, picker.refreshes)
+		assert.are.equal(items, picker.items)
+		data.data[1].data[2] = "2"
+		workspace.handle_server_message(data, 42)
+		assert.are.equal(before + 1, picker.refreshes)
+		assert.are.equal("2", picker.items[1].row.Value)
+		workspace.handle_server_message({ type = "Data", data = { {} } }, 42)
+		assert.matches("protocol error", buffer_text())
+		workspace.handle_server_message(data, 42)
+		assert.are.equal("2", picker.items[1].row.Value)
 	end)
 
 	it("rejects MATLAB releases older than R2023a without starting the backend", function()

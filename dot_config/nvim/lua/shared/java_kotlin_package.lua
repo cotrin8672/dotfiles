@@ -31,14 +31,16 @@ function M.setup()
         return
       end
 
-      local lines = vim.api.nvim_buf_get_lines(event.buf, 0, -1, false)
-      if lines[1] and lines[1]:match("^package%s+") then
+      local first_line = vim.api.nvim_buf_get_lines(event.buf, 0, 1, false)[1] or ""
+      if first_line:find("%S") then
         return
       end
 
-      if vim.iter(lines):any(function(line)
-        return line:match("%S") ~= nil
-      end) then
+      if vim.api.nvim_buf_line_count(event.buf) > 1
+        and vim.iter(vim.api.nvim_buf_get_lines(event.buf, 1, -1, false)):any(function(line)
+          return line:match("%S") ~= nil
+        end)
+      then
         return
       end
 

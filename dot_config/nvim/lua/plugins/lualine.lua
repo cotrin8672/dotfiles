@@ -109,15 +109,21 @@ return {
 				return cached
 			end
 
-			local git_dir = vim.fs.find(".git", { path = path, upward = true })[1]
-			if not git_dir then
-				repo_name_cache[path] = ""
-				return ""
+			local directory = path
+			while directory do
+				if vim.uv.fs_lstat(vim.fs.joinpath(directory, ".git")) then
+					local name = vim.fs.basename(directory)
+					repo_name_cache[path] = name
+					return name
+				end
+				local parent = vim.fs.dirname(directory)
+				if parent == directory then
+					break
+				end
+				directory = parent
 			end
-
-			local name = vim.fs.basename(vim.fs.dirname(git_dir))
-			repo_name_cache[path] = name
-			return name
+			repo_name_cache[path] = ""
+			return ""
 		end
 
 		local function diagnostics_summary()
@@ -130,37 +136,25 @@ return {
 				return cached.total, cached.severity
 			end
 
-			local diagnostics = vim.diagnostic.get(bufnr)
-			local total = #diagnostics
+			local counts = vim.diagnostic.count(bufnr)
+			local total = 0
+			for _, count in pairs(counts) do
+				total = total + count
+			end
 			if total == 0 then
 				diagnostic_cache[bufnr] = false
 				return nil
 			end
 
-			local has_error = false
-			local has_warn = false
-			local has_hint = false
-
-			for _, diagnostic in ipairs(diagnostics) do
-				if diagnostic.severity == vim.diagnostic.severity.ERROR then
-					has_error = true
-					break
-				elseif diagnostic.severity == vim.diagnostic.severity.WARN then
-					has_warn = true
-				elseif diagnostic.severity == vim.diagnostic.severity.HINT then
-					has_hint = true
-				end
-			end
-
-			if has_error then
+			if (counts[vim.diagnostic.severity.ERROR] or 0) > 0 then
 				diagnostic_cache[bufnr] = { total = total, severity = vim.diagnostic.severity.ERROR }
 				return total, vim.diagnostic.severity.ERROR
 			end
-			if has_warn then
+			if (counts[vim.diagnostic.severity.WARN] or 0) > 0 then
 				diagnostic_cache[bufnr] = { total = total, severity = vim.diagnostic.severity.WARN }
 				return total, vim.diagnostic.severity.WARN
 			end
-			if has_hint then
+			if (counts[vim.diagnostic.severity.HINT] or 0) > 0 then
 				diagnostic_cache[bufnr] = { total = total, severity = vim.diagnostic.severity.HINT }
 				return total, vim.diagnostic.severity.HINT
 			end

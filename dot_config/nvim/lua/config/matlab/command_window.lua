@@ -85,24 +85,34 @@ local function get_hl_attr(groups, attr)
 	end
 end
 
+local winbar_palette
 local function apply_winbar_highlights()
+	local palette = {
+		fill = get_hl_attr({ "TabbyFill", "StatusLineNC", "Normal" }, "bg"),
+		head = get_hl_attr({ "TabbyHead", "DiagnosticHint", "Normal" }, "bg"),
+		active = get_hl_attr({ "TabbyActive", "DiagnosticHint", "Normal" }, "bg"),
+		inactive = get_hl_attr({ "TabbyInactive", "StatusLine", "Normal" }, "bg"),
+	}
+	if vim.deep_equal(palette, winbar_palette) then
+		return
+	end
+	winbar_palette = palette
 	vim.api.nvim_set_hl(0, "MatlabWinbarHead", { link = "TabbyHead" })
 	vim.api.nvim_set_hl(0, "MatlabWinbarActive", { link = "TabbyActive" })
 	vim.api.nvim_set_hl(0, "MatlabWinbarInactive", { link = "TabbyInactive" })
 	vim.api.nvim_set_hl(0, "MatlabWinbarFill", { link = "TabbyFill" })
 
-	local fill_bg = get_hl_attr({ "TabbyFill", "StatusLineNC", "Normal" }, "bg")
 	vim.api.nvim_set_hl(0, "MatlabWinbarHeadSep", {
-		fg = get_hl_attr({ "TabbyHead", "DiagnosticHint", "Normal" }, "bg"),
-		bg = fill_bg,
+		fg = palette.head,
+		bg = palette.fill,
 	})
 	vim.api.nvim_set_hl(0, "MatlabWinbarActiveSep", {
-		fg = get_hl_attr({ "TabbyActive", "DiagnosticHint", "Normal" }, "bg"),
-		bg = fill_bg,
+		fg = palette.active,
+		bg = palette.fill,
 	})
 	vim.api.nvim_set_hl(0, "MatlabWinbarInactiveSep", {
-		fg = get_hl_attr({ "TabbyInactive", "StatusLine", "Normal" }, "bg"),
-		bg = fill_bg,
+		fg = palette.inactive,
+		bg = palette.fill,
 	})
 end
 
@@ -110,7 +120,10 @@ apply_winbar_highlights()
 local winbar_highlight_group = vim.api.nvim_create_augroup("MatlabCommandWindowWinbar", { clear = true })
 vim.api.nvim_create_autocmd("ColorScheme", {
 	group = winbar_highlight_group,
-	callback = apply_winbar_highlights,
+	callback = function()
+		winbar_palette = nil
+		apply_winbar_highlights()
+	end,
 })
 
 local function status_icon(session_state)
@@ -291,7 +304,10 @@ local function render_winbar()
 	if not is_visible() then
 		return
 	end
-	vim.api.nvim_set_option_value("winbar", winbar_text(), { win = state.winid })
+	local text = winbar_text()
+	if vim.wo[state.winid].winbar ~= text then
+		vim.api.nvim_set_option_value("winbar", text, { win = state.winid })
+	end
 	sync_animation()
 end
 
@@ -342,7 +358,9 @@ end
 
 local function render_prompt(bufnr)
 	state.prompt, state.status_text = current_prompt()
-	vim.fn.prompt_setprompt(bufnr, state.prompt)
+	if vim.fn.prompt_getprompt(bufnr) ~= state.prompt then
+		vim.fn.prompt_setprompt(bufnr, state.prompt)
+	end
 	render_winbar()
 end
 

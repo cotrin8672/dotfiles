@@ -54,34 +54,61 @@ local function matlab_keyword(line)
 	return vim.trim(strip_matlab_comment(line)):match("^(%a+)")
 end
 
-local function matlab_arguments_context(bufnr, lnum)
-	local stack = {}
-	local last_closed_arguments
-	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, lnum - 1, false)
+local arguments_contexts = {}
 
-	for line_number, line in ipairs(lines) do
+local function matlab_arguments_context(bufnr, lnum)
+	local cache = arguments_contexts[bufnr]
+	if not cache then
+		cache = { valid = 0, states = { [0] = {} } }
+		arguments_contexts[bufnr] = cache
+		vim.api.nvim_buf_attach(bufnr, false, {
+			on_lines = function(_, _, _, first)
+				cache.valid = math.min(cache.valid, first)
+				for row = cache.valid + 1, #cache.states do
+					cache.states[row] = nil
+				end
+			end,
+			on_reload = function()
+				cache.valid, cache.states = 0, { [0] = {} }
+			end,
+			on_detach = function()
+				arguments_contexts[bufnr] = nil
+			end,
+		})
+	end
+	local target = lnum - 1
+	if target <= cache.valid then
+		return cache.states[target].top, cache.states[target].last_closed
+	end
+	local context = cache.states[cache.valid]
+	local top, last_closed_arguments = context.top, context.last_closed
+	local lines = vim.api.nvim_buf_get_lines(bufnr, cache.valid, target, false)
+	for index, line in ipairs(lines) do
+		local line_number = cache.valid + index
 		local code = vim.trim(strip_matlab_comment(line))
 		local keyword = code:match("^(%a+)")
 		if keyword == "end" then
-			local block = table.remove(stack)
+			local block = top
+			top = block and block.parent
 			if block and block.kind == "arguments" then
 				last_closed_arguments = {
 					line = line_number,
-					indent = vim.fn.indent(line_number),
 				}
 			end
 		elseif code ~= "" then
 			last_closed_arguments = nil
 			if matlab_block_keywords[keyword] then
-				table.insert(stack, {
+				top = {
 					kind = keyword,
 					line = line_number,
-				})
+					parent = top,
+				}
 			end
 		end
+		cache.states[line_number] = { top = top, last_closed = last_closed_arguments }
 	end
-
-	return stack, last_closed_arguments
+	cache.valid = target
+	return top, last_closed_arguments
 end
 
 function M.indent(lnum)
@@ -94,10 +121,9 @@ function M.indent(lnum)
 		end
 	end
 
-	local stack, last_closed_arguments = matlab_arguments_context(bufnr, lnum)
+	local top, last_closed_arguments = matlab_arguments_context(bufnr, lnum)
 	local current_line = vim.api.nvim_buf_get_lines(bufnr, lnum - 1, lnum, false)[1] or ""
 	local current_keyword = matlab_keyword(current_line)
-	local top = stack[#stack]
 	if current_keyword == "end" and top then
 		return vim.fn.indent(top.line)
 	end
@@ -109,7 +135,7 @@ function M.indent(lnum)
 		and last_closed_arguments.line == lnum - 1
 		and not matlab_dedent_keywords[current_keyword]
 	then
-		return last_closed_arguments.indent
+		return vim.fn.indent(last_closed_arguments.line)
 	end
 
 	return base_indent

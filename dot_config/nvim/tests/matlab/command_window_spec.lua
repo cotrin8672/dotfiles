@@ -73,6 +73,38 @@ describe("MATLAB command window", function()
 		assert.matches("1 ●", plain_winbar(winid))
 	end)
 
+	it("does not reset unchanged decorations while streaming output", function()
+		connection, release = "connected", "R2024a"
+		cmdwin.open()
+		cmdwin.handle_prompt_change("READY", true)
+		local set_hl, set_option, set_prompt = vim.api.nvim_set_hl, vim.api.nvim_set_option_value, vim.fn.prompt_setprompt
+		local writes = { hl = 0, winbar = 0, prompt = 0 }
+		vim.api.nvim_set_hl = function(...)
+			writes.hl = writes.hl + 1
+			return set_hl(...)
+		end
+		vim.api.nvim_set_option_value = function(name, ...)
+			if name == "winbar" then writes.winbar = writes.winbar + 1 end
+			return set_option(name, ...)
+		end
+		vim.fn.prompt_setprompt = function(...)
+			writes.prompt = writes.prompt + 1
+			return set_prompt(...)
+		end
+		local ok, err = pcall(function()
+			for _ = 1, 20 do cmdwin.handle_text("chunk\n", 0) end
+			cmdwin.handle_prompt_change("READY", true)
+			assert.same({ hl = 0, winbar = 0, prompt = 0 }, writes)
+			vim.api.nvim_exec_autocmds("ColorScheme", { pattern = "default" })
+			assert.is_true(writes.hl > 0)
+			cmdwin.handle_prompt_change("INPUT", true)
+			assert.are.equal("? ", cmdwin._snapshot().prompt)
+			assert.is_true(writes.prompt > 0)
+		end)
+		vim.api.nvim_set_hl, vim.api.nvim_set_option_value, vim.fn.prompt_setprompt = set_hl, set_option, set_prompt
+		assert(ok, err)
+	end)
+
 	it("keeps one command buffer per session and swaps it in the existing window", function()
 		connection = "connected"
 		release = "R2024a"

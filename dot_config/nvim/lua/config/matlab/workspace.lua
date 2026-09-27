@@ -267,19 +267,24 @@ local function icon_field(icon)
 	return icon .. string.rep(" ", math.max(0, 2 - vim.fn.strdisplaywidth(icon))) .. " "
 end
 
-local function picker_items()
+local function picker_message()
 	if state.error then
-		return { { text = state.error, message = "Error: " .. state.error } }
+		return "Error: " .. state.error
 	elseif not state.connected then
-		local message = state.loading and "Connecting to MATLAB..." or "MATLAB is not connected."
-		return { { text = message, message = message } }
+		return state.loading and "Connecting to MATLAB..." or "MATLAB is not connected."
 	elseif not state.supported then
-		return { { text = "Workspace Browser is unavailable.", message = "Workspace Browser is unavailable." } }
+		return "Workspace Browser is unavailable."
 	elseif state.rows == nil then
-		local message = state.loading and "Loading workspace variables..." or "Workspace data has not been loaded."
-		return { { text = message, message = message } }
+		return state.loading and "Loading workspace variables..." or "Workspace data has not been loaded."
 	elseif #state.rows == 0 then
-		return { { text = "(no workspace variables)", message = "(no workspace variables)" } }
+		return "(no workspace variables)"
+	end
+end
+
+local function picker_items()
+	local message = picker_message()
+	if message then
+		return { { text = state.error or message, message = message } }
 	end
 
 	return vim.tbl_map(function(row)
@@ -331,9 +336,15 @@ local function picker_preview(ctx)
 	ctx.preview:highlight({ ft = "markdown" })
 end
 
+local last_picker, last_picker_rows, last_picker_message
 local function refresh_picker()
 	if is_picker_visible() then
-		state.picker:refresh()
+		local message = picker_message()
+		local rows = not message and state.rows or nil
+		if state.picker ~= last_picker or rows ~= last_picker_rows or message ~= last_picker_message then
+			last_picker, last_picker_rows, last_picker_message = state.picker, rows, message
+			state.picker:refresh()
+		end
 	elseif state.picker then
 		state.picker = nil
 	end
@@ -360,6 +371,9 @@ local function open_picker()
 		on_close = function(closed)
 			if state.picker == closed then
 				state.picker = nil
+			end
+			if last_picker == closed then
+				last_picker, last_picker_rows, last_picker_message = nil, nil, nil
 			end
 		end,
 		actions = {
@@ -659,7 +673,9 @@ local function handle_data(result)
 		})
 	end
 
-	state.rows = rows
+	if not vim.deep_equal(state.rows, rows) then
+		state.rows = rows
+	end
 	state.row_count = math.max(state.row_count, #rows)
 	state.loading = false
 	state.dirty = false

@@ -2,7 +2,9 @@ describe("MATLAB editing keymaps", function()
 	local bufnr
 
 	before_each(function()
-		require("config.matlab.editing").setup()
+		local editing = require("config.matlab.editing")
+		vim.api.nvim_clear_autocmds({ group = "MatlabEditing" })
+		editing.setup()
 		bufnr = vim.api.nvim_create_buf(false, true)
 		vim.api.nvim_win_set_buf(0, bufnr)
 		vim.bo[bufnr].filetype = "matlab"
@@ -87,6 +89,40 @@ describe("MATLAB editing keymaps", function()
 		vim.api.nvim_exec_autocmds("TextChangedI", { buffer = bufnr })
 		vim.api.nvim_buf_get_lines = get_lines
 		assert.are.equal(1, calls)
+	end)
+
+	it("limits Normal-mode scans to edited lines and keeps section marks after boundary edits", function()
+		vim.api.nvim_buf_set_name(bufnr, vim.fn.tempname() .. ".m")
+		vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "%% first", "a = 1;", "b = 2;", "%% second", "c = 3;" })
+		vim.api.nvim_exec_autocmds("TextChanged", { buffer = bufnr })
+		vim.api.nvim_win_set_cursor(0, { 2, 0 })
+		local get_lines, reads = vim.api.nvim_buf_get_lines, {}
+		vim.api.nvim_buf_get_lines = function(buf, first, last, strict)
+			reads[#reads + 1] = { first, last }
+			return get_lines(buf, first, last, strict)
+		end
+		local ok, err = pcall(function()
+			vim.api.nvim_set_current_line("a = 99;")
+			vim.api.nvim_exec_autocmds("TextChanged", { buffer = bufnr })
+			assert.same({ { 1, 2 } }, reads)
+		end)
+		vim.api.nvim_buf_get_lines = get_lines
+		assert(ok, err)
+		local namespace = vim.api.nvim_create_namespace("MatlabSections")
+		local function rows()
+			return vim.tbl_map(function(mark) return mark[2] end,
+				vim.api.nvim_buf_get_extmarks(bufnr, namespace, 0, -1, {}))
+		end
+		assert.same({ 0, 3 }, rows())
+		vim.api.nvim_buf_set_lines(bufnr, 1, 2, false, { "%% added" })
+		vim.api.nvim_exec_autocmds("TextChanged", { buffer = bufnr })
+		assert.same({ 0, 1, 3 }, rows())
+		vim.api.nvim_buf_set_lines(bufnr, 0, 2, false, { "plain code" })
+		vim.api.nvim_exec_autocmds("TextChanged", { buffer = bufnr })
+		assert.same({ 2 }, rows())
+		local current_ns = vim.api.nvim_create_namespace("MatlabCurrentSection")
+		local marks = vim.api.nvim_buf_get_extmarks(bufnr, current_ns, 0, -1, {})
+		assert.same({ 0, 1 }, vim.tbl_map(function(mark) return mark[2] end, marks))
 	end)
 
 	it("repairs a missing split join mapping in an already open MATLAB buffer", function()
