@@ -54,7 +54,7 @@ return {
 		vim.api.nvim_set_hl(0, "LineNrAbove", { fg = dim })
 		vim.api.nvim_set_hl(0, "LineNrBelow", { fg = dim })
 		vim.api.nvim_set_hl(0, "CursorLineNr", { fg = dim })
-		vim.api.nvim_set_hl(0, "LspInlayHint", { fg = dim, italic = true })
+		vim.api.nvim_set_hl(0, "LspInlayHint", { fg = dim, bg = hl("PmenuSel", "bg"), italic = true })
 		vim.api.nvim_set_hl(0, "Whitespace", { fg = subtle })
 	end,
 }
