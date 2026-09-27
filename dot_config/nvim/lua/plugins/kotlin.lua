@@ -1,7 +1,5 @@
 return {
 	"AlexandrosAlexiou/kotlin.nvim",
-	-- Keep the pre-v2 launcher path (kotlin-lsp/java), not bin/intellij-server.
-	version = "v1.1.0",
 	ft = { "kotlin" },
 	dependencies = {
 		"neovim/nvim-lspconfig",
@@ -18,6 +16,7 @@ return {
 				"settings.gradle.kts",
 			},
 			jdk_for_symbol_resolution = os.getenv("JAVA_HOME"),
+			java_files = false,
 			jvm_args = {
 				"-Xmx4g",
 			},

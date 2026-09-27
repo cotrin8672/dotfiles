@@ -75,8 +75,7 @@ return {
 			ensure_installed = {
 				"clang-format",
 				"jdtls",
-				-- Match kotlin.nvim v1.1.0's legacy kotlin-lsp launcher.
-				{ "kotlin-lsp", version = "kotlin-lsp/v261.13587.0" },
+				"kotlin-lsp",
 				"google-java-format",
 				"ktfmt",
 				"ktlint",
