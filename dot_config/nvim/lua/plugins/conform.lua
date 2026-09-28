@@ -6,7 +6,6 @@ return {
 			c = { "clang_format" },
 			cpp = { "clang_format" },
 			java = { "google-java-format" },
-			kotlin = { "ktlint" },
 			lua = { "stylua" },
 			nix = { "alejandra" },
 			css = { "prettier" },

@@ -3,6 +3,14 @@ return {
 	event = "User LazyFile",
 	config = function()
 		local lint = require("lint")
+		lint.linters.ktlint.args = {
+			"--reporter=json",
+			"--stdin",
+			function()
+				local name = vim.api.nvim_buf_get_name(0)
+				return "--stdin-path=" .. (name ~= "" and name or "stdin.kt")
+			end,
+		}
 		local clangtidy = lint.linters.clangtidy
 		clangtidy.parser = require("lint.parser").from_pattern(
 			"(.+):(%d+):(%d+): (%w+): ([^[]+) %[(.*)%]",
@@ -31,7 +39,6 @@ return {
 			markdown = { "markdownlint" },
 			sh = { "shellcheck" },
 			zsh = { "shellcheck" },
-			java = { "checklint" },
 			kotlin = { "ktlint" },
 		}
 

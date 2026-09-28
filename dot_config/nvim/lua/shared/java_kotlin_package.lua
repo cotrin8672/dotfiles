@@ -45,7 +45,7 @@ function M.setup()
       end
 
       vim.api.nvim_buf_set_lines(event.buf, 0, -1, false, {
-        ("package %s"):format(package_name),
+        ("package %s%s"):format(package_name, event.match:match("%.java$") and ";" or ""),
         "",
       })
     end,

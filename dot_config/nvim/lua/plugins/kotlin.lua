@@ -16,7 +16,8 @@ return {
 				"settings.gradle.kts",
 			},
 			jdk_for_symbol_resolution = os.getenv("JAVA_HOME"),
-			java_files = false,
+			-- Sync unsaved Java edits to Kotlin analysis in the same workspace.
+			java_files = true,
 			jvm_args = {
 				"-Xmx4g",
 			},

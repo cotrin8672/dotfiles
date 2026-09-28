@@ -37,7 +37,8 @@ return {
 	end,
 	opts = function(plugin)
 		return {
-			navigation = { enable = true },
+			-- JDTLS/kross own gd/gr/K; MC-specific navigation is mapped in jdtls.lua.
+			navigation = { enable = false },
 			code_action = { enable = true },
 			diagnostics = { enabled = true },
 			jdtls = {

@@ -71,8 +71,12 @@ return {
 					vim.keymap.set("n", lhs, rhs, { buffer = bufnr, silent = true })
 				end
 
-				map("gd", vim.lsp.buf.definition)
-				map("gr", vim.lsp.buf.references)
+				map("gd", function()
+					vim.lsp.buf.definition()
+				end)
+				map("gr", function()
+					vim.lsp.buf.references()
+				end)
 				map("gi", vim.lsp.buf.implementation)
 				if vim.bo[bufnr].filetype ~= "matlab" then
 					map("K", vim.lsp.buf.hover)

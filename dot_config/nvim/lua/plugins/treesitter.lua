@@ -24,7 +24,7 @@ local parsers = {
 
 return {
 	"nvim-treesitter/nvim-treesitter",
-	event = { "BufReadPost", "BufNewFile" },
+	lazy = false,
 	priority = 1000,
 	build = ":TSUpdate",
 	config = function()

@@ -133,6 +133,11 @@ vim.api.nvim_create_autocmd({ "WinEnter", "FocusGained", "BufEnter" }, {
 	command = "checktime",
 })
 
+vim.api.nvim_create_autocmd("BufWritePre", {
+	pattern = { "*.kt", "*.kts" },
+	command = [[silent %s/\r$//e]],
+})
+
 require("shared.java_kotlin_package").setup()
 require("config.matlab").setup()
 

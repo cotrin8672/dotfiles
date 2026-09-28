@@ -34,6 +34,28 @@ return {
 			capabilities = require("blink.cmp").get_lsp_capabilities(capabilities)
 		end)
 
+		local function mcdev_navigation(bufnr, method)
+			require("mcdev.navigation")[method](bufnr, nil, function(locations, err, raw_locations)
+				if err then
+					vim.notify(tostring(err), vim.log.levels.WARN)
+				elseif not locations or #locations == 0 then
+					local unresolved = raw_locations and raw_locations[1]
+					vim.notify(
+						unresolved and unresolved.resolutionMessage or "mcdev: no " .. method .. " found",
+						vim.log.levels.INFO
+					)
+				elseif method == "definition" and #locations == 1 then
+					vim.lsp.util.show_document(locations[1], "utf-8", { focus = true })
+				else
+					vim.fn.setqflist({}, " ", {
+						title = "mcdev " .. method,
+						items = vim.lsp.util.locations_to_items(locations, "utf-8"),
+					})
+					vim.cmd.copen()
+				end
+			end)
+		end
+
 		local function start_or_attach(bufnr)
 			if not vim.api.nvim_buf_is_valid(bufnr) or vim.bo[bufnr].filetype ~= "java" then
 				return
@@ -60,6 +82,14 @@ return {
 					vim.schedule(function()
 						if vim.api.nvim_buf_is_valid(attached_bufnr) then
 							require("mcdev.attach").setup(attached_bufnr)
+							for key, method in pairs({ ["<leader>md"] = "definition", ["<leader>mr"] = "references" }) do
+								vim.keymap.set("n", key, function()
+									mcdev_navigation(attached_bufnr, method)
+								end, { buffer = attached_bufnr, desc = "MC " .. method })
+							end
+							vim.keymap.set("n", "<leader>mh", function()
+								require("mcdev.hover").show(attached_bufnr)
+							end, { buffer = attached_bufnr, desc = "MC hover" })
 						end
 					end)
 				end,

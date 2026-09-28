@@ -86,7 +86,7 @@ return {
 				"shellcheck",
 				"markdownlint",
 			},
-			auto_update = true,
+			auto_update = false,
 			start_delay = 0,
 		},
 	},

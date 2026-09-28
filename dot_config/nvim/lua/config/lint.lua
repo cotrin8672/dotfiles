@@ -40,6 +40,10 @@ function M.format_started(bufnr)
 end
 
 function M.insert_leave(bufnr)
+	-- ktlint starts a JVM; run it after saving instead of on every mode change.
+	if vim.bo[bufnr].filetype == "kotlin" then
+		return
+	end
 	if formatting[bufnr] then
 		M.after_save(bufnr)
 	else
