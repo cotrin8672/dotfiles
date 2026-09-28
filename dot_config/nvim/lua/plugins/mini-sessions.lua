@@ -114,18 +114,9 @@ return {
 			data.modify_time = vim.fn.getftime(data.path)
 		end
 
-		local function git_root(path)
-			local dot_git = vim.fs.find(".git", {
-				path = path or vim.fn.getcwd(),
-				upward = true,
-				limit = 1,
-			})[1]
-
-			return dot_git and vim.fs.dirname(dot_git) or nil
-		end
-
 		local function session_name(root)
 			local normalized = vim.fs.normalize(root)
+			-- Keep existing names so previous sessions remain available in starter.
 			return "git-" .. normalized:gsub("[:/\\]+", "%%")
 		end
 
@@ -161,12 +152,7 @@ return {
 						return
 					end
 
-					local root = git_root()
-					if not root then
-						return
-					end
-
-					managed_session_name = session_name(root)
+					managed_session_name = session_name(vim.fn.getcwd())
 				end
 
 				local path = vim.fs.normalize(vim.fn.fnamemodify(
