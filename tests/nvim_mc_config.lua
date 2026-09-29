@@ -158,22 +158,26 @@ vim.lsp.buf.definition = function()
 end
 maps.gd.callback()
 assert(normal_calls == 1, "gd must resolve the current LSP/kross function after later attaches")
-local mc_calls, opened = 0, nil
+local mc_calls = 0
+vim.api.nvim_buf_set_lines(java, 0, -1, false, { "// 日本語 foo" })
+local mc_location = {
+	uri = vim.uri_from_bufnr(java),
+	range = { start = { line = 0, character = 7 }, ["end"] = { line = 0, character = 10 } },
+}
 require("mcdev.navigation").definition = function(bufnr, _, cb)
 	assert(bufnr == java)
 	mc_calls = mc_calls + 1
-	cb({
-		{
-			uri = vim.uri_from_bufnr(java),
-			range = { start = { line = 0, character = 0 }, ["end"] = { line = 0, character = 0 } },
-		},
-	})
-end
-vim.lsp.util.show_document = function(_, encoding)
-	opened = encoding
+	cb({ mc_location })
 end
 maps[" md"].callback()
-assert(mc_calls == 1 and opened == "utf-8", "MC definition must use the custom navigation endpoint")
+assert(mc_calls == 1 and vim.api.nvim_win_get_cursor(0)[2] == 13, "MC definition must decode UTF-16 positions")
+require("mcdev.navigation").references = function(bufnr, _, cb)
+	assert(bufnr == java)
+	cb({ mc_location })
+end
+maps[" mr"].callback()
+assert(vim.fn.getqflist()[1].col == 14, "MC references must convert UTF-16 to quickfix byte columns")
+vim.cmd.cclose()
 
 vim.fn.jobstart = function()
 	error("A buffer save must not start a Gradle build")

@@ -45,11 +45,11 @@ return {
 						vim.log.levels.INFO
 					)
 				elseif method == "definition" and #locations == 1 then
-					vim.lsp.util.show_document(locations[1], "utf-8", { focus = true })
+					vim.lsp.util.show_document(locations[1], "utf-16", { focus = true })
 				else
 					vim.fn.setqflist({}, " ", {
 						title = "mcdev " .. method,
-						items = vim.lsp.util.locations_to_items(locations, "utf-8"),
+						items = vim.lsp.util.locations_to_items(locations, "utf-16"),
 					})
 					vim.cmd.copen()
 				end
