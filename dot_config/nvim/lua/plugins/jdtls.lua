@@ -1,6 +1,6 @@
 return {
 	"mfussenegger/nvim-jdtls",
-	ft = { "java" },
+	ft = { "java", "kotlin" },
 	dependencies = {
 		{
 			"cotrin8672/mc-dev-lsp",
@@ -57,11 +57,15 @@ return {
 		end
 
 		local function start_or_attach(bufnr)
-			if not vim.api.nvim_buf_is_valid(bufnr) or vim.bo[bufnr].filetype ~= "java" then
+			local filetype = vim.api.nvim_buf_is_valid(bufnr) and vim.bo[bufnr].filetype
+			if filetype ~= "java" and filetype ~= "kotlin" then
 				return
 			end
 
 			local source = vim.api.nvim_buf_get_name(bufnr)
+			if not vim.startswith(vim.uri_from_bufnr(bufnr), "file://") then
+				return
+			end
 			local root_dir = require("jdtls.setup").find_root(root_markers, source)
 			if not root_dir or root_dir == "" then
 				return
@@ -71,6 +75,7 @@ return {
 			local root_hash = vim.fn.sha256(vim.fs.normalize(root_dir)):sub(1, 12)
 			local workspace_dir = vim.fs.joinpath(vim.fn.stdpath("cache"), "jdtls", project_name .. "-" .. root_hash)
 			local config = {
+				name = "jdtls",
 				cmd = {
 					"jdtls",
 					"-data",
@@ -102,17 +107,26 @@ return {
 				},
 				init_options = {
 					bundles = kross.bundles(),
+					extendedClientCapabilities = jdtls.extendedClientCapabilities,
 				},
 			}
 
 			if require("mcdev.jdtls").extend_config(config) then
-				jdtls.start_or_attach(config, nil, { bufnr = bufnr })
+				if filetype == "kotlin" then
+					-- Start the workspace without JDTLS's Java document hooks or implicit save.
+					config.on_init = function(client)
+						kross.attach(client)
+					end
+					vim.lsp.start(config, { bufnr = bufnr, attach = false })
+				else
+					jdtls.start_or_attach(config, nil, { bufnr = bufnr })
+				end
 			end
 		end
 
 		vim.api.nvim_create_autocmd("FileType", {
 			group = vim.api.nvim_create_augroup("JdtlsAttach", { clear = true }),
-			pattern = "java",
+			pattern = { "java", "kotlin" },
 			callback = function(event)
 				start_or_attach(event.buf)
 			end,

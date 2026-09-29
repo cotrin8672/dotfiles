@@ -1,18 +1,80 @@
 local M = {}
 local icon_cache = {}
 local tabline_cache
+local tabline_columns
+local first_visible_buffer
 
 local function invalidate_tabline()
 	tabline_cache = nil
 end
 
 local function render_tabline()
+	if tabline_columns ~= vim.o.columns then
+		invalidate_tabline()
+		tabline_columns = vim.o.columns
+	end
 	if require("tabby.feature.tab_jumper").is_start then
 		return require("tabby.tabline").render()
 	end
 
 	tabline_cache = tabline_cache or require("tabby.tabline").render()
 	return tabline_cache
+end
+
+local function node_width(node)
+	local builder = require("tabby.module.builder"):new()
+	builder:render_element(node, {})
+	return vim.api.nvim_eval_statusline(builder:build(), { use_tabline = true, maxwidth = vim.o.columns }).width
+end
+
+local function scroll_buffers(nodes, width)
+	local widths, total, first, current = {}, 0, 1, nil
+	for index, node in ipairs(nodes) do
+		widths[index] = node_width(node)
+		total = total + widths[index]
+		if node.click[2] == first_visible_buffer then
+			first = index
+		end
+		if node.click[2] == vim.api.nvim_get_current_buf() then
+			current = index
+		end
+	end
+	if total <= width then
+		first_visible_buffer = nodes[1] and nodes[1].click[2]
+		return nodes
+	end
+
+	-- Reserve both overflow markers so moving the selection does not change the budget.
+	width = math.max(1, width - 4)
+	for index, node in ipairs(nodes) do
+		node.lo = { max_width = width }
+		widths[index] = math.min(widths[index], width)
+	end
+	first = math.min(first, current or first)
+	local last, used = first, 0
+	for index = first, #nodes do
+		used = used + widths[index]
+		while used > width and first < index and index <= (current or first) do
+			used = used - widths[first]
+			first = first + 1
+		end
+		if used > width then
+			used = used - widths[index]
+			break
+		end
+		last = index
+	end
+	while last == #nodes and first > 1 and used + widths[first - 1] <= width do
+		first = first - 1
+		used = used + widths[first]
+	end
+	first_visible_buffer = nodes[first].click[2]
+	local visible = { first > 1 and "‹ " or "" }
+	for index = first, last do
+		visible[#visible + 1] = nodes[index]
+	end
+	visible[#visible + 1] = last < #nodes and " ›" or ""
+	return visible
 end
 
 local function is_jdtls_class_buffer(bufnr)
@@ -180,7 +242,7 @@ return vim.tbl_extend("force", M, {
 
 		require("tabby").setup({
 			line = function(line)
-				return {
+				local head = {
 					{
 						{ "  ", hl = theme.head },
 						line.sep("", theme.head, theme.fill),
@@ -196,29 +258,40 @@ return vim.tbl_extend("force", M, {
 							margin = "",
 						}
 					end),
+					hl = theme.fill,
+				}
+				local tail = {
+					line.sep("", theme.tail, theme.fill),
+					{ "  ", hl = theme.tail },
+					hl = theme.fill,
+				}
+				local width = vim.o.columns - node_width(head) - node_width(tail)
+				if width < 10 then
+					head, tail, width = {}, {}, vim.o.columns
+				end
+				local buffers = line.bufs()
+					.filter(function(buf)
+						return is_tabby_buffer(buf.id)
+					end)
+					.foreach(function(buf)
+						local hl = buf.is_current() and theme.current or theme.inactive
+						local modified = buf.is_changed() and "● " or ""
+						return {
+							line.sep("", hl, theme.fill),
+							buffer_file_icon(buf.id, hl),
+							" ",
+							{ modified, hl = hl },
+							(buf.name():gsub("%%", "%%%%")),
+							line.sep("", hl, theme.fill),
+							hl = hl,
+							margin = "",
+						}
+					end)
+				return {
+					head,
 					line.spacer(),
-					line.bufs()
-						.filter(function(buf)
-							return is_tabby_buffer(buf.id)
-						end)
-						.foreach(function(buf)
-							local hl = buf.is_current() and theme.current or theme.inactive
-							local modified = buf.is_changed() and "● " or ""
-							return {
-								line.sep("", hl, theme.fill),
-								buffer_file_icon(buf.id, hl),
-								" ",
-								{ modified, hl = hl },
-								buf.name(),
-								line.sep("", hl, theme.fill),
-								hl = hl,
-								margin = "",
-							}
-						end),
-					{
-						line.sep("", theme.tail, theme.fill),
-						{ "  ", hl = theme.tail },
-					},
+					scroll_buffers(buffers, width),
+					tail,
 					hl = theme.fill,
 				}
 			end,

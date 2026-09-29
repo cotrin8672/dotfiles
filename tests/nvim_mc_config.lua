@@ -3,7 +3,7 @@
 local config = vim.fn.fnamemodify("dot_config/nvim", ":p"):gsub("[/\\]$", "")
 local lazy = vim.fn.stdpath("data") .. "/lazy"
 vim.opt.rtp:prepend(config)
-for _, plugin in ipairs({ "nvim-lint", "kross.nvim", "nvim-treesitter", "overseer.nvim" }) do
+for _, plugin in ipairs({ "nvim-lint", "nvim-jdtls", "kross.nvim", "nvim-treesitter", "overseer.nvim" }) do
 	vim.opt.rtp:append(lazy .. "/" .. plugin)
 end
 vim.opt.rtp:append(lazy .. "/mcdev-nvim/mcdev-nvim")
@@ -16,6 +16,7 @@ local fixture = vim.fs.normalize(vim.fn.tempname())
 local project = fixture .. "/project with spaces"
 vim.fn.mkdir(project .. "/src/main/kotlin/example", "p")
 vim.fn.writefile({}, project .. (vim.fn.has("win32") == 1 and "/gradlew.bat" or "/gradlew"))
+vim.fn.writefile({}, project .. "/settings.gradle.kts")
 local function buffer(path, ft, lines)
 	local buf = vim.api.nvim_create_buf(true, false)
 	vim.api.nvim_buf_set_name(buf, project .. path)
@@ -110,6 +111,90 @@ local mcdev_spec = spec("mc-dev")
 require("mcdev.config").setup(mcdev_spec.opts({ dir = lazy .. "/mcdev-nvim" }))
 assert(require("mcdev.config").options.navigation.enable == false)
 require("kross").setup(spec("kross").opts)
+
+-- Use the real LSP lifecycle/reuse logic, replacing only the external server process.
+local rpc_start, kross_attach = vim.lsp.rpc.start, require("kross").attach
+local starts, kross_clients = {}, {}
+require("kross").attach = function(client)
+	kross_clients[client.id] = true
+end
+vim.lsp.rpc.start = function(_, dispatchers)
+	local state = { notifications = {} }
+	starts[#starts + 1] = state
+	local closing, request_id = false, 0
+	return {
+		request = function(method, params, callback, on_reply)
+			request_id = request_id + 1
+			local id = request_id
+			if method == "initialize" then
+				state.initialize = params
+			end
+			vim.schedule(function()
+				if on_reply then
+					on_reply(id)
+				end
+				callback(nil, method == "initialize" and { capabilities = { textDocumentSync = 1 } } or {})
+			end)
+			return true, id
+		end,
+		notify = function(method, params)
+			state.notifications[#state.notifications + 1] = { method = method, params = params }
+			return true
+		end,
+		is_closing = function()
+			return closing
+		end,
+		terminate = function()
+			closing = true
+			vim.schedule(function()
+				dispatchers.on_exit(0, 0)
+			end)
+		end,
+	}
+end
+vim.api.nvim_set_current_buf(kotlin)
+assert(vim.tbl_contains(spec("jdtls").ft, "kotlin"), "Kotlin must load JDTLS and its MC/kross dependencies")
+spec("jdtls").config()
+vim.api.nvim_exec_autocmds("FileType", { buffer = kotlin })
+assert(#starts == 1, "Kotlin must start one workspace, including repeated events before initialization")
+assert(vim.wait(1000, function()
+	return #vim.lsp.get_clients({ name = "jdtls" }) == 1
+end))
+local workspace = vim.lsp.get_clients({ name = "jdtls" })[1]
+assert(kross_clients[workspace.id], "Kotlin-first startup must initialize kross")
+assert(not workspace.attached_buffers[kotlin], "JDTLS must not analyze Kotlin documents")
+assert(vim.fn.filereadable(vim.api.nvim_buf_get_name(kotlin)) == 0, "Kotlin startup must not save the buffer")
+assert(
+	require("mcdev.protocol").active_jdtls_client(kotlin) == workspace,
+	"MC requests must find the detached workspace"
+)
+local initialization = starts[1].initialize.initializationOptions
+assert(
+	initialization.extendedClientCapabilities.classFileContentsSupport,
+	"Later Java buffers need decompilation support"
+)
+assert(vim.tbl_contains(initialization.bundles, require("mcdev.jdtls").resolve_extension_jar()))
+for _, jar in ipairs(require("kross").bundles()) do
+	assert(vim.tbl_contains(initialization.bundles, jar))
+end
+buffer("/build.gradle.kts", "kotlin")
+assert(#starts == 1, "Another Kotlin buffer must reuse the workspace")
+vim.fn.mkdir(project .. "/src/main/java/example", "p")
+vim.fn.writefile(vim.api.nvim_buf_get_lines(java, 0, -1, false), vim.api.nvim_buf_get_name(java))
+vim.api.nvim_set_current_buf(java)
+vim.api.nvim_exec_autocmds("FileType", { buffer = java })
+assert(#starts == 1 and workspace.attached_buffers[java], "Java must attach to the Kotlin-started workspace")
+for _, notification in ipairs(starts[1].notifications) do
+	if notification.method == "textDocument/didOpen" then
+		assert(notification.params.textDocument.languageId == "java", "Only Java documents may be sent to JDTLS")
+	end
+end
+workspace:stop(true)
+assert(vim.wait(1000, function()
+	return vim.lsp.get_client_by_id(workspace.id) == nil
+end))
+vim.lsp.rpc.start, require("kross").attach = rpc_start, kross_attach
+
 local fake_jdtls = { name = "jdtls", id = 1001, config = { root_dir = project } }
 local fake_kotlin = { name = "kotlin_lsp", id = 1002 }
 vim.lsp.get_client_by_id = function(id)
@@ -195,5 +280,5 @@ for _, file in ipairs(vim.fn.glob(config .. "/**/*.lua", false, true)) do
 	assert(loadfile(file))
 end
 print(
-	"PASS: package templates, save/lint order, Gradle task + quickfix, navigation ownership, no save-time build, Kotlin query"
+	"PASS: Kotlin-first JDTLS/MC/kross startup and reuse, package templates, save/lint order, Gradle task + quickfix, navigation ownership, no save-time build, Kotlin query"
 )
