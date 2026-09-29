@@ -18,29 +18,55 @@ end
 local bufs, names = {}, {}
 for index = 1, 8 do
 	local buf = index == 1 and vim.api.nvim_get_current_buf() or vim.api.nvim_create_buf(true, false)
-	local name = string.format("VeryLongFileNameForTabbyOverflow%02d.lua", index)
+	local name = string.format("%02d-VeryLongFileNameForTabbyOverflow.lua", index)
 	vim.api.nvim_buf_set_name(buf, vim.fn.tempname() .. "/" .. name)
 	bufs[index], names[index] = buf, name
 end
 local function frame()
-	local result = vim.api.nvim_eval_statusline(vim.o.tabline, { use_tabline = true, maxwidth = vim.o.columns })
+	local result =
+		vim.api.nvim_eval_statusline(vim.o.tabline, { use_tabline = true, maxwidth = vim.o.columns, highlights = true })
 	local raw = _G.TabbyRenderCached()
 	local count = renders
 	assert(_G.TabbyRenderCached() == raw and renders == count, "render cache must remain effective")
-	assert(result.width <= vim.o.columns, "tabline must fit")
-	return result.str, raw
+	assert(result.width <= vim.o.columns, "viewport must fit")
+	assert(
+		vim.fn.strdisplaywidth(result.str) == vim.o.columns,
+		"wide character clipping must preserve cell widths: columns="
+			.. vim.o.columns
+			.. " actual="
+			.. vim.fn.strdisplaywidth(result.str)
+			.. " text="
+			.. result.str
+	)
+	assert(not result.str:find("‹", 1, true) and not result.str:find("›", 1, true), "overflow must just be clipped")
+	return result.str, raw, result
 end
 local function selected(index)
 	assert(vim.api.nvim_get_current_buf() == bufs[index], "wrong buffer selected")
-	local text = frame()
-	assert(text:find(names[index], 1, true), "selected filename must be visible: " .. text)
+	local text, _, result = frame()
+	local start = text:find(names[index], 1, true)
+	assert(start, "selected filename must be visible: " .. text)
+	local highlight
+	for _, item in ipairs(result.highlights) do
+		if item.start <= start - 1 then
+			highlight = item
+		end
+	end
+	assert(vim.tbl_contains(highlight.groups, "TabbyActive"), "current filename must retain its highlight")
 	return text
 end
 
 vim.o.columns = 110
 vim.api.nvim_set_current_buf(bufs[1])
 local first = selected(1)
-assert(first:find("›", 1, true) and not first:find("‹", 1, true))
+assert(
+	first:find("03-Very", 1, true) and not first:find(names[3], 1, true),
+	"right neighbor must remain partially visible"
+)
+assert(
+	_G.TabbyRenderCached():find("%" .. bufs[3] .. "@TabbyOpenBuffer@", 1, true),
+	"clipped neighbors must remain clickable"
+)
 spec.next_buffer()
 assert(selected(2) == first, "viewport must stay still when the next buffer already fits")
 for index = 3, #bufs do
@@ -48,7 +74,7 @@ for index = 3, #bufs do
 	selected(index)
 end
 local last = selected(#bufs)
-assert(last ~= first and last:find("‹", 1, true) and not last:find("›", 1, true))
+assert(last ~= first, "viewport must follow selection")
 spec.next_buffer()
 selected(1)
 spec.previous_buffer()
@@ -57,6 +83,36 @@ for index = #bufs - 1, 1, -1 do
 	spec.previous_buffer()
 	selected(index)
 end
+
+local function margins(index)
+	local text = selected(index)
+	local head, tail = "  1 ●", "  "
+	assert(text:sub(1, #head) == head and text:sub(-#tail) == tail)
+	local viewport = text:sub(#head + 1, -#tail - 1)
+	local start, finish = viewport:find(names[index], 1, true)
+	local icon = require("mini.icons").get("file", vim.api.nvim_buf_get_name(bufs[index]))
+	return vim.fn.strdisplaywidth(viewport:sub(1, start - 1)) - vim.fn.strdisplaywidth("" .. icon .. " "),
+		vim.fn.strdisplaywidth(viewport:sub(finish + 1)) - vim.fn.strdisplaywidth("")
+end
+vim.o.columns = 500
+selected(1)
+vim.g.tabby_scrolloff = 0
+vim.o.columns = 110
+vim.api.nvim_set_current_buf(bufs[3])
+local _, right = margins(3)
+assert(right == 0, "zero scrolloff must scroll only as far as needed")
+vim.g.tabby_scrolloff = 8
+local left
+left, right = margins(3)
+assert(left >= 8 and right == 8, "scrolloff must expose eight cells of the right neighbor")
+vim.api.nvim_set_current_buf(bufs[2])
+left, right = margins(2)
+assert(left == 8 and right >= 8, "leftward scrolling must keep eight cells of the left neighbor")
+vim.g.tabby_scrolloff = 1000
+left, right = margins(2)
+assert(math.abs(left - right) <= 1, "excessive scrolloff must center the current buffer")
+vim.g.tabby_scrolloff = nil
+
 vim.api.nvim_set_current_buf(bufs[6])
 selected(6)
 vim.o.columns = 80
@@ -66,7 +122,6 @@ local wide = selected(6)
 for _, name in ipairs(names) do
 	assert(wide:find(name, 1, true), "resize must reveal all buffers when they fit")
 end
-assert(not wide:find("‹", 1, true) and not wide:find("›", 1, true))
 
 vim.o.columns = 80
 selected(6)
@@ -84,11 +139,23 @@ for _, width in ipairs({ 80, 30, 12 }) do
 	local text, raw = frame()
 	assert(raw:find("%" .. long .. "@TabbyOpenBuffer@", 1, true), "long buffer must retain its click target")
 	assert(
-		text:find(width >= 30 and "END.lua" or ".lua", 1, true),
-		"oversized filename must remain identifiable: " .. text
+		text:find("日本語", 1, true),
+		"oversized tabs must show their beginning without shortening the name: " .. text
 	)
+	assert(not text:find("END.lua", 1, true), "oversized tabs must be clipped at the right edge")
+	if width >= 30 then
+		assert(text:find("100%", 1, true), "clipped labels must preserve literal percent signs")
+	end
 	assert(vim.str_utfindex(text, "utf-8") > 0)
 end
+local unicode = vim.api.nvim_create_buf(true, false)
+vim.api.nvim_buf_set_name(unicode, vim.fn.tempname() .. "/á_日本語日本語.lua")
+vim.api.nvim_set_current_buf(unicode)
+for width = 30, 60 do
+	vim.o.columns = width
+	frame()
+end
+vim.api.nvim_set_current_buf(long)
 vim.o.columns = 500
 assert(frame():find("100%", 1, true), "percent signs in names must stay literal")
 
@@ -103,5 +170,5 @@ end
 frame()
 assert(vim.v.errmsg == "", vim.v.errmsg)
 print(
-	"PASS: Tab/Shift-Tab, stable viewport, wraparound, direct jumps, resize, deletion, modified labels, Unicode, long names, cache, empty list"
+	"PASS: fixed cell viewport, partially clipped neighbors and click targets, scrolloff in both directions, highlights, Unicode boundaries, Tab/Shift-Tab, wraparound, resize, deletion, cache, empty list"
 )

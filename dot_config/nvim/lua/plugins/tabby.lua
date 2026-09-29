@@ -2,16 +2,22 @@ local M = {}
 local icon_cache = {}
 local tabline_cache
 local tabline_columns
-local first_visible_buffer
+local tabline_scrolloff
+local buffer_scroll = 0
+
+local function scrolloff()
+	return math.max(0, math.floor(vim.g.tabby_scrolloff or 8))
+end
 
 local function invalidate_tabline()
 	tabline_cache = nil
 end
 
 local function render_tabline()
-	if tabline_columns ~= vim.o.columns then
+	if tabline_columns ~= vim.o.columns or tabline_scrolloff ~= scrolloff() then
 		invalidate_tabline()
 		tabline_columns = vim.o.columns
+		tabline_scrolloff = scrolloff()
 	end
 	if require("tabby.feature.tab_jumper").is_start then
 		return require("tabby.tabline").render()
@@ -21,59 +27,77 @@ local function render_tabline()
 	return tabline_cache
 end
 
-local function node_width(node)
+local function render_node(node)
 	local builder = require("tabby.module.builder"):new()
 	builder:render_element(node, {})
-	return vim.api.nvim_eval_statusline(builder:build(), { use_tabline = true, maxwidth = vim.o.columns }).width
+	local rendered =
+		vim.api.nvim_eval_statusline(builder:build(), { use_tabline = true, maxwidth = 0, highlights = true })
+	rendered.width = vim.fn.strdisplaywidth(rendered.str)
+	return rendered
+end
+
+local function clip_node(node, rendered, left, right)
+	local clipped = { hl = node.hl }
+	local column = 0
+	for index, highlight in ipairs(rendered.highlights) do
+		local finish = rendered.highlights[index + 1] and rendered.highlights[index + 1].start or #rendered.str
+		local text = {}
+		for _, char in ipairs(vim.fn.split(rendered.str:sub(highlight.start + 1, finish), "\\zs")) do
+			local next_column = column + vim.fn.strdisplaywidth(char, column)
+			local overlap = math.min(right, next_column) - math.max(left, column)
+			if overlap > 0 then
+				text[#text + 1] = column >= left and next_column <= right and char or string.rep(" ", overlap)
+			end
+			column = next_column
+			if column >= right then
+				break
+			end
+		end
+		if #text > 0 then
+			clipped[#clipped + 1] = {
+				(table.concat(text):gsub("%%", "%%%%")),
+				hl = highlight.groups[#highlight.groups],
+				click = node.click,
+			}
+		end
+		if column >= right then
+			break
+		end
+	end
+	return clipped
 end
 
 local function scroll_buffers(nodes, width)
-	local widths, total, first, current = {}, 0, 1, nil
+	local rendered, total, current_left, current_right = {}, 0, nil, nil
 	for index, node in ipairs(nodes) do
-		widths[index] = node_width(node)
-		total = total + widths[index]
-		if node.click[2] == first_visible_buffer then
-			first = index
-		end
+		rendered[index] = render_node(node)
 		if node.click[2] == vim.api.nvim_get_current_buf() then
-			current = index
+			current_left, current_right = total, total + rendered[index].width
+		end
+		total = total + rendered[index].width
+	end
+	if current_left then
+		local current_width = current_right - current_left
+		local margin = math.min(scrolloff(), math.max(0, math.floor((width - current_width) / 2)))
+		if current_width >= width then
+			buffer_scroll = current_left
+		else
+			buffer_scroll = math.min(buffer_scroll, current_left - margin)
+			buffer_scroll = math.max(buffer_scroll, current_right + margin - width)
 		end
 	end
-	if total <= width then
-		first_visible_buffer = nodes[1] and nodes[1].click[2]
-		return nodes
-	end
-
-	-- Reserve both overflow markers so moving the selection does not change the budget.
-	width = math.max(1, width - 4)
+	buffer_scroll = math.max(0, math.min(buffer_scroll, total - width))
+	local visible, position = {}, 0
 	for index, node in ipairs(nodes) do
-		node.lo = { max_width = width }
-		widths[index] = math.min(widths[index], width)
-	end
-	first = math.min(first, current or first)
-	local last, used = first, 0
-	for index = first, #nodes do
-		used = used + widths[index]
-		while used > width and first < index and index <= (current or first) do
-			used = used - widths[first]
-			first = first + 1
+		local item = rendered[index]
+		local left = math.max(0, buffer_scroll - position)
+		local right = math.min(item.width, buffer_scroll + width - position)
+		if left < right then
+			visible[#visible + 1] = left == 0 and right == item.width and node or clip_node(node, item, left, right)
 		end
-		if used > width then
-			used = used - widths[index]
-			break
-		end
-		last = index
+		position = position + item.width
 	end
-	while last == #nodes and first > 1 and used + widths[first - 1] <= width do
-		first = first - 1
-		used = used + widths[first]
-	end
-	first_visible_buffer = nodes[first].click[2]
-	local visible = { first > 1 and "‹ " or "" }
-	for index = first, last do
-		visible[#visible + 1] = nodes[index]
-	end
-	visible[#visible + 1] = last < #nodes and " ›" or ""
+	visible[#visible + 1] = string.rep(" ", math.max(0, width - (total - buffer_scroll)))
 	return visible
 end
 
@@ -265,7 +289,7 @@ return vim.tbl_extend("force", M, {
 					{ "  ", hl = theme.tail },
 					hl = theme.fill,
 				}
-				local width = vim.o.columns - node_width(head) - node_width(tail)
+				local width = vim.o.columns - render_node(head).width - render_node(tail).width
 				if width < 10 then
 					head, tail, width = {}, {}, vim.o.columns
 				end
@@ -289,7 +313,6 @@ return vim.tbl_extend("force", M, {
 					end)
 				return {
 					head,
-					line.spacer(),
 					scroll_buffers(buffers, width),
 					tail,
 					hl = theme.fill,
