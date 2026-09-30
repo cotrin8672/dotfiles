@@ -106,6 +106,14 @@ return {
 	config = function(_, opts)
 		enable_kitty_placeholders_for_wezterm()
 		require("snacks").setup(opts)
+		-- Preview resolution can resume after close has destroyed the picker windows.
+		local picker = require("snacks.picker.core.picker")
+		local update_titles = picker.update_titles
+		function picker:update_titles()
+			if not self.closed then
+				return update_titles(self)
+			end
+		end
 		schedule_md_render_preload()
 	end,
 	opts = {

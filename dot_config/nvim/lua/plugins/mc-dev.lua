@@ -54,5 +54,33 @@ return {
 	config = function(plugin, opts)
 		vim.opt.rtp:prepend(plugin.dir .. "/mcdev-nvim")
 		require("mcdev").setup(opts)
+		local actions = require("mcdev.code_action")
+		local apply = actions.apply
+		-- MC's picker also lists JDTLS actions, which may need resolution before applying.
+		actions.apply = function(action, bufnr)
+			bufnr = bufnr or vim.api.nvim_get_current_buf()
+			if
+				action
+				and action.data
+				and not action.edit
+				and not action.command
+				and vim.bo[bufnr].filetype == "java"
+			then
+				local client = require("mcdev.protocol").active_jdtls_client(bufnr)
+				if not client then
+					vim.notify("JDTLS is not attached", vim.log.levels.WARN)
+					return
+				end
+				client:request("codeAction/resolve", action, function(err, resolved)
+					if err then
+						vim.notify(err.message, vim.log.levels.ERROR)
+					else
+						apply(resolved, bufnr)
+					end
+				end, bufnr)
+			else
+				apply(action, bufnr)
+			end
+		end
 	end,
 }

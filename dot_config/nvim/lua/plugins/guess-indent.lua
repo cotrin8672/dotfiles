@@ -2,7 +2,7 @@ return {
 	"NMAC427/guess-indent.nvim",
 	event = { "BufReadPost", "BufNewFile" },
 	opts = {
-		-- Kotlin is intentionally standardized to four spaces below.
-		filetype_exclude = { "kotlin" },
+		-- Java and Kotlin use four spaces, including files formatted on save.
+		filetype_exclude = { "java", "kotlin" },
 	},
 }

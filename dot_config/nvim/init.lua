@@ -152,7 +152,7 @@ local function paint_buffer_early(buf)
 	local size = name == "" and -1 or vim.fn.getfsize(name)
 	if vim.bo[buf].filetype ~= "bigfile" and (size < 0 or size <= 1024 * 1024) then
 		local filetype = vim.filetype.match({ buf = buf })
-		if filetype and vim.bo[buf].syntax == "" then
+		if filetype and vim.bo[buf].syntax == "" and not vim.treesitter.highlighter.active[buf] then
 			pcall(vim.cmd, "syntax enable")
 			pcall(function()
 				vim.bo[buf].syntax = filetype

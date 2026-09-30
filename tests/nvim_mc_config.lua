@@ -3,7 +3,16 @@
 local config = vim.fn.fnamemodify("dot_config/nvim", ":p"):gsub("[/\\]$", "")
 local lazy = vim.fn.stdpath("data") .. "/lazy"
 vim.opt.rtp:prepend(config)
-for _, plugin in ipairs({ "nvim-lint", "nvim-jdtls", "kross.nvim", "nvim-treesitter", "overseer.nvim" }) do
+for _, plugin in ipairs({
+	"nvim-lint",
+	"nvim-jdtls",
+	"kross.nvim",
+	"nvim-treesitter",
+	"overseer.nvim",
+	"conform.nvim",
+	"guess-indent.nvim",
+	"kotlin.nvim",
+}) do
 	vim.opt.rtp:append(lazy .. "/" .. plugin)
 end
 vim.opt.rtp:append(lazy .. "/mcdev-nvim/mcdev-nvim")
@@ -110,7 +119,7 @@ task:dispose(true)
 local mcdev_spec = spec("mc-dev")
 require("mcdev.config").setup(mcdev_spec.opts({ dir = lazy .. "/mcdev-nvim" }))
 assert(require("mcdev.config").options.navigation.enable == false)
-require("kross").setup(spec("kross").opts)
+spec("kross").config(nil, spec("kross").opts)
 
 -- Use the real LSP lifecycle/reuse logic, replacing only the external server process.
 local rpc_start, kross_attach = vim.lsp.rpc.start, require("kross").attach
@@ -133,7 +142,15 @@ vim.lsp.rpc.start = function(_, dispatchers)
 				if on_reply then
 					on_reply(id)
 				end
-				callback(nil, method == "initialize" and { capabilities = { textDocumentSync = 1 } } or {})
+				callback(nil, method == "initialize" and {
+					capabilities = {
+						textDocumentSync = 1,
+						semanticTokensProvider = {
+							legend = { tokenTypes = { "class" }, tokenModifiers = {} },
+							full = true,
+						},
+					},
+				} or {})
 			end)
 			return true, id
 		end,
@@ -184,6 +201,7 @@ vim.fn.writefile(vim.api.nvim_buf_get_lines(java, 0, -1, false), vim.api.nvim_bu
 vim.api.nvim_set_current_buf(java)
 vim.api.nvim_exec_autocmds("FileType", { buffer = java })
 assert(#starts == 1 and workspace.attached_buffers[java], "Java must attach to the Kotlin-started workspace")
+assert(not vim.lsp.semantic_tokens.get_at_pos(java, 0, 0), "Java must not start JDTLS semantic highlighting")
 for _, notification in ipairs(starts[1].notifications) do
 	if notification.method == "textDocument/didOpen" then
 		assert(notification.params.textDocument.languageId == "java", "Only Java documents may be sent to JDTLS")
@@ -196,9 +214,9 @@ end))
 vim.lsp.rpc.start, require("kross").attach = rpc_start, kross_attach
 
 local fake_jdtls = { name = "jdtls", id = 1001, config = { root_dir = project } }
-local fake_kotlin = { name = "kotlin_lsp", id = 1002 }
+local fake_copilot = { name = "copilot", id = 1002 }
 vim.lsp.get_client_by_id = function(id)
-	return id == 1001 and fake_jdtls or fake_kotlin
+	return id == 1001 and fake_jdtls or fake_copilot
 end
 vim.lsp.get_clients = function(opts)
 	return opts and opts.name == "jdtls" and { fake_jdtls } or {}
@@ -224,12 +242,40 @@ package.loaded["mcdev.jdtls"] = {
 vim.api.nvim_set_current_buf(java)
 spec("jdtls").config()
 assert(attached_config)
+local sent_params
+local conversion_client = {
+	server_capabilities = {},
+	request = function(_, method, params)
+		assert(method == "textDocument/codeAction")
+		sent_params = params
+		return true, 42
+	end,
+}
+attached_config.on_init(conversion_client)
+local lsp_diagnostic = {
+	message = "Missing import",
+	code = "16777218",
+	data = { arguments = { "Type" } },
+	range = { start = { line = 0, character = 7 }, ["end"] = { line = 0, character = 11 } },
+}
+local request_params = {
+	context = {
+		diagnostics = {
+			{ lnum = 0, col = 13, user_data = { lsp = lsp_diagnostic } },
+			lsp_diagnostic,
+		},
+	},
+}
+local requested, request_id = conversion_client:request("textDocument/codeAction", request_params)
+assert(requested and request_id == 42)
+assert(vim.deep_equal(sent_params.context.diagnostics, { lsp_diagnostic, lsp_diagnostic }))
+assert(request_params.context.diagnostics[1].range == nil, "Converting MC diagnostics must not mutate the caller")
 vim.api.nvim_exec_autocmds("LspAttach", { buffer = java, data = { client_id = 1001 } })
 attached_config.on_attach(fake_jdtls, java)
 vim.wait(20, function()
 	return false
 end)
--- Kotlin may attach after JDTLS to synchronize unsaved Java edits.
+-- An unrelated client attaching later must not replace Java navigation.
 vim.api.nvim_exec_autocmds("LspAttach", { buffer = java, data = { client_id = 1002 } })
 local maps = {}
 for _, map in ipairs(vim.api.nvim_buf_get_keymap(java, "n")) do
@@ -264,6 +310,127 @@ maps[" mr"].callback()
 assert(vim.fn.getqflist()[1].col == 14, "MC references must convert UTF-16 to quickfix byte columns")
 vim.cmd.cclose()
 
+mcdev_spec.config({ dir = lazy .. "/mcdev-nvim" }, mcdev_spec.opts({ dir = lazy .. "/mcdev-nvim" }))
+local resolve_calls = 0
+fake_jdtls.offset_encoding = "utf-16"
+fake_jdtls.request = function(_, method, action, callback, bufnr)
+	assert(method == "codeAction/resolve" and bufnr == java and action.kind == "source.organizeImports")
+	resolve_calls = resolve_calls + 1
+	callback(nil, {
+		edit = {
+			changes = {
+				[vim.uri_from_bufnr(java)] = {
+					{
+						range = { start = { line = 0, character = 0 }, ["end"] = { line = 0, character = 0 } },
+						newText = "import example.Type;\n",
+					},
+				},
+			},
+		},
+	})
+end
+require("mcdev.code_action").apply({ kind = "source.organizeImports", data = { pid = "0", rid = "0" } }, java)
+assert(resolve_calls == 1 and vim.api.nvim_buf_get_lines(java, 0, 1, false)[1] == "import example.Type;")
+require("mcdev.code_action").apply({ edit = { changes = {} } }, java)
+assert(resolve_calls == 1, "Already resolved MC actions must apply without another resolve")
+
+local kotlin_plugin = require("kotlin")
+local kotlin_setup, kotlin_opts = kotlin_plugin.setup
+kotlin_plugin.setup = function(opts)
+	kotlin_opts = opts
+end
+spec("kotlin").config()
+kotlin_plugin.setup = kotlin_setup
+vim.env.MASON = vim.fn.stdpath("data") .. "/mason"
+vim.api.nvim_set_current_buf(kotlin)
+kotlin_plugin.setup_kotlin_lsp(kotlin_opts)
+assert(vim.deep_equal(vim.lsp.config.kotlin_lsp.filetypes, { "kotlin" }), "Kotlin LSP must never attach to Java")
+
+local native_actions, tiny_actions = 0, 0
+vim.lsp.buf.code_action = function()
+	native_actions = native_actions + 1
+end
+package.loaded["tiny-code-action"] = {
+	code_action = function()
+		tiny_actions = tiny_actions + 1
+	end,
+}
+local code_action = spec("tiny-code-action").keys[1][2]
+vim.api.nvim_set_current_buf(java)
+code_action()
+assert(native_actions == 1 and tiny_actions == 0, "Java must resolve actions only after selection")
+vim.api.nvim_set_current_buf(kotlin)
+code_action()
+assert(native_actions == 1 and tiny_actions == 1, "Other filetypes retain code action previews")
+
+local execute = attached_config.handlers["workspace/executeClientCommand"]
+local candidates = {
+	{ fullyQualifiedName = "java.util.logging.Level", id = "logging" },
+	{ fullyQualifiedName = "net.minecraft.world.level.Level", id = "minecraft" },
+}
+local params = {
+	command = "java.action.organizeImports.chooseImports",
+	arguments = {
+		vim.uri_from_bufnr(java),
+		{ { candidates = candidates }, { candidates = { candidates[1] } } },
+	},
+}
+local select = vim.ui.select
+local function choose_imports(cancel)
+	vim.ui.select = function(items, _, callback)
+		callback(not cancel and items[2] or nil)
+	end
+	local result
+	local co = coroutine.create(function()
+		result = execute(nil, params, { client_id = 1001 })
+	end)
+	assert(coroutine.resume(co))
+	assert(vim.wait(1000, function()
+		return coroutine.status(co) == "dead"
+	end))
+	return result
+end
+local choices = choose_imports(false)
+assert(#choices == 2 and choices[1].id == "minecraft" and choices[2].id == "logging")
+assert(choose_imports(true) == vim.NIL, "Cancel must abort imports without returning an error object as choices")
+vim.ui.select = select
+local result, response_error = execute(nil, { command = "codex.test.unknown" }, { client_id = 1001 })
+assert(result == nil and response_error.code == vim.lsp.protocol.ErrorCodes.MethodNotFound)
+
+local formatted = buffer("/src/main/java/example/Formatting.java", "java", {
+	"class Formatting {",
+	"  void test() {",
+	'    System.out.println("ok");',
+	"  }",
+	"}",
+})
+vim.bo[formatted].shiftwidth, vim.bo[formatted].tabstop, vim.bo[formatted].softtabstop = 4, 4, 4
+require("guess-indent").setup(spec("guess-indent").opts)
+require("guess-indent").set_from_buffer(formatted, true, true)
+assert(vim.bo[formatted].shiftwidth == 4, "GuessIndent must not restore Java's old two-space indent")
+vim.env.PATH = vim.fn.stdpath("data") .. "/mason/bin" .. (vim.fn.has("win32") == 1 and ";" or ":") .. vim.env.PATH
+local conform = require("conform")
+conform.setup(spec("conform").opts)
+vim.api.nvim_exec_autocmds("BufWritePre", { group = "Conform", buffer = formatted })
+assert(
+	vim.api.nvim_buf_get_lines(formatted, 1, 2, false)[1] == "    void test() {",
+	"Java formatter must use four spaces"
+)
+local format, format_calls = conform.format, {}
+conform.format = function(opts, callback)
+	format_calls[#format_calls + 1] = opts
+	if callback then
+		callback("format spy")
+	end
+end
+vim.api.nvim_exec_autocmds("BufWritePre", { group = "Conform", buffer = formatted })
+vim.api.nvim_exec_autocmds("BufWritePost", { group = "Conform", buffer = formatted })
+assert(#format_calls == 1 and format_calls[1].async == false, "Java save must finish formatting before code actions")
+vim.api.nvim_exec_autocmds("BufWritePre", { group = "Conform", buffer = kotlin })
+vim.api.nvim_exec_autocmds("BufWritePost", { group = "Conform", buffer = kotlin })
+assert(#format_calls == 2 and format_calls[2].async == true, "Kotlin retains asynchronous save formatting")
+conform.format = format
+
 vim.fn.jobstart = function()
 	error("A buffer save must not start a Gradle build")
 end
@@ -280,5 +447,5 @@ for _, file in ipairs(vim.fn.glob(config .. "/**/*.lua", false, true)) do
 	assert(loadfile(file))
 end
 print(
-	"PASS: Kotlin-first JDTLS/MC/kross startup and reuse, package templates, save/lint order, Gradle task + quickfix, navigation ownership, no save-time build, Kotlin query"
+	"PASS: Kotlin-first JDTLS/MC/kross startup and reuse, Kotlin-only attachment, Java Tree-sitter ownership and synchronous four-space save formatting, import selection/cancel/RPC errors, action routing, package templates, save/lint order, Gradle task + quickfix, navigation ownership, no save-time build, Kotlin query"
 )

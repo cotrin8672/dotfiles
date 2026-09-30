@@ -29,6 +29,11 @@ return {
 		{
 			"gra",
 			function()
+				-- Java import resolution can prompt for a type; resolve only after selection.
+				if vim.bo.filetype == "java" then
+					vim.lsp.buf.code_action()
+					return
+				end
 				require("tiny-code-action").code_action({})
 			end,
 			mode = { "n", "x" },

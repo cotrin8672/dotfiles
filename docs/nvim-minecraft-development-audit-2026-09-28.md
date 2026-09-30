@@ -1,5 +1,11 @@
 **Neovim / Minecraft MOD開発環境の調査結果 — 2026-09-28**
 
+2026-10-01追記（生成位置・色）: 稼働中のCEM JavaバッファではTree-sitter・従来のJava syntax・JDTLS semantic tokensが重なり、保持されたsemantic tokensの位置は同じ文書版で取り直したfull応答と一致しなかった。JavaはTree-sitterで色分けし、起動直後の描画処理が従来のsyntaxを再び有効にしないようにした。生成位置については、解決済みactionの適用前に実際の非同期整形を完了させる順序を制御すると、コンストラクタが既存メソッド内に入って構文が壊れた。Javaの整形を保存前の同期処理へ移し、Conformも最初の保存前に読み込む。他言語の保存後整形は維持する。隔離したCEM workspaceの実際の `gra` とSnacksで、保存前整形後にメソッド本文からコンストラクタ・overrideを生成し、実装不足メソッドのquickfixも適用して、構文とクラス内の位置を確認した。MODソースは保存せず、稼働中Neovimへの設定反映前後でも本文の一致を確認した。保存時の処理順とJavaの色分け担当は `tests/nvim_mc_config.lua` で再確認できる。実サーバーの検証用ファイルは [生成位置の再現](C:/Users/gummy/AppData/Local/Temp/codex-java-format-race-probe.lua) と [修正後の生成確認](C:/Users/gummy/AppData/Local/Temp/codex-java-fixed-generation-probe.lua)。
+
+2026-10-01追記（選択画面）: Snacksはプレビュー解決中に閉じられると、破棄済みのpreviewをタイトル更新で参照して落ちる。設定側で共通の `update_titles` に終了判定を追加した。krossの遅延キーマップも削除済みプレビューバッファへ書き込んでいたため、重複設定を外し、LSPのナビゲーションとkrossの出力登録を維持した。MCのcode actionはVim形式の診断をJDTLSへ送って `range=null` エラーになるため、送信時にNeovim標準の `vim.lsp.diagnostic.from` で戻す。前回は選択UIを置き換えてLSP応答を検証していた。今回は隔離したCEM workspaceで実際のSnacksの7画面を開き、Javaの `gra` とMCの `<Space>ca` からOrganize Importsの選択・型選択・編集適用、型選択のキャンセルを確認した。MODソースは保存していない。画面を閉じる途中の競合とkrossの削除済みバッファ操作は [tests/nvim_picker_lifecycle.lua](C:/Users/gummy/.local/share/chezmoi/tests/nvim_picker_lifecycle.lua) を `rtk proxy nvim --headless -u NONE -l tests/nvim_picker_lifecycle.lua` で再確認する。
+
+2026-10-01追記: Kotlin LSPは `java_files=false` とし、Javaバッファへattachしない。未保存Javaの同期を目的に設定を戻さない。KotlinからのJDTLS workspace起動とは別の設定である。Javaは `google-java-format --aosp` とguess-indentの除外で4スペースに統一。Javaの `gra` は標準code actionを使い、importの候補選択は非同期UIと正しいRPC応答で処理する。MCの `<Space>ca` でもJDTLSの未解決actionをresolveしてから適用する。実際のCEM workspaceで `extends` 補完、importの選択・キャンセル・適用を確認した。
+
 2026-09-29追記: 以下は修正前の調査記録。後続作業でNeovim設定を修正した。Tree-sitterのeager load、Javaの不正linter指定の削除、Kotlin lintの保存時限定・stdinファイル名指定、Java packageのセミコロン、Kotlinへの未保存Java同期、Masonの自動更新停止を適用。mcdev・kross本体は変更していない。
 
 保存時のkrossビルドは停止し、必要時に `:KrossBuild` で実行する。通常の `gd` / `gr` / `K` はLSP・kross、MC固有の定義・参照・hoverはそれぞれ `<Space>md` / `<Space>mr` / `<Space>mh`。Overseer設定を修正し、`:OverseerRun` → `Gradle wrapper` で `classes` / `runClient` / `runServer` / `runData` 等のタスク名を入力して実行できるようにした。出力は `:OverseerToggle`、診断はquickfixで確認する。`KrossBuild` はJavaファイルを開く前でもコマンドでロードできる。
