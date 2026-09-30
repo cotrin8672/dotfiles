@@ -5,6 +5,7 @@ for _, plugin in ipairs({ "tabby.nvim", "mini.icons" }) do
 	vim.opt.rtp:append(vim.fn.stdpath("data") .. "/lazy/" .. plugin)
 end
 vim.opt.hidden = true
+vim.opt.wrap = false -- Tabline width must not include buffer-window wrapping.
 require("mini.icons").setup()
 local spec = require("plugins.tabby")
 spec.config()
@@ -122,6 +123,8 @@ local wide = selected(6)
 for _, name in ipairs(names) do
 	assert(wide:find(name, 1, true), "resize must reveal all buffers when they fit")
 end
+local right_edge = names[#names] .. "  "
+assert(wide:sub(-#right_edge) == right_edge, "buffers that fit must align with the right edge")
 
 vim.o.columns = 80
 selected(6)

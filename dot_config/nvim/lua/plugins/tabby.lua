@@ -76,6 +76,10 @@ local function scroll_buffers(nodes, width)
 		end
 		total = total + rendered[index].width
 	end
+	if total <= width then
+		buffer_scroll = 0
+		return nodes
+	end
 	if current_left then
 		local current_width = current_right - current_left
 		local margin = math.min(scrolloff(), math.max(0, math.floor((width - current_width) / 2)))
@@ -313,6 +317,7 @@ return vim.tbl_extend("force", M, {
 					end)
 				return {
 					head,
+					line.spacer(),
 					scroll_buffers(buffers, width),
 					tail,
 					hl = theme.fill,
