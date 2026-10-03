@@ -1,5 +1,4 @@
 return function(sm)
-	local shared = require("plugins.submode.shared")
 	local submode_color = "#7DAEA3"
 
 	local window_sm = sm.build_submode({
@@ -7,12 +6,6 @@ return function(sm)
 		display_name = "WINDOW",
 		color = submode_color,
 		timeoutlen = vim.o.timeoutlen,
-		after_enter = function()
-			shared.refresh_ui()
-		end,
-		after_leave = function()
-			shared.refresh_ui()
-		end,
 	}, {
 		{ "h", "<Cmd>vertical resize -1<CR>" },
 		{ "j", "<Cmd>resize +1<CR>" },

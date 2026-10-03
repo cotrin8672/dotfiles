@@ -96,6 +96,14 @@ return {
 			return mode.get_mode()
 		end
 
+		local function submode_color()
+			local sm = package.loaded["nvim-submode"]
+			local color = sm and sm.get_submode_color()
+			if color then
+				return { fg = first_color("bg", { "Normal", "StatusLine" }), bg = color, gui = "bold" }
+			end
+		end
+
 		local function repo_name()
 			local path = vim.api.nvim_buf_get_name(0)
 			if path == "" then
@@ -348,6 +356,7 @@ return {
 				lualine_a = {
 					{
 						submode_label,
+						color = submode_color,
 						separator = { left = "", right = "" },
 						padding = { left = 1, right = 1 },
 					},

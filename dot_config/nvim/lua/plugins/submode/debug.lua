@@ -1,6 +1,4 @@
 return function(sm)
-	local shared = require("plugins.submode.shared")
-
 	local debug_sm = sm.build_submode({
 		name = "DEBUG",
 		display_name = "DEBUG",
@@ -12,14 +10,12 @@ return function(sm)
 			if ok then
 				dapui.open()
 			end
-			shared.refresh_ui()
 		end,
 		after_leave = function()
 			local ok, dapui = pcall(require, "dapui")
 			if ok then
 				dapui.close()
 			end
-			shared.refresh_ui()
 		end,
 	}, {
 		{
