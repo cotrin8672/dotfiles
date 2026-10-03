@@ -33,7 +33,7 @@ local function updated(before)
 		"Submode must refresh lualine"
 	)
 end
-local normal = frame("NORMAL")
+local normal, normal_right = frame("NORMAL"), frame("1:1")
 local runtime = require("nvim-submode.runtime").create({
 	id = "sub-action",
 	display_name = "CODE ACTION",
@@ -44,18 +44,22 @@ local before = refreshes
 runtime:start()
 updated(before)
 assert(frame("CODE ACTION") == 0xE3A875, "Code Action must use the configured amber")
+assert(frame("1:1") == 0xE3A875, "The rightmost location must use the same submode color")
 assert(vim.api.nvim_get_hl(0, { name = "CursorLineNr", link = false }).fg == 0xE3A875)
 before = refreshes
 runtime:stop()
 updated(before)
 assert(frame("NORMAL") == normal, "Leaving must restore the Normal color")
+assert(frame("1:1") == normal_right, "Leaving must restore the rightmost Normal color")
 local window = sm.build_submode({ name = "WINDOW", color = "#7DAEA3" }, {})
 before = refreshes
 sm.enable(window)
 updated(before)
 assert(frame("WINDOW") == 0x7DAEA3, "Legacy submodes must still share their colors")
+assert(frame("1:1") == 0x7DAEA3, "Legacy submodes must also color the rightmost location")
 before = refreshes
 sm.disable()
 updated(before)
 assert(frame("NORMAL") == normal)
+assert(frame("1:1") == normal_right)
 print("PASS: runtime and legacy submode colors, lualine updates, cursor accent and restored Normal colors")

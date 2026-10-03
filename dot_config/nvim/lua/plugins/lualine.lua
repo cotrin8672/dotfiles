@@ -387,6 +387,7 @@ return {
 				lualine_z = {
 					{
 						"location",
+						color = submode_color,
 						separator = { left = "", right = "" },
 						padding = { left = 1, right = 1 },
 					},
