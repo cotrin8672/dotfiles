@@ -34,6 +34,7 @@ local function updated(before)
 	)
 end
 local normal, normal_right = frame("NORMAL"), frame("1:1")
+local normal_line = vim.api.nvim_get_hl(0, { name = "CursorLine", link = false }).bg
 local runtime = require("nvim-submode.runtime").create({
 	id = "sub-action",
 	display_name = "CODE ACTION",
@@ -46,11 +47,19 @@ updated(before)
 assert(frame("CODE ACTION") == 0xE3A875, "Code Action must use the configured amber")
 assert(frame("1:1") == 0xE3A875, "The rightmost location must use the same submode color")
 assert(vim.api.nvim_get_hl(0, { name = "CursorLineNr", link = false }).fg == 0xE3A875)
+assert(
+	vim.api.nvim_get_hl(0, { name = "CursorLine", link = false }).bg == 0x5E4A3A,
+	"CursorLine must use the amber tint"
+)
 before = refreshes
 runtime:stop()
 updated(before)
 assert(frame("NORMAL") == normal, "Leaving must restore the Normal color")
 assert(frame("1:1") == normal_right, "Leaving must restore the rightmost Normal color")
+assert(
+	vim.api.nvim_get_hl(0, { name = "CursorLine", link = false }).bg == normal_line,
+	"Leaving must restore CursorLine"
+)
 local window = sm.build_submode({ name = "WINDOW", color = "#7DAEA3" }, {})
 before = refreshes
 sm.enable(window)
