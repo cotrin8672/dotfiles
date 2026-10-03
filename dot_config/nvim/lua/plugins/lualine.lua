@@ -382,6 +382,9 @@ return {
 				lualine_y = {
 					{
 						"filetype",
+						color = function()
+							return { fg = require("ui.mode_accent").get_accent_color() }
+						end,
 					},
 				},
 				lualine_z = {
