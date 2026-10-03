@@ -346,22 +346,21 @@ vim.api.nvim_set_current_buf(kotlin)
 kotlin_plugin.setup_kotlin_lsp(kotlin_opts)
 assert(vim.deep_equal(vim.lsp.config.kotlin_lsp.filetypes, { "kotlin" }), "Kotlin LSP must never attach to Java")
 
-local native_actions, tiny_actions = 0, 0
-vim.lsp.buf.code_action = function()
-	native_actions = native_actions + 1
-end
-package.loaded["tiny-code-action"] = {
-	code_action = function()
-		tiny_actions = tiny_actions + 1
+local sub_actions = 0
+package.loaded["sub_action"] = {
+	open = function(opts)
+		assert(opts == nil)
+		sub_actions = sub_actions + 1
 	end,
 }
-local code_action = spec("tiny-code-action").keys[1][2]
+local action_spec = spec("sub-action")
+assert(#action_spec.keys == 1 and action_spec.keys[1][1] == "gra")
+local code_action = action_spec.keys[1][2]
 vim.api.nvim_set_current_buf(java)
 code_action()
-assert(native_actions == 1 and tiny_actions == 0, "Java must resolve actions only after selection")
 vim.api.nvim_set_current_buf(kotlin)
 code_action()
-assert(native_actions == 1 and tiny_actions == 1, "Other filetypes retain code action previews")
+assert(sub_actions == 2, "Java and Kotlin must use sub-action")
 
 local execute = attached_config.handlers["workspace/executeClientCommand"]
 local candidates = {
