@@ -39,7 +39,7 @@ return {
 			markdown = { "markdownlint" },
 			sh = { "shellcheck" },
 			zsh = { "shellcheck" },
-			kotlin = { "ktlint" },
+			-- Kotlin uses IntelliJ formatting; run ktlint explicitly when a project requires it.
 		}
 
 		local group = vim.api.nvim_create_augroup("nvim-lint", { clear = true })

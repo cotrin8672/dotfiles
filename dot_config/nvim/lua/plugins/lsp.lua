@@ -50,6 +50,7 @@ return {
 		local diagnostic_icons = require("shared.diagnostic_icons")
 
 		vim.diagnostic.config({
+			float = { source = "always" },
 			signs = {
 				text = {
 					[vim.diagnostic.severity.ERROR] = diagnostic_icons.error_icon,

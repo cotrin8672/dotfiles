@@ -4,6 +4,7 @@ return {
 	opts = {
 		preset = "modern",
 		options = {
+			show_source = { enabled = true },
 			severity = {
 				vim.diagnostic.severity.ERROR,
 				vim.diagnostic.severity.WARN,

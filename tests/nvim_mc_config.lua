@@ -48,6 +48,7 @@ spec("nvim-lint").config()
 local lint = require("lint")
 assert(lint.linters_by_ft.java == nil)
 local lint_calls = {}
+assert(lint.linters_by_ft.kotlin == nil, "Kotlin must not mix IntelliJ formatting with automatic ktlint diagnostics")
 lint.try_lint = function()
 	lint_calls[#lint_calls + 1] = vim.api.nvim_get_current_buf()
 end

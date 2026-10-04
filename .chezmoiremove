@@ -1,3 +1,4 @@
 .config/nvim/lua/plugins/smart-splits.lua
+.config/nvim/lua/plugins/tabout.lua
 .config/nvim/lua/plugins/tiny-code-action.lua
 .config/nvim/lua/config/kotlin/imports.lua

@@ -495,14 +495,15 @@ return {
       group = group,
       callback = function()
         local buf = vim.api.nvim_get_current_buf()
-        local global_swapfile = vim.o.swapfile
+        local global_swapfile = vim.go.swapfile
         local buffer_swapfile = vim.bo[buf].swapfile
 
-        vim.o.swapfile = false
+        vim.go.swapfile = false
         vim.bo[buf].swapfile = false
 
         vim.schedule(function()
-          vim.o.swapfile = global_swapfile
+          -- Restore only the default; `vim.o` would also enable starter's swap.
+          vim.go.swapfile = global_swapfile
           if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].filetype ~= "ministarter" then
             vim.bo[buf].swapfile = buffer_swapfile
           end

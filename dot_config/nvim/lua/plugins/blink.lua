@@ -13,7 +13,6 @@ return {
 			lazy = true,
 		},
 		"L3MON4D3/LuaSnip",
-		"abecodes/tabout.nvim",
 		"erooke/blink-cmp-latex",
 		"mcdev-nvim",
 	},
