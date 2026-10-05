@@ -1,2 +1,5 @@
 .config/starship/starship.toml
 README.md
+{{ if ne .chezmoi.os "windows" -}}
+AppData
+{{ end -}}
