@@ -1,5 +1,4 @@
 dot_config/nushell/history.txt
-dot_config/nvim/lazy-lock.json
 dot_config/nushell/env-secret.nu
 
 # Neovim logs / scratch files
