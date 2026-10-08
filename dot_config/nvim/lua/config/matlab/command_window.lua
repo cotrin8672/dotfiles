@@ -444,7 +444,6 @@ end
 
 local function ensure_buffer()
 	if state.bufnr and vim.api.nvim_buf_is_valid(state.bufnr) then
-		configure_buffer(state.bufnr)
 		return state.bufnr
 	end
 
@@ -453,6 +452,19 @@ local function ensure_buffer()
 	state.bufnr = bufnr
 	configure_buffer(bufnr)
 	return bufnr
+end
+
+local function ignore_scroll_events(winid)
+	local ignored = vim.wo[winid].eventignorewin
+	if ignored ~= "all" and not ignored:find("WinScrolled", 1, true) then
+		vim.api.nvim_set_option_value(
+			"eventignorewin",
+			ignored == "" and "WinScrolled" or (ignored .. ",WinScrolled"),
+			{
+				win = winid,
+			}
+		)
+	end
 end
 
 local function ensure_window()
@@ -464,6 +476,8 @@ local function ensure_window()
 	vim.cmd("botright 12split")
 	local winid = vim.api.nvim_get_current_win()
 	vim.api.nvim_win_set_buf(winid, bufnr)
+	-- Background output scrolling must not animate the cursor in the editor.
+	ignore_scroll_events(winid)
 	vim.api.nvim_set_option_value("winfixbuf", true, { win = winid })
 	vim.w[winid].matlab_command_window = true
 	state.winid = winid
@@ -493,6 +507,7 @@ local function append_entries(entries)
 	local following = {}
 	for _, winid in ipairs(vim.fn.win_findbuf(bufnr)) do
 		if vim.api.nvim_win_is_valid(winid) then
+			ignore_scroll_events(winid)
 			views[winid] = vim.api.nvim_win_call(winid, vim.fn.winsaveview)
 			following[winid] = vim.api.nvim_win_get_cursor(winid)[1] == line_count
 		end
@@ -514,16 +529,11 @@ local function append_entries(entries)
 		end
 	end
 
-	local new_last_line = vim.api.nvim_buf_line_count(bufnr)
 	for winid, view in pairs(views) do
-		if vim.api.nvim_win_is_valid(winid) then
-			if following[winid] then
-				vim.api.nvim_win_set_cursor(winid, { new_last_line, 0 })
-			else
-				vim.api.nvim_win_call(winid, function()
-					vim.fn.winrestview(view)
-				end)
-			end
+		if vim.api.nvim_win_is_valid(winid) and not following[winid] then
+			vim.api.nvim_win_call(winid, function()
+				vim.fn.winrestview(view)
+			end)
 		end
 	end
 	render_prompt(bufnr)
@@ -823,6 +833,7 @@ function M.select_session(session_id, session_count, session_index)
 		state.winid = winid
 		vim.api.nvim_set_option_value("winfixbuf", false, { win = winid })
 		vim.api.nvim_win_set_buf(winid, ensure_buffer())
+		ignore_scroll_events(winid)
 		vim.api.nvim_set_option_value("winfixbuf", true, { win = winid })
 		render_prompt(state.bufnr)
 	end

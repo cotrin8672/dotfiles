@@ -149,14 +149,18 @@ local function should_continue_line(before, after_cursor, depth)
 	if before.in_comment or before.quote then
 		return false
 	end
-	if code:find(";$") or (code:find(",$") and depth == 0) then
+	if
+		code:find(";$")
+		or after_cursor:match("^%s*;")
+		or (depth == 0 and (code:find(",$") or after_cursor:match("^%s*,")))
+	then
+		return false
+	end
+	if code == "" then
 		return false
 	end
 	if depth > 0 then
 		return true
-	end
-	if code == "" then
-		return false
 	end
 
 	if after_cursor:find("%S") and not after_cursor:find("^%s*%%") then
@@ -173,10 +177,13 @@ end
 function M.newline()
 	local row, col, text, before_cursor, after_cursor = line_parts_at_cursor()
 	local syntax = require("config.matlab.syntax")
-	local context = syntax.context(vim.api.nvim_get_current_buf(), row - 1)
+	local bufnr = vim.api.nvim_get_current_buf()
+	local context = syntax.context(bufnr, row - 1)
 	local before = syntax.line(before_cursor, context.in_block_comment)
 	local full = syntax.line(text, context.in_block_comment)
-	local depth = syntax.depth((context.logical and context.logical.code or "") .. " " .. before.code)
+	local depth = syntax.depth(
+		(context.logical and context.logical.code or "") .. " " .. syntax.command_code(bufnr, row, before.code)
+	)
 	local command = "<Cmd>lua require('config.matlab.editing')."
 	if full.continuation_start and col >= full.continuation_start and col < full.continuation_start + 2 then
 		return "<CR>"
@@ -184,6 +191,13 @@ function M.newline()
 	if before.in_comment and not context.in_block_comment and after_cursor:find("%S") then
 		local marker = before.continuation and "..." or "%"
 		return "<CR>" .. command .. "finish_comment('" .. marker .. "')<CR>"
+	end
+	if
+		not full.continuation
+		and not syntax.line(after_cursor).code:find("%S")
+		and syntax.command_at(bufnr, row, #rstrip(before.code))
+	then
+		return "<CR>" .. command .. "finish_block()<CR>"
 	end
 	if
 		before.comment_start
@@ -196,17 +210,17 @@ function M.newline()
 		and not before.in_comment
 		and not before.quote
 		and not before.code:find("%S")
+		and not rstrip(context.logical.code):find(";$")
 	local closing_only = syntax.line(after_cursor).code:match("^%s*[%)%]}]+%s*;?%s*$")
-	if depth > 0 and closing_only and not before.in_comment and not before.quote then
-		local prefix = rstrip(before.code):find(";$") and "" or " ..."
-		return prefix .. "<CR>" .. command .. "finish_pair()<CR>"
+	if depth > 0 and closing_only and not before.in_comment and not before.quote and rstrip(before.code):find(";$") then
+		return "<CR>" .. command .. "finish_pair(false)<CR>"
 	end
 	if should_continue_line(before, after_cursor, depth) or blank_continuation or before.continuation then
 		local tail_ellipsis = after_cursor:match("^%s*%.%.%.%s*$")
 		local prefix = tail_ellipsis and "<End>" or (before.continuation and "" or " ...")
 		local close = { ["("] = ")", ["["] = "]", ["{"] = "}" }
 		local opening = rstrip(before.code):sub(-1)
-		if close[opening] and vim.trim(after_cursor):sub(1, 1) == close[opening] then
+		if (depth > 0 and closing_only) or (close[opening] and vim.trim(after_cursor):sub(1, 1) == close[opening]) then
 			return prefix .. "<CR>" .. command .. "finish_pair()<CR>"
 		end
 		if not after_cursor:find("%S") or tail_ellipsis then
@@ -254,14 +268,14 @@ function M.finish_comment(marker)
 	vim.api.nvim_win_set_cursor(0, { row, col + #marker + 1 })
 end
 
-function M.finish_pair()
+function M.finish_pair(continuation)
 	local row = vim.api.nvim_win_get_cursor(0)[1]
 	local logical = require("config.matlab.syntax").context(vim.api.nvim_get_current_buf(), row - 1).logical
 	local opener = logical.delimiter and logical.delimiter.line or logical.line
 	local before = vim.api.nvim_buf_get_lines(0, opener - 1, opener, false)[1]
 	local unit = before:match("^%s*") .. (vim.bo.expandtab and string.rep(" ", vim.fn.shiftwidth()) or "\t")
 	vim.cmd("undojoin")
-	vim.api.nvim_buf_set_lines(0, row - 1, row - 1, false, { unit .. " ..." })
+	vim.api.nvim_buf_set_lines(0, row - 1, row - 1, false, { unit .. (continuation == false and "" or " ...") })
 	vim.api.nvim_win_set_cursor(0, { row, #unit })
 end
 

@@ -187,7 +187,7 @@ local function target_contains_row(node, row)
 end
 
 local function target_is_split(node, bufnr, original)
-	if not separate_arguments(node) then
+	if not separate_arguments(node) and not operator_node_types[node:type()] then
 		return original:find("\n", 1, true) ~= nil
 	end
 
@@ -205,6 +205,22 @@ end
 local function target_from_node(node, row)
 	local binary_target
 	while node do
+		if node:type() == "parenthesis" then
+			local grouped = node
+			repeat
+				grouped = direct_named_children(grouped)[1]
+			until not grouped or grouped:type() ~= "parenthesis"
+			if grouped then
+				if
+					operator_node_types[grouped:type()]
+					or (container_types[grouped:type()] and container_has_multiple_items(grouped))
+				then
+					return grouped
+				end
+				return wrapped_target(grouped)
+			end
+			return nil
+		end
 		if container_types[node:type()] and container_has_multiple_items(node) and target_contains_row(node, row) then
 			return node
 		end
@@ -323,8 +339,20 @@ local function format_list(node, bufnr, split)
 
 	local items = {}
 	local separators = {}
+	local start_row = target_range(node)
+	local indent, base = continuation_indent(bufnr, start_row)
+	local item_indent = split and separate_arguments(node) and indent or base
 	for index, child in ipairs(children) do
-		table.insert(items, node_text(child, bufnr))
+		local row = child:range()
+		local item = node_text(child, bufnr)
+		local shift = vim.fn.strdisplaywidth(item_indent) - vim.fn.indent(row + 1)
+		if shift ~= 0 then
+			item = item:gsub("\n([ \t]*)", function(leading)
+				return "\n" .. string.rep(" ", math.max(0, vim.fn.strdisplaywidth(leading) + shift))
+			end)
+		end
+		table.insert(items, item)
+		item_indent = split and indent or (item:match("\n([ \t]*)[^\n]*$") or item_indent)
 		if index < #children then
 			local gap = text_between(bufnr, child, children[index + 1])
 			if not gap:find(config.separator, 1, true) then
@@ -334,9 +362,7 @@ local function format_list(node, bufnr, split)
 		end
 	end
 
-	local start_row = target_range(node)
-	local indent, base = continuation_indent(bufnr, start_row)
-	return render_parts(
+	local formatted, cursor_col, cursor_row = render_parts(
 		config.open,
 		config.close,
 		items,
@@ -345,6 +371,15 @@ local function format_list(node, bufnr, split)
 		split,
 		separate_arguments(node) and base or nil
 	)
+	if separate_arguments(node) then
+		local row, col = children[1]:range()
+		local first_target = target_from_node(vim.treesitter.get_node({ bufnr = bufnr, pos = { row, col } }), row)
+		if first_target and not vim.deep_equal({ target_range(first_target) }, { target_range(node) }) then
+			-- Keep a repeated toggle on this call when its first argument has its own target.
+			return formatted, 0, 0
+		end
+	end
+	return formatted, cursor_col, cursor_row
 end
 
 local function matrix_parts(node, bufnr)
@@ -444,8 +479,15 @@ local function format_binary(node, bufnr, split)
 		return " " .. item
 	end, operators)
 
-	local start_row = node:range()
-	return render_parts("", "", items, separators, continuation_indent(bufnr, start_row), split)
+	local start_row, start_col = node:range()
+	local formatted, cursor_col = render_parts("", "", items, separators, continuation_indent(bufnr, start_row), split)
+	local first_target =
+		target_from_node(vim.treesitter.get_node({ bufnr = bufnr, pos = { start_row, start_col } }), start_row)
+	if first_target and not vim.deep_equal({ target_range(first_target) }, { target_range(node) }) then
+		local lines = vim.split(items[1], "\n", { plain = true })
+		return formatted, #lines[#lines] + 1, #lines - 1
+	end
+	return formatted, cursor_col
 end
 
 local function format_target(node, bufnr, split)
@@ -527,59 +569,24 @@ local function remove_state(bufnr, state)
 	end
 end
 
-local function position_in_range(row, col, start_row, start_col, end_row, end_col)
-	if row < start_row or row > end_row then
-		return false
-	end
-	if row == start_row and col < start_col then
-		return false
-	end
-	if row == end_row and col >= end_col then
-		return false
-	end
-	return true
-end
-
-local function state_at_cursor(bufnr)
-	local cursor = vim.api.nvim_win_get_cursor(0)
-	local row, col = cursor[1] - 1, cursor[2]
-	local nearest
-	local nearest_distance
-
+local function state_for_target(bufnr, node)
+	local range = { target_range(node) }
 	for _, state in ipairs(vim.list_slice(states[bufnr] or {})) do
 		local mark = vim.api.nvim_buf_get_extmark_by_id(bufnr, namespace, state.mark, { details = true })
 		if #mark == 0 then
 			remove_state(bufnr, state)
 		else
 			local details = mark[3]
-			if position_in_range(row, col, mark[1], mark[2], details.end_row, details.end_col) then
+			if vim.deep_equal(range, { mark[1], mark[2], details.end_row, details.end_col }) then
 				return state, mark[1], mark[2], details.end_row, details.end_col
 			end
-			if row >= mark[1] and row <= details.end_row then
-				local line_start = row == mark[1] and mark[2] or 0
-				local line_end = row == details.end_row and details.end_col or math.huge
-				local distance = col < line_start and line_start - col or (col > line_end and col - line_end or 0)
-				if nearest_distance == nil or distance < nearest_distance then
-					nearest = { state, mark[1], mark[2], details.end_row, details.end_col }
-					nearest_distance = distance
-				end
-			end
 		end
-	end
-
-	if nearest then
-		vim.treesitter.get_parser(bufnr, "matlab"):parse(true)
-		local target = target_from_node(node_at_cursor(bufnr), row)
-		if target and not vim.deep_equal({ target_range(target) }, vim.list_slice(nearest, 2)) then
-			return nil
-		end
-		return unpack(nearest)
 	end
 end
 
-local function toggle_saved_state(bufnr)
+local function toggle_saved_state(bufnr, node)
 	while true do
-		local state, start_row, start_col, end_row, end_col = state_at_cursor(bufnr)
+		local state, start_row, start_col, end_row, end_col = state_for_target(bufnr, node)
 		if not state then
 			return false
 		end
@@ -600,13 +607,12 @@ function M.toggle(bufnr)
 	assert(vim.api.nvim_get_current_buf() == bufnr, "MATLAB split/join buffer is not current")
 	states[bufnr] = states[bufnr] or {}
 
-	if toggle_saved_state(bufnr) then
-		return true
-	end
-
 	local node = find_target(bufnr)
 	if not node then
 		return false
+	end
+	if toggle_saved_state(bufnr, node) then
+		return true
 	end
 	if has_blocking_syntax(node:type() == "arguments" and node:parent() or node, bufnr) then
 		notify("The selected MATLAB expression contains a comment or syntax error")
@@ -625,9 +631,19 @@ function M.toggle(bufnr)
 		return false
 	end
 
+	local original_cursor = relative_cursor(bufnr, start_row, start_col)
+	if is_split then
+		-- Re-splitting a joined expression uses the canonical layout, including existing manual wrapping.
+		local canonical, cursor_col, cursor_row = format_target(node, bufnr, true)
+		if canonical ~= original then
+			original = assert(canonical)
+			original_cursor = { cursor_row or 0, assert(cursor_col) }
+		end
+	end
+
 	local state = {
 		forms = {
-			{ text = original, cursor = relative_cursor(bufnr, start_row, start_col) },
+			{ text = original, cursor = original_cursor },
 			{ text = formatted, cursor = { generated_cursor_row or 0, assert(generated_cursor_col) } },
 		},
 		current = 1,

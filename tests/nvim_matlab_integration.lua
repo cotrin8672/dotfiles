@@ -171,13 +171,128 @@ end
 for _, header in ipairs({ "a = [", "a = [1 2", "a = [1 2;" }) do
 	scenario("matrix " .. header)
 	step("i" .. header, { header .. "]" }, { 1, #header }, no_menu)
-	local first = header .. (header:sub(-1) == ";" and "" or " ...")
-	step("<CR>", { first, "     ...", "]" }, { 2, 4 }, no_menu)
-	step("3 4", { first, "    3 4 ...", "]" }, { 2, 7 }, no_menu)
+	local row_separator = header:sub(-1) == ";"
+	local first = header .. (row_separator and "" or " ...")
+	step("<CR>", { first, row_separator and "    " or "     ...", "]" }, { 2, 4 }, no_menu)
+	step("3 4", { first, "    3 4" .. (row_separator and "" or " ..."), "]" }, { 2, 7 }, no_menu)
 	step("<CR>", { first, "    3 4 ...", "]" }, { 3, 0 }, no_menu)
 	step("]", { first, "    3 4 ...", "]" }, { 3, 1 }, no_menu)
 	step(";<CR>value = 1;<Esc>", { first, "    3 4 ...", "];", "value = 1;" }, { 4, 9 }, no_menu)
 end
+
+local runner =
+	"baseRunner = @() run_lle(cycle, At_in, Bt_in, del_t, Kappa_normal, disp_normal, interaction, detuning_main, detuning_aux, Gamma_normal, F_main, F_aux, u, Raman_coef, mu_a, noise_str, interaction_coef)"
+for _, fixture in ipairs({
+	{ runner .. ";", runner, ";", ";" },
+	{ "value = f(a); next();", "value = f(a)", "; next();", ";" },
+	{ "value = 1, next();", "value = 1", ", next();", "," },
+}) do
+	scenario("Enter before statement separator: " .. fixture[1], { fixture[1] })
+	step("0f" .. fixture[4], { fixture[1] }, { 1, #fixture[2] })
+	step("i<CR><Esc>", { fixture[2], fixture[3] }, { 2, 0 }, no_menu)
+	step("u", { fixture[1] })
+	step("<C-r>", { fixture[2], fixture[3] })
+end
+
+for _, delimiters in ipairs({ { "[", "]" }, { "{", "}" } }) do
+	local header, close = "A = " .. delimiters[1] .. "1 2;", delimiters[2] .. ";"
+	scenario("plain repeated array row Enter " .. delimiters[1], { header .. close })
+	step("0f;", { header .. close }, { 1, #header - 1 })
+	step("a<CR><CR><CR>", { header, "", "", "    ", close }, { 4, 4 }, no_menu)
+	local edited = { header, "", "", "    3 4", close }
+	step("3 4<Esc>", edited, { 4, 6 }, no_menu)
+	step("u", { header .. close })
+	step("<C-r>", edited)
+end
+
+for _, command in ipairs({ "cd C:/", "cd C:\\", "addpath C:/Users/minol/", "cd C:/work(1/" }) do
+	scenario("command path Enter " .. command, { command })
+	step("A<CR>value = 1<CR><Esc>", { command, "value = 1", "" }, { 3, 0 }, no_menu)
+	step("u", { command })
+	step("<C-r>", { command, "value = 1", "" })
+end
+local continued_command = { "addpath C:/first/ ...", "    C:/work{1/", "value = 1" }
+scenario("continued command literal delimiter", continued_command)
+local continued_edit = vim.list_extend(vim.deepcopy(continued_command), { "" })
+step("GA<CR><Esc>", continued_edit, { 4, 0 }, no_menu)
+step("u", continued_command)
+step("<C-r>", continued_edit)
+
+local nested_original = { "value = f(g(a, b), c);" }
+local nested_outer = { "value = f( ...", "    g(a, b), ...", "    c ...", ");" }
+local nested_both = {
+	"value = f( ...",
+	"    g( ...",
+	"        a, ...",
+	"        b ...",
+	"    ), ...",
+	"    c ...",
+	");",
+}
+local nested_inner = { "value = f(g( ...", "    a, ...", "    b ...", "), c);" }
+scenario("native nested split join undo and redo", nested_original)
+step("gg0f(", nested_original, { 1, 9 })
+step(" s", nested_outer)
+step("2G0f(", nested_outer, { 2, 5 })
+step(" s", nested_both)
+step("u", nested_outer)
+step("u", nested_original)
+step("<C-r>", nested_outer)
+step("<C-r>", nested_both)
+step("gg0f(", nested_both, { 1, 9 })
+step(" s", nested_inner)
+step("gg0f(f(", nested_inner, { 1, 11 })
+step(" s", nested_original)
+step("u", nested_inner)
+step("u", nested_both)
+step("<C-r>", nested_inner)
+step("<C-r>", nested_original)
+
+local manual_call = {
+	"store;",
+	"run_lle = store.recompute(@solve_lle, waveform);",
+	"",
+	"[At_in, Bt_in] = run_lle( ...",
+	"    cycle, At_in, Bt_in, stepTime_normal, Kappa_normal, disp_normal, ...",
+	"    interaction, detuning_main, detuning_aux, Gamma_normal, ...",
+	"    F_main, F_aux, u, Raman_coef, aux_pump_mode, noise_str, interaction_coef);",
+}
+local call_args = {
+	"cycle",
+	"At_in",
+	"Bt_in",
+	"stepTime_normal",
+	"Kappa_normal",
+	"disp_normal",
+	"interaction",
+	"detuning_main",
+	"detuning_aux",
+	"Gamma_normal",
+	"F_main",
+	"F_aux",
+	"u",
+	"Raman_coef",
+	"aux_pump_mode",
+	"noise_str",
+	"interaction_coef",
+}
+local joined_call = vim.list_slice(manual_call, 1, 3)
+table.insert(joined_call, "[At_in, Bt_in] = run_lle(" .. table.concat(call_args, ", ") .. ");")
+local canonical_call = vim.list_slice(manual_call, 1, 4)
+for index, argument in ipairs(call_args) do
+	table.insert(canonical_call, "    " .. argument .. (index == #call_args and " ..." or ", ..."))
+end
+table.insert(canonical_call, ");")
+scenario("manual wrapping joins then splits to one argument per line", manual_call)
+step("4G0f(", manual_call, { 4, 24 })
+step(" s", joined_call)
+step(" s", canonical_call)
+step("u", joined_call)
+step("u", manual_call)
+step("<C-r>", joined_call)
+step("<C-r>", canonical_call)
+step(" s", joined_call)
+step(" s", canonical_call)
 
 for _, base in ipairs({ "", "    ", "\t" }) do
 	local unit = base == "\t" and "\t" or "    "

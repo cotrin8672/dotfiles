@@ -3,6 +3,8 @@ local config = vim.fn.fnamemodify("dot_config/nvim", ":p"):gsub("[/\\]$", "")
 vim.opt.rtp:prepend(config)
 vim.opt.rtp:append(vim.fn.stdpath("data") .. "/site")
 local splitjoin = require("config.matlab.splitjoin")
+vim.g.mapleader = " "
+vim.keymap.set("n", "<leader>s", require("plugins.treesj").keys[1][2])
 local cases = 0
 local notifications = {}
 vim.notify = function(message)
@@ -66,6 +68,38 @@ local function roundtrip(lines, expected, cursor, generated_cursor, options)
 	end, options)
 end
 
+local function canonicalize(lines, joined, split, cursor, options)
+	with_buffer(lines, cursor, function(buf)
+		local original_syntax = syntax(buf)
+		for _, expected in ipairs({ joined, split, joined, split }) do
+			assert(splitjoin.toggle(), "Existing wrapping must toggle into canonical layout")
+			assert_text(buf, expected)
+			assert(vim.deep_equal(syntax(buf), original_syntax), "Canonical split/join changed MATLAB syntax")
+		end
+	end, options)
+end
+
+local function mapped_toggle_at(buf, token, offset, expected)
+	local original_syntax = syntax(buf)
+	for row, line in ipairs(vim.api.nvim_buf_get_lines(buf, 0, -1, false)) do
+		local col = line:find(token, 1, true)
+		if col then
+			vim.api.nvim_win_set_cursor(0, { row, col - 1 + offset })
+			vim.api.nvim_feedkeys(" s", "mx", false)
+			assert_text(buf, expected)
+			assert(vim.deep_equal(syntax(buf), original_syntax), "Mapped split/join changed MATLAB syntax")
+			local cursor = vim.api.nvim_win_get_cursor(0)
+			vim.bo[buf].expandtab = true
+			vim.bo[buf].indentexpr = "v:lua.require'config.matlab'.indent(v:lnum)"
+			vim.cmd("silent normal! gg=G")
+			assert_text(buf, expected)
+			vim.api.nvim_win_set_cursor(0, cursor)
+			return
+		end
+	end
+	error("Missing cursor token: " .. token)
+end
+
 local declaration = {
 	"function [A_comb_power, B_comb_power] = run_main_detuning_sweep_off_point(cycle, At_in, aux_off_detuning)",
 	"end",
@@ -116,9 +150,107 @@ roundtrip({ "    f(a, b); % tail" }, { "    f( ...", "        a, ...", "        
 roundtrip({ "\tf(a, b);" }, { "\tf( ...", "\t  a, ...", "\t  b ...", "\t);" }, nil, { 2, 3 }, { shiftwidth = 2 })
 roundtrip({ "f(a, b);" }, { "f( ...", "   a, ...", "   b ...", ");" }, nil, nil, { shiftwidth = 0, tabstop = 3 })
 roundtrip({ "f( a ,  b );" }, { "f( ...", "    a, ...", "    b ...", ");" })
-roundtrip({ "f(a, ...", "    b);" }, { "f(a, b);" })
-roundtrip({ "f( ...", "    a, ...", "    b);" }, { "f(a, b);" })
-roundtrip({ "f(a, b ...", ");" }, { "f(a, b);" })
+canonicalize({ "f(a, ...", "    b);" }, { "f(a, b);" }, { "f( ...", "    a, ...", "    b ...", ");" })
+canonicalize({ "f( ...", "    a, ...", "    b);" }, { "f(a, b);" }, { "f( ...", "    a, ...", "    b ...", ");" })
+canonicalize({ "f(a, b ...", ");" }, { "f(a, b);" }, { "f( ...", "    a, ...", "    b ...", ");" })
+canonicalize({ "function [x, y] = f(a, b, ...", "    c, d) % header", "end" }, {
+	"function [x, y] = f(a, b, c, d) % header",
+	"end",
+}, {
+	"function [x, y] = f( ...",
+	"    a, ...",
+	"    b, ...",
+	"    c, ...",
+	"    d ...",
+	") % header",
+	"end",
+}, { 1, 18 })
+canonicalize({ "value = f(g(a, b, ...", "    c, d), [1 2; 3 4]); % tail" }, {
+	"value = f(g(a, b, c, d), [1 2; 3 4]); % tail",
+}, {
+	"value = f(g( ...",
+	"    a, ...",
+	"    b, ...",
+	"    c, ...",
+	"    d ...",
+	"), [1 2; 3 4]); % tail",
+}, { 1, 10 })
+canonicalize({ "value = f([1 2; ...", "    3 4], tail);" }, { "value = f([1 2; 3 4], tail);" }, {
+	"value = f([1 ...",
+	"    2; ...",
+	"    3 ...",
+	"    4], tail);",
+}, { 1, 10 })
+canonicalize({ "f('it''s %, ...', A', ...", '    B.\', "x,%", {1, 2; 3, 4}); % tail' }, {
+	"f('it''s %, ...', A', B.', \"x,%\", {1, 2; 3, 4}); % tail",
+}, {
+	"f( ...",
+	"    'it''s %, ...', ...",
+	"    A', ...",
+	"    B.', ...",
+	'    "x,%", ...',
+	"    {1, 2; 3, 4} ...",
+	"); % tail",
+})
+
+-- Native Undo owns the original manual wrapping; toggles own the canonical layout.
+local manual_run_lle = {
+	"store;",
+	"run_lle = store.recompute(@solve_lle, waveform);",
+	"",
+	"[At_in, Bt_in] = run_lle( ...",
+	"    cycle, At_in, Bt_in, stepTime_normal, Kappa_normal, disp_normal, ...",
+	"    interaction, detuning_main, detuning_aux, Gamma_normal, ...",
+	"    F_main, F_aux, u, Raman_coef, aux_pump_mode, noise_str, interaction_coef);",
+}
+local joined_run_lle = {
+	manual_run_lle[1],
+	manual_run_lle[2],
+	"",
+	"[At_in, Bt_in] = run_lle(cycle, At_in, Bt_in, stepTime_normal, Kappa_normal, disp_normal, interaction, detuning_main, detuning_aux, Gamma_normal, F_main, F_aux, u, Raman_coef, aux_pump_mode, noise_str, interaction_coef);",
+}
+local canonical_run_lle = {
+	manual_run_lle[1],
+	manual_run_lle[2],
+	"",
+	"[At_in, Bt_in] = run_lle( ...",
+	"    cycle, ...",
+	"    At_in, ...",
+	"    Bt_in, ...",
+	"    stepTime_normal, ...",
+	"    Kappa_normal, ...",
+	"    disp_normal, ...",
+	"    interaction, ...",
+	"    detuning_main, ...",
+	"    detuning_aux, ...",
+	"    Gamma_normal, ...",
+	"    F_main, ...",
+	"    F_aux, ...",
+	"    u, ...",
+	"    Raman_coef, ...",
+	"    aux_pump_mode, ...",
+	"    noise_str, ...",
+	"    interaction_coef ...",
+	");",
+}
+with_buffer(manual_run_lle, { 4, 21 }, function(buf)
+	local original_syntax = syntax(buf)
+	for _, expected in ipairs({ joined_run_lle, canonical_run_lle }) do
+		vim.api.nvim_feedkeys(" s", "xt", false)
+		assert_text(buf, expected)
+		assert(vim.deep_equal(syntax(buf), original_syntax), "Native toggle changed run_lle arguments")
+	end
+	vim.api.nvim_feedkeys("u", "xt", false)
+	assert_text(buf, joined_run_lle)
+	vim.api.nvim_feedkeys("u", "xt", false)
+	assert_text(buf, manual_run_lle)
+	vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-r>", true, false, true), "xt", false)
+	assert_text(buf, joined_run_lle)
+	vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-r>", true, false, true), "xt", false)
+	assert_text(buf, canonical_run_lle)
+	mapped_toggle_at(buf, "run_lle(", 1, joined_run_lle)
+	mapped_toggle_at(buf, "run_lle(", 1, canonical_run_lle)
+end)
 roundtrip({ "obj.method(a, b);" }, { "obj.method( ...", "    a, ...", "    b ...", ");" })
 roundtrip({ "value = A(1:end, :);" }, { "value = A( ...", "    1:end, ...", "    : ...", ");" }, { 1, 8 })
 roundtrip({ "value = f(A(1:end), g('a,b', matrix.'), \"x,%\");" }, {
@@ -147,18 +279,254 @@ roundtrip({ "value = f([a b; c d], {x, y}, @(a, b) a + b);" }, {
 roundtrip({ "value = f(g( ...", "    a, ...", "    b ...", "), c);" }, {
 	"value = f( ...",
 	"    g( ...",
-	"    a, ...",
-	"    b ...",
-	"), ...",
+	"        a, ...",
+	"        b ...",
+	"    ), ...",
 	"    c ...",
 	");",
 }, { 1, 8 })
 roundtrip({ "value = f( ...", "    g( ...", "        a, ...", "        b ...", "    ), ...", "    c ...", ");" }, {
 	"value = f(g( ...",
+	"    a, ...",
+	"    b ...",
+	"), c);",
+}, { 1, 8 })
+
+-- Saved outer ranges must never take over the selected nested call or index.
+local nested_call = { "value = f(g(a, b), c);" }
+local outer_split = { "value = f( ...", "    g(a, b), ...", "    c ...", ");" }
+local both_split = {
+	"value = f( ...",
+	"    g( ...",
 	"        a, ...",
 	"        b ...",
-	"    ), c);",
-}, { 1, 8 })
+	"    ), ...",
+	"    c ...",
+	");",
+}
+with_buffer(nested_call, nil, function(buf)
+	for _, offset in ipairs({ 0, 1 }) do
+		mapped_toggle_at(buf, "f(", 1, outer_split)
+		mapped_toggle_at(buf, "g(", offset, both_split)
+		mapped_toggle_at(buf, "), ...", 0, outer_split)
+		mapped_toggle_at(buf, ");", 0, nested_call)
+	end
+end)
+with_buffer(nested_call, nil, function(buf)
+	mapped_toggle_at(buf, "f(", 1, outer_split)
+	mapped_toggle_at(buf, "g(", 1, both_split)
+	mapped_toggle_at(buf, "f(", 1, {
+		"value = f(g( ...",
+		"    a, ...",
+		"    b ...",
+		"), c);",
+	})
+	mapped_toggle_at(buf, "), c);", 0, nested_call)
+	mapped_toggle_at(buf, "f(", 1, outer_split)
+end)
+with_buffer(nested_call, nil, function(buf)
+	mapped_toggle_at(buf, "g(", 1, { "value = f(g( ...", "    a, ...", "    b ...", "), c);" })
+	mapped_toggle_at(buf, "f(", 1, both_split)
+	mapped_toggle_at(buf, "), ...", 0, outer_split)
+	mapped_toggle_at(buf, ");", 0, nested_call)
+end)
+with_buffer(nested_call, nil, function(buf)
+	mapped_toggle_at(buf, "f(", 1, outer_split)
+	mapped_toggle_at(buf, "g(", 1, both_split)
+	vim.api.nvim_buf_set_lines(buf, 3, 4, false, { "        changed ..." })
+	mapped_toggle_at(buf, "g(", 1, { "value = f( ...", "    g(a, changed), ...", "    c ...", ");" })
+	mapped_toggle_at(buf, ");", 0, { "value = f(g(a, changed), c);" })
+	mapped_toggle_at(buf, "f(", 1, { "value = f( ...", "    g(a, changed), ...", "    c ...", ");" })
+end)
+with_buffer({ "value = f(A(g(1), :), (a + b));" }, nil, function(buf)
+	mapped_toggle_at(buf, "f(", 1, { "value = f( ...", "    A(g(1), :), ...", "    (a + b) ...", ");" })
+	mapped_toggle_at(buf, "A(", 1, {
+		"value = f( ...",
+		"    A( ...",
+		"        g(1), ...",
+		"        : ...",
+		"    ), ...",
+		"    (a + b) ...",
+		");",
+	})
+	mapped_toggle_at(buf, "g(", 1, {
+		"value = f( ...",
+		"    A( ...",
+		"        g( ...",
+		"            1 ...",
+		"        ), ...",
+		"        : ...",
+		"    ), ...",
+		"    (a + b) ...",
+		");",
+	})
+	mapped_toggle_at(buf, "g(", 1, {
+		"value = f( ...",
+		"    A( ...",
+		"        g(1), ...",
+		"        : ...",
+		"    ), ...",
+		"    (a + b) ...",
+		");",
+	})
+	mapped_toggle_at(buf, "A(", 1, { "value = f( ...", "    A(g(1), :), ...", "    (a + b) ...", ");" })
+	mapped_toggle_at(buf, ");", 0, { "value = f(A(g(1), :), (a + b));" })
+end)
+with_buffer({ "value = f(g(h('a, )', \"x...\"), b), c);" }, nil, function(buf)
+	local deepest_split = { "value = f(g(h( ...", "    'a, )', ...", '    "x..." ...', "), b), c);" }
+	mapped_toggle_at(buf, "h(", 1, deepest_split)
+	mapped_toggle_at(buf, "g(", 1, {
+		"value = f(g( ...",
+		"    h( ...",
+		"        'a, )', ...",
+		'        "x..." ...',
+		"    ), ...",
+		"    b ...",
+		"), c);",
+	})
+	mapped_toggle_at(buf, "f(", 1, {
+		"value = f( ...",
+		"    g( ...",
+		"        h( ...",
+		"            'a, )', ...",
+		'            "x..." ...',
+		"        ), ...",
+		"        b ...",
+		"    ), ...",
+		"    c ...",
+		");",
+	})
+	mapped_toggle_at(buf, "g(", 1, {
+		"value = f( ...",
+		"    g(h( ...",
+		"        'a, )', ...",
+		'        "x..." ...',
+		"    ), b), ...",
+		"    c ...",
+		");",
+	})
+	mapped_toggle_at(buf, "f(", 1, deepest_split)
+	mapped_toggle_at(buf, "h(", 1, { "value = f(g(h('a, )', \"x...\"), b), c);" })
+end)
+with_buffer({ "value = f(g(a, b), h(c, d));" }, nil, function(buf)
+	mapped_toggle_at(buf, "h(", 1, { "value = f(g(a, b), h( ...", "    c, ...", "    d ...", "));" })
+	mapped_toggle_at(buf, "f(", 1, {
+		"value = f( ...",
+		"    g(a, b), ...",
+		"    h( ...",
+		"        c, ...",
+		"        d ...",
+		"    ) ...",
+		");",
+	})
+	mapped_toggle_at(buf, "g(", 1, {
+		"value = f( ...",
+		"    g( ...",
+		"        a, ...",
+		"        b ...",
+		"    ), ...",
+		"    h( ...",
+		"        c, ...",
+		"        d ...",
+		"    ) ...",
+		");",
+	})
+	mapped_toggle_at(buf, "f(", 1, {
+		"value = f(g( ...",
+		"    a, ...",
+		"    b ...",
+		"), h( ...",
+		"    c, ...",
+		"    d ...",
+		"));",
+	})
+	mapped_toggle_at(buf, "g(", 1, { "value = f(g(a, b), h( ...", "    c, ...", "    d ...", "));" })
+	mapped_toggle_at(buf, "h(", 1, { "value = f(g(a, b), h(c, d));" })
+end)
+with_buffer({ "value = f((a + b), g(c, d));" }, nil, function(buf)
+	local group_split = { "value = f((a + ...", "    b), g(c, d));" }
+	local children_split = {
+		"value = f((a + ...",
+		"    b), g( ...",
+		"        c, ...",
+		"        d ...",
+		"    ));",
+	}
+	mapped_toggle_at(buf, "(a +", 0, group_split)
+	mapped_toggle_at(buf, "g(", 1, children_split)
+	mapped_toggle_at(buf, "f(", 1, {
+		"value = f( ...",
+		"    (a + ...",
+		"        b), ...",
+		"    g( ...",
+		"        c, ...",
+		"        d ...",
+		"    ) ...",
+		");",
+	})
+	mapped_toggle_at(buf, "f(", 1, children_split)
+	mapped_toggle_at(buf, "g(", 1, group_split)
+	mapped_toggle_at(buf, "+ ...", 0, { "value = f((a + b), g(c, d));" })
+end)
+roundtrip({ "f(g( ...", "  a, ...", "  b ...", "), c);" }, {
+	"f( ...",
+	"  g( ...",
+	"    a, ...",
+	"    b ...",
+	"  ), ...",
+	"  c ...",
+	");",
+}, { 1, 1 }, nil, { shiftwidth = 2 })
+roundtrip({ "baseRunner = @() run_lle(cycle, At_in, Bt_in);" }, {
+	"baseRunner = @() run_lle( ...",
+	"    cycle, ...",
+	"    At_in, ...",
+	"    Bt_in ...",
+	");",
+}, { 1, 23 })
+
+-- Explicit grouping keeps a binary target inside its nearest parentheses.
+for _, cursor in ipairs({ { 1, 4 }, { 1, 5 }, { 1, 10 } }) do
+	roundtrip({ "x = (a + b) * (c + d);" }, { "x = (a + ...", "    b) * (c + d);" }, cursor)
+end
+roundtrip({ "x = (a + b) * (c + d);" }, { "x = (a + b) * ...", "    (c + d);" }, { 1, 12 })
+roundtrip({ "x = ((a + b)) * c;" }, { "x = ((a + ...", "    b)) * c;" }, { 1, 4 })
+roundtrip({ "f((a + b), c);" }, { "f((a + ...", "    b), c);" }, { 1, 2 })
+roundtrip({ "f((a + b), c);" }, { "f( ...", "    (a + b), ...", "    c ...", ");" }, { 1, 1 })
+roundtrip({ "x = (g(a, b)) * c;" }, { "x = (g( ...", "    a, ...", "    b ...", ")) * c;" }, { 1, 4 })
+roundtrip({ "x = (1:5) * z;" }, { "x = (1: ...", "    5) * z;" }, { 1, 4 })
+with_buffer({ "f(((a + b) * c), d);" }, nil, function(buf)
+	mapped_toggle_at(buf, "f(", 1, { "f( ...", "    ((a + b) * c), ...", "    d ...", ");" })
+	mapped_toggle_at(buf, "(a + b)", 0, { "f( ...", "    ((a + ...", "        b) * c), ...", "    d ...", ");" })
+	mapped_toggle_at(buf, "* c", 0, {
+		"f( ...",
+		"    ((a + ...",
+		"        b) * ...",
+		"        c), ...",
+		"    d ...",
+		");",
+	})
+	mapped_toggle_at(buf, "* ...", 0, { "f( ...", "    ((a + ...", "        b) * c), ...", "    d ...", ");" })
+	mapped_toggle_at(buf, "+ ...", 0, { "f( ...", "    ((a + b) * c), ...", "    d ...", ");" })
+	mapped_toggle_at(buf, ");", 0, { "f(((a + b) * c), d);" })
+end)
+with_buffer({ "f((g(a, b) + c), d);" }, nil, function(buf)
+	mapped_toggle_at(buf, "f(", 1, { "f( ...", "    (g(a, b) + c), ...", "    d ...", ");" })
+	mapped_toggle_at(buf, "(g(", 0, { "f( ...", "    (g(a, b) + ...", "        c), ...", "    d ...", ");" })
+	mapped_toggle_at(buf, "g(", 1, {
+		"f( ...",
+		"    (g( ...",
+		"        a, ...",
+		"        b ...",
+		"    ) + ...",
+		"        c), ...",
+		"    d ...",
+		");",
+	})
+	mapped_toggle_at(buf, ") +", 0, { "f( ...", "    (g(a, b) + ...", "        c), ...", "    d ...", ");" })
+	mapped_toggle_at(buf, "+ ...", 0, { "f( ...", "    (g(a, b) + c), ...", "    d ...", ");" })
+	mapped_toggle_at(buf, ");", 0, { "f((g(a, b) + c), d);" })
+end)
 
 -- Keep the established layouts of other MATLAB expressions.
 roundtrip({ "function [x, y] = f(a, b)", "end" }, { "function [x, ...", "    y] = f(a, b)", "end" }, { 1, 14 })
@@ -169,7 +537,12 @@ roundtrip(
 	{ "value = {one, two; three, four};" },
 	{ "value = {one, ...", "    two; ...", "    three, ...", "    four};" }
 )
-roundtrip({ "value = [1 2", "    3 4];" }, { "value = [1 2; 3 4];" })
+canonicalize({ "value = [1 2", "    3 4];" }, { "value = [1 2; 3 4];" }, {
+	"value = [1 ...",
+	"    2; ...",
+	"    3 ...",
+	"    4];",
+})
 roundtrip({ "value = first + second * third;" }, { "value = first + ...", "    second * third;" }, { 1, 8 })
 
 -- A remembered input toggle must not take over an explicit output selection.
@@ -249,5 +622,7 @@ rejected({ "value = [a, ... % comment", "    b];" }, nil, true)
 rejected({ "f(a,", "    % preserved comment", "    b);" }, nil, true)
 
 print(
-	"PASS: " .. cases .. " MATLAB split/join cases, syntax structure, comments, cursor selection and exact roundtrips"
+	"PASS: "
+		.. cases
+		.. " MATLAB split/join cases, syntax structure, comments, cursor selection, canonical wrapping and exact roundtrips"
 )

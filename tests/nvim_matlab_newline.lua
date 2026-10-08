@@ -102,6 +102,11 @@ local function check(marked, expected, options)
 end
 
 -- Distinguish top-level statement/row separators from commas inside lists.
+local runner =
+	"baseRunner = @() run_lle(cycle, At_in, Bt_in, del_t, Kappa_normal, disp_normal, interaction, detuning_main, detuning_aux, Gamma_normal, F_main, F_aux, u, Raman_coef, mu_a, noise_str, interaction_coef)"
+check({ runner .. "<cursor>;" }, { runner, ";" }, { undo = true })
+check({ "x = f(a)<cursor>; next();" }, { "x = f(a)", "; next();" }, { undo = true })
+check({ "x = 1<cursor>, next();" }, { "x = 1", ", next();" }, { undo = true })
 for _, item in ipairs({
 	{ "f(a,<cursor> b);", { "f(a, ...", "    b);" } },
 	{ "obj.f(a,<cursor> Name = value);", { "obj.f(a, ...", "    Name = value);" } },
@@ -134,10 +139,83 @@ for _, item in ipairs({
 	{ { "function f(<cursor>)", "end" }, { "function f( ...", "    ...", ")", "end" } },
 	{ { "f(a<cursor>);" }, { "f(a ...", "    ...", ");" } },
 	{ { "A = [1 2<cursor>];" }, { "A = [1 2 ...", "    ...", "];" } },
-	{ { "A = [1 2;<cursor>];" }, { "A = [1 2;", "    ...", "];" } },
+	{ { "A = [1 2;<cursor>];" }, { "A = [1 2;", "", "];" } },
 }) do
 	check(item[1], item[2], { semantic = true, undo = true })
 end
+
+-- Empty lines following an explicit array row separator need no continuation.
+for _, delimiters in ipairs({ { "[", "]" }, { "{", "}" } }) do
+	for _, input in ipairs({ "<CR>", "<CR><CR>", "<CR><CR><CR>" }) do
+		local initial = "A = " .. delimiters[1] .. "1 2;"
+		local last = "    3 4" .. delimiters[2] .. ";"
+		local expected = { initial }
+		for _ = 1, select(2, input:gsub("<CR>", "")) do
+			table.insert(expected, "")
+		end
+		table.insert(expected, last)
+		check({ initial .. "<cursor>", last }, expected, { semantic = true, input = input, undo = true })
+		expected[#expected] = delimiters[2] .. ";"
+		check(
+			{ initial .. "<cursor>" .. delimiters[2] .. ";" },
+			expected,
+			{ semantic = true, input = input, undo = true }
+		)
+	end
+end
+
+-- Command-form paths and arguments are literals, including punctuation that
+-- would otherwise look like an operator or an unfinished delimiter.
+for _, command in ipairs({
+	"cd C:/",
+	"cd C:\\",
+	"cd ./",
+	"cd ..\\",
+	"addpath C:/Users/minol/",
+	"generic +",
+	"generic -",
+	"generic path:",
+	"import matlab.lang.*",
+	"!dir C:/",
+	"cd C:/ % note",
+}) do
+	check({ command .. "<cursor>", "disp done" }, { command, "", "disp done" }, { semantic = true, undo = true })
+end
+check(
+	{ "generic arg ...", "    other/<cursor>", "disp done" },
+	{ "generic arg ...", "    other/", "", "disp done" },
+	{ semantic = true, undo = true }
+)
+check(
+	{ "addpath C:/first/ ...", "    C:/work{1/", "value = 1<cursor>" },
+	{ "addpath C:/first/ ...", "    C:/work{1/", "value = 1", "" },
+	{ semantic = true, undo = true }
+)
+for _, delimiter in ipairs({ "(", "[", "{" }) do
+	local command = "cd C:/work" .. delimiter .. "1/"
+	check({ command .. "<cursor>" }, { command, "" }, { semantic = true, undo = true })
+	check(
+		{ command .. ";", "value = 1<cursor>" },
+		{ command .. ";", "value = 1", "" },
+		{ semantic = true, undo = true }
+	)
+	check(
+		{ command, "if ready<cursor>" },
+		{ command, "if ready", "    BODY", "end" },
+		{ input = "<CR>BODY", undo = true }
+	)
+	local inline = "value = 1; " .. command
+	check({ inline .. "<cursor>" }, { inline, "" }, { semantic = true })
+	local header = "if ready; " .. command
+	check({ header .. "<cursor>", "end" }, { header, "    BODY", "end" }, { input = "<CR>BODY" })
+	local closed = header .. "; end"
+	check({ closed .. "<cursor>" }, { closed, "" }, { semantic = true })
+end
+check(
+	{ "A = [1 2;", "    % next row<cursor>", "    3 4];" },
+	{ "A = [1 2;", "    % next row", "", "    3 4];" },
+	{ semantic = true, undo = true }
+)
 
 -- Every whitespace boundary in these valid expressions preserves the parsed
 -- operands/operators, literal bytes, argument ordering and array row structure.

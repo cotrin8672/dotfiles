@@ -69,6 +69,56 @@ function M.keyword(code)
 	return code:match("^%s*([%a_][%w_]*)")
 end
 
+function M.command_at(bufnr, row, col)
+	if col == 0 then
+		return nil
+	end
+	local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "matlab")
+	if not ok or not parser then
+		return nil
+	end
+	local node = parser:parse(true)[1]:root():descendant_for_range(row - 1, col - 1, row - 1, col)
+	while node do
+		if node:type() == "command" then
+			return node
+		end
+		node = node:parent()
+	end
+end
+
+function M.command_code(bufnr, row, code)
+	if not code:find("[%(%[%{%)%]%}]") then
+		return code
+	end
+	-- Command arguments are literal text; their delimiters cannot open a
+	-- MATLAB expression or swallow surrounding statements on the same line.
+	local function mask_arguments(col)
+		local command = M.command_at(bufnr, row, col)
+		if command then
+			for child in command:iter_children() do
+				if child:type() == "command_argument" then
+					local first_row, first_col, last_row, last_col = child:range()
+					if row - 1 >= first_row and row - 1 <= last_row then
+						local first = row - 1 == first_row and first_col or 0
+						local finish = math.min(row - 1 == last_row and last_col or #code, #code)
+						if first < finish then
+							code = code:sub(1, first) .. string.rep(" ", finish - first) .. code:sub(finish + 1)
+						end
+					end
+				end
+			end
+		end
+	end
+	for col in code:gmatch("()[%a_][%w_]*%s+[^=%s]") do
+		mask_arguments(col)
+	end
+	if M.depth(code) ~= 0 then
+		-- A continued command can start this row directly with a literal argument.
+		mask_arguments(code:find("%S") or 0)
+	end
+	return code
+end
+
 local function statements(code)
 	local result, depth, start = {}, 0, 1
 	for index = 1, #code do
@@ -143,6 +193,7 @@ end
 
 local function advance(previous, text, line_number, bufnr)
 	local line = M.line(text, previous.in_block_comment)
+	line.code = M.command_code(bufnr, line_number, line.code)
 	local state = {
 		top = previous.top,
 		last_closed = previous.last_closed,
