@@ -40,7 +40,12 @@ return {
 			-- JDTLS/kross own gd/gr/K; MC-specific navigation is mapped in jdtls.lua.
 			navigation = { enable = false },
 			code_action = { enable = true },
-			diagnostics = { enabled = true },
+			diagnostics = {
+				enabled = true,
+				events = { "TextChanged", "TextChangedI", "TextChangedP", "InsertLeave", "BufWritePost" },
+				debounce_ms = 500,
+				insert_mode = true,
+			},
 			jdtls = {
 				extension_jar = latest_mcdev_jdtls_jar(plugin.dir),
 			},

@@ -73,18 +73,40 @@ return {
 				end
 
 				map("gd", function()
-					vim.lsp.buf.definition()
+					if vim.bo[bufnr].filetype == "java" then
+						require("kross").definition()
+					else
+						vim.lsp.buf.definition()
+					end
 				end)
 				map("gr", function()
+					if vim.bo[bufnr].filetype == "java" then
+						local kross = require("kross")
+						if kross.references then
+							return kross.references()
+						end
+					end
 					vim.lsp.buf.references()
 				end)
 				map("gi", vim.lsp.buf.implementation)
 				if vim.bo[bufnr].filetype ~= "matlab" then
 					map("K", vim.lsp.buf.hover)
 				end
-				vim.keymap.set("n", "<leader>rn", function()
-					return ":IncRename " .. vim.fn.expand("<cword>")
-				end, { buffer = bufnr, silent = true, expr = true })
+				map("<leader>rn", function()
+					local command = ":IncRename " .. vim.fn.expand("<cword>")
+					local function incremental_rename()
+						if vim.api.nvim_get_current_buf() == bufnr then
+							vim.api.nvim_feedkeys(command, "n", false)
+						end
+					end
+					if vim.bo[bufnr].filetype == "java" then
+						local kross = require("kross")
+						if kross.rename then
+							return kross.rename(nil, { fallback = incremental_rename })
+						end
+					end
+					incremental_rename()
+				end)
 				map("[d", function()
 					vim.diagnostic.jump({ count = -1, float = true })
 				end)

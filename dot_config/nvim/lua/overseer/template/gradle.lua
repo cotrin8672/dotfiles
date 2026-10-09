@@ -10,10 +10,9 @@ return {
 		if not wrapper then
 			return "No Gradle wrapper found"
 		end
-		local uri_prefix = vim.fn.has("win32") == 1 and "file:///" or "file://"
 		local errorformat = table.concat({
-			"%Ee: " .. uri_prefix .. "%f:%l:%c %m",
-			"%Ww: " .. uri_prefix .. "%f:%l:%c %m",
+			"%Ee: %f:%l:%c %m",
+			"%Ww: %f:%l:%c %m",
 			"%Ee: %f: (%l\\, %c): %m",
 			"%Ww: %f: (%l\\, %c): %m",
 			vim.o.errorformat,
@@ -29,13 +28,34 @@ return {
 					},
 				},
 				builder = function(params)
+					local parser = { result_version = 0 }
+					local compiler_output
+					function parser:reset()
+						compiler_output = require("overseer.parselib").parser_from_errorformat(errorformat)
+						self.result_version = self.result_version + 1
+					end
+					function parser:parse(line)
+						line = line:gsub("^([ew]: )(file://.-)(:%d+:%d+)", function(level, uri, position)
+							return level .. vim.uri_to_fname(uri) .. position
+						end)
+						require("overseer.util").run_in_cwd(vim.fs.dirname(wrapper), function()
+							compiler_output:parse(line)
+						end)
+						self.result_version = self.result_version + 1
+					end
+					function parser:get_result()
+						return compiler_output:get_result()
+					end
+					parser:reset()
 					return {
 						name = "Gradle " .. params.task,
 						cmd = { wrapper, params.task, "--console=plain" },
 						cwd = vim.fs.dirname(wrapper),
+						-- Windows ConPTY drops Gradle output; pipes retain the terminal's input forwarding.
+						strategy = vim.fn.has("win32") == 1 and { "jobstart", wrap_opts = { pty = false } } or nil,
 						components = {
-							-- ponytail: errorformat cannot decode escaped compiler URI paths; use an output parser if needed.
-							{ "on_output_quickfix", errorformat = errorformat, open = false, items_only = true },
+							{ "on_output_parse", parser = parser },
+							{ "on_result_diagnostics_quickfix", open = false, set_empty_results = true },
 							{
 								"unique",
 								replace = false,

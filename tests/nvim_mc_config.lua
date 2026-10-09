@@ -12,6 +12,7 @@ for _, plugin in ipairs({
 	"conform.nvim",
 	"guess-indent.nvim",
 	"kotlin.nvim",
+	"blink.cmp",
 }) do
 	vim.opt.rtp:append(lazy .. "/" .. plugin)
 end
@@ -82,19 +83,41 @@ end)
 assert(templates and #templates == 1)
 local task_config = templates[1].builder({ task = "runClient" })
 assert(task_config.cwd == project and task_config.cmd[2] == "runClient")
+if vim.fn.has("win32") == 1 then
+	assert(
+		task_config.strategy.wrap_opts.pty == false,
+		"Windows Gradle output must use pipes without losing terminal input"
+	)
+else
+	assert(task_config.strategy == nil, "Other platforms retain the default terminal strategy")
+end
 assert(task_config.cmd[1]:find("project with spaces", 1, true), "Wrapper path must remain one argument")
 local prefix = vim.fn.has("win32") == 1 and "C:/work/" or "/work/"
-local qf = vim.fn.getqflist({
-	efm = task_config.components[1].errorformat,
-	lines = {
-		"e: " .. vim.uri_from_fname(prefix .. "Drill.kt") .. ":90:34 Unresolved reference 'bad'.",
-		prefix .. "Mixin.java:12: error: cannot find symbol",
-	},
-}).items
-assert(#qf == 2 and qf[1].valid == 1 and qf[1].lnum == 90 and qf[1].col == 34)
+local parser = task_config.components[1].parser
+for _, line in ipairs({
+	"e: " .. vim.uri_from_fname(prefix .. "日本語 with spaces/Drill.kt") .. ":90:34 Unresolved reference 'bad'.",
+	prefix .. "Mixin.java:12: error: cannot find symbol",
+	"w: " .. vim.uri_from_fname(prefix .. "literal%20name.kt") .. ":3:4 Warning",
+	"e: " .. prefix .. "literal%20name.kt:5:6 Plain path must not be URI-decoded",
+	"src/main/kotlin/example/Relative.kt:8: error: relative path",
+}) do
+	parser:parse(line)
+end
+local qf = parser:get_result().diagnostics
+assert(#qf == 5 and qf[1].valid == 1 and qf[1].lnum == 90 and qf[1].col == 34)
 assert(qf[2].valid == 1 and qf[2].lnum == 12)
-assert(vim.fs.normalize(vim.api.nvim_buf_get_name(qf[1].bufnr)) == prefix .. "Drill.kt")
-local unique = task_config.components[2]
+assert(vim.fs.normalize(vim.api.nvim_buf_get_name(qf[1].bufnr)) == prefix .. "日本語 with spaces/Drill.kt")
+assert(qf[3].type == "W" and qf[3].col == 4)
+assert(vim.fs.normalize(vim.api.nvim_buf_get_name(qf[3].bufnr)) == prefix .. "literal%20name.kt")
+assert(vim.fs.normalize(vim.api.nvim_buf_get_name(qf[4].bufnr)) == prefix .. "literal%20name.kt")
+assert(vim.fs.normalize(vim.api.nvim_buf_get_name(qf[5].bufnr)) == project .. "/src/main/kotlin/example/Relative.kt")
+local other_parser = templates[1].builder({ task = "classes" }).components[1].parser
+other_parser:parse(prefix .. "Other.java:7: error: isolated task")
+assert(#parser:get_result().diagnostics == 5 and #other_parser:get_result().diagnostics == 1)
+parser:reset()
+parser:parse(prefix .. "AfterRestart.java:2: error: restarted task")
+assert(#parser:get_result().diagnostics == 1, "Restart must clear pending multiline compiler output")
+local unique = task_config.components[3]
 assert(unique.replace == false and unique.restart_interrupts == false)
 assert(not unique.compare({ name = "classes", cwd = "one" }, { name = "classes", cwd = "two" }))
 local overseer = require("overseer")
@@ -145,7 +168,7 @@ vim.lsp.rpc.start = function(_, dispatchers)
 				end
 				callback(nil, method == "initialize" and {
 					capabilities = {
-						textDocumentSync = 1,
+						textDocumentSync = 2,
 						semanticTokensProvider = {
 							legend = { tokenTypes = { "class" }, tokenModifiers = {} },
 							full = true,
@@ -181,12 +204,19 @@ end))
 local workspace = vim.lsp.get_clients({ name = "jdtls" })[1]
 assert(kross_clients[workspace.id], "Kotlin-first startup must initialize kross")
 assert(not workspace.attached_buffers[kotlin], "JDTLS must not analyze Kotlin documents")
+for _, scratch in ipairs({ vim.api.nvim_create_buf(true, false), vim.api.nvim_create_buf(false, true) }) do
+	vim.api.nvim_set_current_buf(scratch)
+	vim.bo[scratch].filetype = "java"
+	assert(#starts == 1 and not workspace.attached_buffers[scratch], "JDTLS must not open unnamed or scratch documents")
+end
+vim.api.nvim_set_current_buf(kotlin)
 assert(vim.fn.filereadable(vim.api.nvim_buf_get_name(kotlin)) == 0, "Kotlin startup must not save the buffer")
 assert(
 	require("mcdev.protocol").active_jdtls_client(kotlin) == workspace,
 	"MC requests must find the detached workspace"
 )
 local initialization = starts[1].initialize.initializationOptions
+assert(workspace.config.settings.java.signatureHelp.enabled)
 assert(
 	initialization.extendedClientCapabilities.classFileContentsSupport,
 	"Later Java buffers need decompilation support"
@@ -197,12 +227,36 @@ for _, jar in ipairs(require("kross").bundles()) do
 end
 buffer("/build.gradle.kts", "kotlin")
 assert(#starts == 1, "Another Kotlin buffer must reuse the workspace")
+if vim.fn.has("win32") == 1 then
+	local case_buf = vim.api.nvim_create_buf(true, false)
+	vim.api.nvim_buf_set_name(case_buf, project:lower() .. "/src/main/kotlin/example/Case.kt")
+	vim.api.nvim_set_current_buf(case_buf)
+	vim.bo[case_buf].filetype = "kotlin"
+	assert(#starts == 1, "Kotlin LSP's lowercase Windows drive URI must reuse the JDTLS workspace")
+end
 vim.fn.mkdir(project .. "/src/main/java/example", "p")
 vim.fn.writefile(vim.api.nvim_buf_get_lines(java, 0, -1, false), vim.api.nvim_buf_get_name(java))
 vim.api.nvim_set_current_buf(java)
 vim.api.nvim_exec_autocmds("FileType", { buffer = java })
 assert(#starts == 1 and workspace.attached_buffers[java], "Java must attach to the Kotlin-started workspace")
 assert(not vim.lsp.semantic_tokens.get_at_pos(java, 0, 0), "Java must not start JDTLS semantic highlighting")
+vim.api.nvim_buf_set_lines(java, 0, -1, false, { "package example;", "class Test { } // 日本語" })
+assert(
+	vim.wait(1000, function()
+		for _, notification in ipairs(starts[1].notifications) do
+			if notification.method == "textDocument/didChange" then
+				local changes = notification.params.contentChanges
+				assert(#changes == 1 and changes[1].range == nil, "JDTLS edits must send the complete document")
+				assert(
+					changes[1].text:gsub("\r\n", "\n") == "package example;\nclass Test { } // 日本語\n",
+					vim.inspect(changes)
+				)
+				return true
+			end
+		end
+	end),
+	"Java edits must reach JDTLS"
+)
 for _, notification in ipairs(starts[1].notifications) do
 	if notification.method == "textDocument/didOpen" then
 		assert(notification.params.textDocument.languageId == "java", "Only Java documents may be sent to JDTLS")
@@ -243,12 +297,12 @@ package.loaded["mcdev.jdtls"] = {
 vim.api.nvim_set_current_buf(java)
 spec("jdtls").config()
 assert(attached_config)
-local sent_params
+local sent_params, sent_method, sent_handler
 local conversion_client = {
+	id = 1003,
 	server_capabilities = {},
-	request = function(_, method, params)
-		assert(method == "textDocument/codeAction")
-		sent_params = params
+	request = function(_, method, params, handler)
+		sent_params, sent_method, sent_handler = params, method, handler
 		return true, 42
 	end,
 }
@@ -269,8 +323,32 @@ local request_params = {
 }
 local requested, request_id = conversion_client:request("textDocument/codeAction", request_params)
 assert(requested and request_id == 42)
+assert(sent_method == "textDocument/codeAction")
 assert(vim.deep_equal(sent_params.context.diagnostics, { lsp_diagnostic, lsp_diagnostic }))
 assert(request_params.context.diagnostics[1].range == nil, "Converting MC diagnostics must not mutate the caller")
+
+local completion_error, completion_result, completion_context
+conversion_client:request("textDocument/completion", {}, function(err, result, ctx)
+	completion_error, completion_result, completion_context = err, result, ctx
+end)
+local response = { isIncomplete = false, items = { { label = "clone" } } }
+local context = { client_id = conversion_client.id }
+sent_handler(nil, response, context)
+local cache = require("blink.cmp.sources.lsp.cache")
+cache.set({ id = 1, pos = { col = 8 } }, conversion_client, {
+	is_incomplete_forward = completion_result.isIncomplete,
+	items = completion_result.items,
+})
+assert(
+	cache.get({ id = 1, pos = { col = 19 } }, conversion_client) == nil,
+	"Typing BlockEntity after a complete whitespace response must refetch Java class candidates"
+)
+assert(completion_result.items == response.items and completion_context == context)
+cache.entries[conversion_client.id] = nil
+local completion_failure = { code = -32603, message = "Completion failed" }
+sent_handler(completion_failure, nil, context)
+assert(completion_error == completion_failure and completion_result == nil and completion_context == context)
+
 vim.api.nvim_exec_autocmds("LspAttach", { buffer = java, data = { client_id = 1001 } })
 attached_config.on_attach(fake_jdtls, java)
 vim.wait(20, function()
@@ -284,12 +362,70 @@ for _, map in ipairs(vim.api.nvim_buf_get_keymap(java, "n")) do
 end
 assert(maps.gd and maps.gr and maps[" md"] and maps[" mr"] and maps[" mh"])
 assert(maps.gd.desc ~= "Mcdev go to definition" and maps.gr.desc ~= "Mcdev find references")
-local normal_calls = 0
+local normal_calls, kotlin_source_calls = 0, 0
 vim.lsp.buf.definition = function()
 	normal_calls = normal_calls + 1
 end
+local kross_definition = require("kross").definition
+require("kross").definition = function()
+	kotlin_source_calls = kotlin_source_calls + 1
+end
 maps.gd.callback()
-assert(normal_calls == 1, "gd must resolve the current LSP/kross function after later attaches")
+assert(kotlin_source_calls == 1 and normal_calls == 0, "Java gd must use kross after unrelated clients attach")
+vim.bo[java].filetype = "python"
+maps.gd.callback()
+assert(normal_calls == 1 and kotlin_source_calls == 1, "Non-Java gd must use the current LSP function")
+vim.bo[java].filetype = "java"
+require("kross").definition = kross_definition
+local kross = require("kross")
+local references, kross_references = vim.lsp.buf.references, kross.references
+local reference_calls, kotlin_reference_calls = 0, 0
+vim.lsp.buf.references = function()
+	reference_calls = reference_calls + 1
+end
+kross.references = function()
+	kotlin_reference_calls = kotlin_reference_calls + 1
+end
+maps.gr.callback()
+assert(kotlin_reference_calls == 1 and reference_calls == 0, "Java gr must use Kotlin semantic references")
+vim.bo[java].filetype = "python"
+maps.gr.callback()
+assert(reference_calls == 1 and kotlin_reference_calls == 1, "Non-Java references retain their LSP")
+vim.bo[java].filetype = "java"
+kross.references = nil
+maps.gr.callback()
+assert(reference_calls == 2, "Older kross versions must retain standard references")
+vim.lsp.buf.references, kross.references = references, kross_references
+
+local feedkeys, kross_rename = vim.api.nvim_feedkeys, kross.rename
+local commands, rename_fallback = {}, nil
+vim.api.nvim_feedkeys = function(command, mode)
+	assert(mode == "n")
+	commands[#commands + 1] = command
+end
+kross.rename = function(new_name, opts)
+	assert(new_name == nil)
+	rename_fallback = opts.fallback
+end
+vim.api.nvim_set_current_buf(java)
+vim.api.nvim_buf_set_lines(java, 0, -1, false, { "class Test { int field; }" })
+vim.api.nvim_win_set_cursor(0, { 1, 17 })
+maps[" rn"].callback()
+assert(rename_fallback and #commands == 0, "Kotlin resolution must precede the Java rename UI")
+rename_fallback()
+assert(commands[1] == ":IncRename field", "Ordinary Java must retain editable IncRename input")
+vim.api.nvim_set_current_buf(kotlin)
+rename_fallback()
+assert(#commands == 1, "A late rename callback must not type into another buffer")
+vim.api.nvim_set_current_buf(java)
+kross.rename = nil
+maps[" rn"].callback()
+assert(commands[2] == ":IncRename field", "Older kross versions retain IncRename")
+vim.bo[java].filetype = "python"
+maps[" rn"].callback()
+assert(commands[3] == ":IncRename field", "Non-Java rename retains IncRename")
+vim.bo[java].filetype = "java"
+vim.api.nvim_feedkeys, kross.rename = feedkeys, kross_rename
 local mc_calls = 0
 vim.api.nvim_buf_set_lines(java, 0, -1, false, { "// 日本語 foo" })
 local mc_location = {
@@ -312,6 +448,38 @@ assert(vim.fn.getqflist()[1].col == 14, "MC references must convert UTF-16 to qu
 vim.cmd.cclose()
 
 mcdev_spec.config({ dir = lazy .. "/mcdev-nvim" }, mcdev_spec.opts({ dir = lazy .. "/mcdev-nvim" }))
+local diagnostics = require("mcdev.diagnostics")
+local fetch, fetch_count, invalid_selector = diagnostics.fetch, 0, true
+diagnostics.fetch = function(bufnr, _, callback)
+	assert(bufnr == java)
+	fetch_count = fetch_count + 1
+	callback(invalid_selector and {
+		{
+			message = "Unknown Mixin method",
+			severity = "error",
+			code = "MIXIN_UNRESOLVED_INJECT_METHOD",
+			range = { start = { line = 0, character = 0 }, ["end"] = { line = 0, character = 1 } },
+		},
+	} or {})
+end
+vim.api.nvim_exec_autocmds("TextChangedI", { buffer = java })
+assert(
+	vim.wait(1500, function()
+		return #vim.diagnostic.get(java, { namespace = diagnostics.namespace }) == 1
+	end),
+	"Unsaved Mixin edits must publish diagnostics"
+)
+invalid_selector = false
+vim.api.nvim_buf_set_lines(java, 0, -1, false, { "// corrected without saving" })
+vim.api.nvim_exec_autocmds("TextChangedP", { buffer = java })
+assert(
+	vim.wait(1500, function()
+		return fetch_count >= 2 and #vim.diagnostic.get(java, { namespace = diagnostics.namespace }) == 0
+	end),
+	"Correcting a Mixin selector with the completion menu open must clear the error"
+)
+diagnostics.stop()
+diagnostics.fetch = fetch
 local resolve_calls = 0
 fake_jdtls.offset_encoding = "utf-16"
 fake_jdtls.request = function(_, method, action, callback, bufnr)
@@ -447,5 +615,5 @@ for _, file in ipairs(vim.fn.glob(config .. "/**/*.lua", false, true)) do
 	assert(loadfile(file))
 end
 print(
-	"PASS: Kotlin-first JDTLS/MC/kross startup and reuse, Kotlin-only attachment, Java Tree-sitter ownership and synchronous four-space save formatting, import selection/cancel/RPC errors, action routing, package templates, save/lint order, Gradle task + quickfix, navigation ownership, no save-time build, Kotlin query"
+	"PASS: Kotlin-first JDTLS/MC/kross startup and reuse, Kotlin-only attachment, Java full-document sync, unsaved Mixin diagnostic updates, Java completion refetch and error forwarding, Java Tree-sitter ownership and synchronous four-space save formatting, import selection/cancel/RPC errors, action routing, package templates, save/lint order, Gradle task + quickfix, navigation ownership, no save-time build, Kotlin query"
 )

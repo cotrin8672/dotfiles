@@ -95,13 +95,18 @@ return {
 			end
 
 			local source = vim.api.nvim_buf_get_name(bufnr)
-			if not vim.startswith(vim.uri_from_bufnr(bufnr), "file://") then
+			if
+				source == ""
+				or vim.bo[bufnr].buftype ~= ""
+				or not vim.startswith(vim.uri_from_bufnr(bufnr), "file://")
+			then
 				return
 			end
 			local root_dir = require("jdtls.setup").find_root(root_markers, source)
 			if not root_dir or root_dir == "" then
 				return
 			end
+			root_dir = vim.uv.fs_realpath(root_dir) or root_dir
 
 			local project_name = vim.fn.fnamemodify(root_dir, ":p:h:t")
 			local root_hash = vim.fn.sha256(vim.fs.normalize(root_dir)):sub(1, 12)
@@ -115,20 +120,31 @@ return {
 				},
 				root_dir = root_dir,
 				capabilities = capabilities,
+				-- ponytail: full Java text repairs missed changes; revisit after incremental tracking is fixed.
+				flags = { allow_incremental_sync = false },
 				handlers = { ["workspace/executeClientCommand"] = execute_client_command },
 				on_init = function(client)
 					-- JDTLS returned stale token positions after edits; Java uses Tree-sitter.
 					client.server_capabilities.semanticTokensProvider = nil
 					local request = client.request
-					-- MC sends Vim diagnostics; JDTLS requires LSP ranges and diagnostic data.
-					function client:request(method, params, ...)
-						if method == "textDocument/codeAction" and params.context then
+					function client:request(method, params, handler, ...)
+						if method == "textDocument/completion" and handler then
+							local callback = handler
+							handler = function(err, result, ...)
+								-- ponytail: refetch Java on each keystroke until JDTLS marks whitespace results incomplete.
+								if type(result) == "table" then
+									result.isIncomplete = true
+								end
+								return callback(err, result, ...)
+							end
+						elseif method == "textDocument/codeAction" and params.context then
+							-- MC sends Vim diagnostics; JDTLS requires LSP ranges and diagnostic data.
 							params = vim.deepcopy(params)
 							params.context.diagnostics = vim.tbl_map(function(diagnostic)
 								return diagnostic.range and diagnostic or vim.lsp.diagnostic.from({ diagnostic })[1]
 							end, params.context.diagnostics or {})
 						end
-						return request(self, method, params, ...)
+						return request(self, method, params, handler, ...)
 					end
 					if filetype == "kotlin" then
 						kross.attach(client)
@@ -151,6 +167,7 @@ return {
 				end,
 				settings = {
 					java = {
+						signatureHelp = { enabled = true },
 						format = {
 							enabled = false,
 						},

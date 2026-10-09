@@ -42,6 +42,7 @@ return {
 				return ls.jump(direction)
 			end,
 		},
+		signature = { enabled = true },
 		completion = {
 			list = {
 				selection = {
@@ -50,6 +51,8 @@ return {
 				},
 			},
 			accept = {
+				-- ponytail: disable completion dot-repeat until Blink/LuaSnip's mode switching is reliable.
+				dot_repeat = false,
 				auto_brackets = {
 					enabled = false,
 				},
@@ -153,7 +156,6 @@ return {
 				mcdev = {
 					name = "mcdev",
 					module = "mcdev.blink",
-					score_offset = 100,
 				},
 			},
 		},
