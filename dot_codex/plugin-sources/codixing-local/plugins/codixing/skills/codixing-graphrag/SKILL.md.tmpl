@@ -1,0 +1,21 @@
+---
+name: codixing-graphrag
+description: Search and explain the current code project with Codixing GraphRAG, using code retrieval, call relationships, dependency graphs, and change impact. Use for Codixing requests or graph-based code exploration; this is not a general-document Microsoft GraphRAG installation.
+---
+
+Use the bundled Codixing MCP server for the chat's working folder. The server automatically builds a BM25 and AST dependency graph index in that folder's `.codixing/` directory when needed. The `reviewer` profile permits source inspection without exposing source-writing or shell-execution tools.
+
+Check `index_status` before searching. If initialization is still running, wait for readiness. Confirm the indexed root matches the project the user wants. In a projectless chat, use the user's specified project through the CLI or have them open that project before relying on this chat's MCP index.
+
+Retrieve candidate symbols and files with `code_search` (use `strategy: "explore"` for graph expansion) or `find_symbol`. Follow relevant graph edges with `get_repo_map`, `symbol_callers`, `symbol_callees`, `get_references`, or `get_transitive_deps`. Use `predict_impact` when the question concerns a proposed change. Read the relevant source and cite file paths and lines in the answer; distinguish retrieved evidence from inference.
+
+For a different project root, or a stale index after edits, run the CLI from the intended project directory:
+
+```powershell
+rtk proxy mise exec codixing@0.48.0 -- codixing init .
+rtk proxy mise exec codixing@0.48.0 -- codixing sync .
+rtk proxy mise exec codixing@0.48.0 -- codixing search "query"
+rtk proxy mise exec codixing@0.48.0 -- codixing graph --map --token-budget 1500
+```
+
+Run `init` only when the project needs an index; use `sync` to refresh an existing one. If a running MCP server still returns stale results after `sync`, start a new chat to reload its in-memory index. The initial setup uses local BM25 plus graph retrieval. Optional vector embeddings are not installed. Indexing is local, while retrieved snippets become part of the Codex conversation.

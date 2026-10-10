@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "codixing": {
+      "type": "stdio",
+      "command": {{ lookPath "mise" | toJson }},
+      "args": ["exec", "codixing-mcp@0.48.0", "--", "codixing-mcp", "--root", ".", "--profile", "reviewer", "--no-daemon-fork"]
+    }
+  }
+}

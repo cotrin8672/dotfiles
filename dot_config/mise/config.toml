@@ -37,6 +37,28 @@ carapace = "latest"
 "github:anomalyco/opencode" = "latest"
 "github:cordx56/rustowl" = "0.4.0"
 zellij = "latest"
+ast-index = "3.56.0"
+
+[tools.codixing]
+version = "0.48.0"
+matching_regex = "^codixing-(linux|macos|windows)-"
+bin = "codixing"
+platforms.windows-x64.bin = "codixing.exe"
+
+[tools.codixing-mcp]
+version = "0.48.0"
+matching = "codixing-mcp-"
+bin = "codixing-mcp"
+platforms.windows-x64.bin = "codixing-mcp.exe"
+
+[tool_alias]
+codixing = "github:ferax564/codixing"
+codixing-mcp = "github:ferax564/codixing"
+ast-index = "github:defendend/Claude-ast-index-search"
+
+[tasks.codex-code-search-install]
+description = "Restore Codixing and ast-index plugins for Codex on Windows"
+run = 'powershell -NoProfile -ExecutionPolicy Bypass -File "{{ env.USERPROFILE }}/.codex/install-code-search.ps1"'
 
 [tasks.nvim-startuptime-install]
 description = "Install vim-startuptime via go install"

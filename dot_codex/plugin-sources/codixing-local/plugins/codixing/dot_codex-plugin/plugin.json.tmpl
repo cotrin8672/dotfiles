@@ -1,0 +1,19 @@
+{
+  "name": "codixing",
+  "version": "0.48.0",
+  "description": "Local code retrieval with AST symbols, dependency graphs, and impact analysis through Codixing MCP.",
+  "homepage": "https://github.com/ferax564/codixing",
+  "repository": "https://github.com/ferax564/codixing",
+  "license": "Apache-2.0",
+  "keywords": ["graphrag", "code-search", "mcp"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Codixing GraphRAG",
+    "shortDescription": "コード検索・依存グラフ・変更影響をローカルで取得",
+    "longDescription": "Codixing v0.48.0 の読み取り専用 reviewer プロファイルを使用します。チャットの作業フォルダーを索引化し、コード検索・呼び出し関係・依存グラフを取得します。",
+    "category": "Developer Tools",
+    "capabilities": ["Read"],
+    "defaultPrompt": ["Codixing でこのプロジェクトを GraphRAG 検索して、主要な構成と依存関係を説明して"]
+  }
+}
