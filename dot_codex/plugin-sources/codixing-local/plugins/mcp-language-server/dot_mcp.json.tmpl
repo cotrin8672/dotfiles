@@ -1,0 +1,22 @@
+{{- $mason := joinPath (env "LOCALAPPDATA") "nvim-data/mason/packages" -}}
+{{- $binary := joinPath .chezmoi.homeDir ".local/share/codex-language-server/0.1.1-codex.1/mcp-language-server.exe" -}}
+{{- $miseData := env "MISE_DATA_DIR" | default (joinPath (env "LOCALAPPDATA") "mise") -}}
+{
+  "mcpServers": {
+    "lsp-rust": {
+      "type": "stdio",
+      "command": {{ lookPath "mise" | toJson }},
+      "args": ["exec", "rust", "--", {{ $binary | toJson }}, "--workspace", ".", "--lsp", {{ joinPath $mason "rust-analyzer/rust-analyzer.exe" | toJson }}],
+      "env": { "MCP_LSP_LANGUAGES": "rust" }
+    },
+    "lsp-typescript": {
+      "type": "stdio",
+      "command": {{ lookPath "mise" | toJson }},
+      "args": ["exec", "node", "--", {{ $binary | toJson }}, "--workspace", ".", "--lsp", "node", "--", {{ joinPath $mason "typescript-language-server/node_modules/typescript-language-server/lib/cli.mjs" | toJson }}, "--stdio"],
+      "env": {
+        "MCP_LSP_LANGUAGES": "typescript,typescriptreact,javascript,javascriptreact",
+        "MCP_TSSERVER_PATH": {{ joinPath $miseData "installs/npm-typescript/5.9.2/node_modules/typescript/lib/tsserver.js" | toJson }}
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "mcp-language-server",
+  "version": "0.1.1-codex.1",
+  "description": "Rust and TypeScript/JavaScript language intelligence using the language servers installed by Neovim Mason.",
+  "homepage": "https://github.com/isaacphi/mcp-language-server",
+  "repository": "https://github.com/isaacphi/mcp-language-server",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "MCP Language Server",
+    "shortDescription": "Rust・TypeScript・JavaScript の定義、参照、診断、リネーム",
+    "longDescription": "Mason の rust-analyzer と typescript-language-server を再利用し、チャットの作業フォルダーを解析します。mcp-language-server 0.1.1 に Windows 用のパス処理を補正したローカルビルドを使用します。リネームと編集ツールはファイルを変更します。",
+    "category": "Developer Tools",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": ["MCP Language Server でこのプロジェクトの定義と参照を調べて"]
+  }
+}

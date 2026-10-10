@@ -1,0 +1,777 @@
+diff --git a/internal/lsp/client.go b/internal/lsp/client.go
+--- a/internal/lsp/client.go
++++ b/internal/lsp/client.go
+@@ -118,7 +118,7 @@
+ 		WorkspaceFoldersInitializeParams: protocol.WorkspaceFoldersInitializeParams{
+ 			WorkspaceFolders: []protocol.WorkspaceFolder{
+ 				{
+-					URI:  protocol.URI("file://" + workspaceDir),
++					URI:  protocol.URI(protocol.URIFromPath(workspaceDir)),
+ 					Name: workspaceDir,
+ 				},
+ 			},
+@@ -131,7 +131,7 @@
+ 				Version: "0.1.0",
+ 			},
+ 			RootPath: workspaceDir,
+-			RootURI:  protocol.DocumentUri("file://" + workspaceDir),
++			RootURI:  protocol.URIFromPath(workspaceDir),
+ 			Capabilities: protocol.ClientCapabilities{
+ 				Workspace: protocol.WorkspaceClientCapabilities{
+ 					Configuration: true,
+@@ -191,13 +191,13 @@
+ 		},
+ 	}
+ 
++	if tsserver := os.Getenv("MCP_TSSERVER_PATH"); tsserver != "" {
++		initParams.InitializationOptions.(map[string]any)["tsserver"] = map[string]string{"fallbackPath": tsserver}
++	}
++
+ 	var result protocol.InitializeResult
+ 	if err := c.Call(ctx, "initialize", initParams, &result); err != nil {
+ 		return nil, fmt.Errorf("initialize failed: %w", err)
+-	}
+-
+-	if err := c.Notify(ctx, "initialized", struct{}{}); err != nil {
+-		return nil, fmt.Errorf("initialized notification failed: %w", err)
+ 	}
+ 
+ 	// Register handlers
+@@ -215,7 +215,7 @@
+ 	}
+ 
+ 	// LSP sepecific Initialization
+-	path := strings.ToLower(c.Cmd.Path)
++	path := strings.ToLower(strings.Join(c.Cmd.Args, " "))
+ 	switch {
+ 	case strings.Contains(path, "typescript-language-server"):
+ 		err := initializeTypescriptLanguageServer(ctx, c, workspaceDir)
+@@ -287,7 +287,10 @@
+ }
+ 
+ func (c *Client) OpenFile(ctx context.Context, filepath string) error {
+-	uri := fmt.Sprintf("file://%s", filepath)
++	uri := string(protocol.URIFromPath(filepath))
++	if languages := os.Getenv("MCP_LSP_LANGUAGES"); languages != "" && !strings.Contains(","+languages+",", ","+string(DetectLanguageID(filepath))+",") {
++		return nil
++	}
+ 
+ 	c.openFilesMu.Lock()
+ 	if _, exists := c.openFiles[uri]; exists {
+@@ -328,7 +331,7 @@
+ }
+ 
+ func (c *Client) NotifyChange(ctx context.Context, filepath string) error {
+-	uri := fmt.Sprintf("file://%s", filepath)
++	uri := string(protocol.URIFromPath(filepath))
+ 
+ 	content, err := os.ReadFile(filepath)
+ 	if err != nil {
+@@ -367,7 +370,7 @@
+ }
+ 
+ func (c *Client) CloseFile(ctx context.Context, filepath string) error {
+-	uri := fmt.Sprintf("file://%s", filepath)
++	uri := string(protocol.URIFromPath(filepath))
+ 
+ 	c.openFilesMu.Lock()
+ 	if _, exists := c.openFiles[uri]; !exists {
+@@ -394,7 +397,7 @@
+ }
+ 
+ func (c *Client) IsFileOpen(filepath string) bool {
+-	uri := fmt.Sprintf("file://%s", filepath)
++	uri := string(protocol.URIFromPath(filepath))
+ 	c.openFilesMu.RLock()
+ 	defer c.openFilesMu.RUnlock()
+ 	_, exists := c.openFiles[uri]
+@@ -409,7 +412,7 @@
+ 	// First collect all URIs that need to be closed
+ 	for uri := range c.openFiles {
+ 		// Convert URI back to file path by trimming "file://" prefix
+-		filePath := strings.TrimPrefix(uri, "file://")
++		filePath := protocol.DocumentUri(uri).Path()
+ 		filesToClose = append(filesToClose, filePath)
+ 	}
+ 	c.openFilesMu.Unlock()
+diff --git a/internal/lsp/codex_compatibility_test.go b/internal/lsp/codex_compatibility_test.go
+new file mode 100644
+--- /dev/null
++++ b/internal/lsp/codex_compatibility_test.go
+@@ -0,0 +1,19 @@
++package lsp
++
++import (
++	"context"
++	"testing"
++)
++
++func TestCodexCompatibilityLanguageFilter(t *testing.T) {
++	t.Setenv("MCP_LSP_LANGUAGES", "rust")
++	client := &Client{}
++	if err := client.OpenFile(context.Background(), "nonexistent.ts"); err != nil {
++		t.Fatal(err)
++	}
++	for _, ext := range []string{"js", "mjs", "cjs", "ts", "mts", "cts", "tsx", "jsx", "rs"} {
++		if DetectLanguageID("file."+ext) == "" {
++			t.Fatalf("unknown extension: %s", ext)
++		}
++	}
++}
+diff --git a/internal/lsp/detect-language.go b/internal/lsp/detect-language.go
+--- a/internal/lsp/detect-language.go
++++ b/internal/lsp/detect-language.go
+@@ -62,7 +62,7 @@
+ 		return protocol.LangIni
+ 	case ".java":
+ 		return protocol.LangJava
+-	case ".js":
++	case ".js", ".mjs", ".cjs":
+ 		return protocol.LangJavaScript
+ 	case ".jsx":
+ 		return protocol.LangJavaScriptReact
+@@ -116,7 +116,7 @@
+ 		return protocol.LangSQL
+ 	case ".swift":
+ 		return protocol.LangSwift
+-	case ".ts":
++	case ".ts", ".mts", ".cts":
+ 		return protocol.LangTypeScript
+ 	case ".tsx":
+ 		return protocol.LangTypeScriptReact
+diff --git a/internal/lsp/typescript.go b/internal/lsp/typescript.go
+--- a/internal/lsp/typescript.go
++++ b/internal/lsp/typescript.go
+@@ -45,7 +45,7 @@
+ 		}
+ 
+ 		// Check if file is a TypeScript file
+-		if strings.HasSuffix(path, ".ts") || strings.HasSuffix(path, ".tsx") {
++		if language := DetectLanguageID(path); strings.HasPrefix(string(language), "typescript") || strings.HasPrefix(string(language), "javascript") {
+ 			if err := client.OpenFile(ctx, path); err != nil {
+ 				lspLogger.Warn("Failed to open TypeScript file %s: %v", path, err)
+ 				return nil // Continue with other files even if one fails
+diff --git a/internal/protocol/codex_compatibility_test.go b/internal/protocol/codex_compatibility_test.go
+new file mode 100644
+--- /dev/null
++++ b/internal/protocol/codex_compatibility_test.go
+@@ -0,0 +1,27 @@
++package protocol
++
++import (
++	"path/filepath"
++	"testing"
++)
++
++func TestCodexCompatibilityURI(t *testing.T) {
++	path := filepath.Join(t.TempDir(), "space 日本語 #%.ts")
++	uri := URIFromPath(path)
++	if got := uri.Path(); got != path {
++		t.Fatalf("round trip: %q != %q", got, path)
++	}
++	parsed, err := ParseDocumentUri(string(uri))
++	if err != nil || parsed != uri {
++		t.Fatalf("parse: %v %v", parsed, err)
++	}
++}
++
++func TestCodexCompatibilityUTF16(t *testing.T) {
++	if offset, err := UTF16Offset("日本語😀 greet", 6); err != nil || offset != 14 {
++		t.Fatalf("offset: %d %v", offset, err)
++	}
++	if _, err := UTF16Offset("日本語😀", 4); err == nil {
++		t.Fatal("a split surrogate pair must be rejected")
++	}
++}
+diff --git a/internal/protocol/pattern_interfaces.go b/internal/protocol/pattern_interfaces.go
+--- a/internal/protocol/pattern_interfaces.go
++++ b/internal/protocol/pattern_interfaces.go
+@@ -2,7 +2,6 @@
+ 
+ import (
+ 	"fmt"
+-	"strings"
+ )
+ 
+ // PatternInfo is an interface for types that represent glob patterns
+@@ -45,9 +44,9 @@
+ 		basePath := ""
+ 		switch baseURI := v.BaseURI.Value.(type) {
+ 		case string:
+-			basePath = strings.TrimPrefix(baseURI, "file://")
++			basePath = DocumentUri(baseURI).Path()
+ 		case DocumentUri:
+-			basePath = strings.TrimPrefix(string(baseURI), "file://")
++			basePath = baseURI.Path()
+ 		default:
+ 			return nil, fmt.Errorf("unknown BaseURI type: %T", v.BaseURI.Value)
+ 		}
+diff --git a/internal/protocol/utf16.go b/internal/protocol/utf16.go
+new file mode 100644
+--- /dev/null
++++ b/internal/protocol/utf16.go
+@@ -0,0 +1,24 @@
++package protocol
++
++import "fmt"
++
++// UTF16Offset converts LSP columns to byte offsets, clamping beyond end of line.
++func UTF16Offset(text string, column int) (int, error) {
++	if column < 0 {
++		return 0, fmt.Errorf("negative UTF-16 column: %d", column)
++	}
++	units := 0
++	for offset, r := range text {
++		if units == column {
++			return offset, nil
++		}
++		units++
++		if r > 0xffff {
++			units++
++		}
++		if units > column {
++			return 0, fmt.Errorf("UTF-16 column %d splits a surrogate pair", column)
++		}
++	}
++	return len(text), nil
++}
+diff --git a/internal/tools/codex_compatibility_test.go b/internal/tools/codex_compatibility_test.go
+new file mode 100644
+--- /dev/null
++++ b/internal/tools/codex_compatibility_test.go
+@@ -0,0 +1,19 @@
++package tools
++
++import (
++	"github.com/isaacphi/mcp-language-server/internal/protocol"
++	"os"
++	"path/filepath"
++	"testing"
++)
++
++func TestCodexCompatibilityExtract(t *testing.T) {
++	path := filepath.Join(t.TempDir(), "space 日本語 #%.ts")
++	if err := os.WriteFile(path, []byte("greet\n"), 0600); err != nil {
++		t.Fatal(err)
++	}
++	text, err := ExtractTextFromLocation(protocol.Location{URI: protocol.URIFromPath(path), Range: protocol.Range{End: protocol.Position{Character: 5}}})
++	if err != nil || text != "greet" {
++		t.Fatalf("extract: %q %v", text, err)
++	}
++}
+diff --git a/internal/tools/definition.go b/internal/tools/definition.go
+--- a/internal/tools/definition.go
++++ b/internal/tools/definition.go
+@@ -79,7 +79,7 @@
+ 				container+
+ 				"Range: L%d:C%d - L%d:C%d\n\n",
+ 			symbol.GetName(),
+-			strings.TrimPrefix(string(loc.URI), "file://"),
++			loc.URI.Path(),
+ 			loc.Range.Start.Line+1,
+ 			loc.Range.Start.Character+1,
+ 			loc.Range.End.Line+1,
+diff --git a/internal/tools/diagnostics.go b/internal/tools/diagnostics.go
+--- a/internal/tools/diagnostics.go
++++ b/internal/tools/diagnostics.go
+@@ -31,7 +31,7 @@
+ 	time.Sleep(time.Second * 3)
+ 
+ 	// Convert the file path to URI format
+-	uri := protocol.DocumentUri("file://" + filePath)
++	uri := protocol.URIFromPath(filePath)
+ 
+ 	// Request fresh diagnostics
+ 	diagParams := protocol.DocumentDiagnosticParams{
+diff --git a/internal/tools/edit_file.go b/internal/tools/edit_file.go
+--- a/internal/tools/edit_file.go
++++ b/internal/tools/edit_file.go
+@@ -7,6 +7,7 @@
+ 	"os"
+ 	"sort"
+ 	"strings"
++	"unicode/utf16"
+ 
+ 	"github.com/isaacphi/mcp-language-server/internal/lsp"
+ 	"github.com/isaacphi/mcp-language-server/internal/protocol"
+@@ -74,7 +75,7 @@
+ 
+ 	edit := protocol.WorkspaceEdit{
+ 		Changes: map[protocol.DocumentUri][]protocol.TextEdit{
+-			protocol.DocumentUri(filePath): textEdits,
++			protocol.URIFromPath(filePath): textEdits,
+ 		},
+ 	}
+ 
+@@ -126,7 +127,7 @@
+ 
+ 		pos := protocol.Position{
+ 			Line:      uint32(lastContentLineIdx),
+-			Character: uint32(len(lines[lastContentLineIdx])),
++			Character: uint32(len(utf16.Encode([]rune(lines[lastContentLineIdx])))),
+ 		}
+ 
+ 		return protocol.Range{
+@@ -148,7 +149,7 @@
+ 		},
+ 		End: protocol.Position{
+ 			Line:      uint32(endIdx),
+-			Character: uint32(len(lines[endIdx])), // Go to end of last line
++			Character: uint32(len(utf16.Encode([]rune(lines[endIdx])))), // Go to end of last line
+ 		},
+ 	}, nil
+ }
+diff --git a/internal/tools/execute-codelens.go b/internal/tools/execute-codelens.go
+--- a/internal/tools/execute-codelens.go
++++ b/internal/tools/execute-codelens.go
+@@ -21,7 +21,7 @@
+ 
+ 	// Get code lenses
+ 	docIdentifier := protocol.TextDocumentIdentifier{
+-		URI: protocol.DocumentUri("file://" + filePath),
++		URI: protocol.URIFromPath(filePath),
+ 	}
+ 
+ 	params := protocol.CodeLensParams{
+diff --git a/internal/tools/get-codelens.go b/internal/tools/get-codelens.go
+--- a/internal/tools/get-codelens.go
++++ b/internal/tools/get-codelens.go
+@@ -21,7 +21,7 @@
+ 
+ 	// Create document identifier
+ 	docIdentifier := protocol.TextDocumentIdentifier{
+-		URI: protocol.DocumentUri("file://" + filePath),
++		URI: protocol.URIFromPath(filePath),
+ 	}
+ 
+ 	// Request code lens from LSP
+diff --git a/internal/tools/hover.go b/internal/tools/hover.go
+--- a/internal/tools/hover.go
++++ b/internal/tools/hover.go
+@@ -24,7 +24,7 @@
+ 		Line:      uint32(line - 1),
+ 		Character: uint32(column - 1),
+ 	}
+-	uri := protocol.DocumentUri("file://" + filePath)
++	uri := protocol.URIFromPath(filePath)
+ 	params.TextDocument = protocol.TextDocumentIdentifier{
+ 		URI: uri,
+ 	}
+diff --git a/internal/tools/lsp-utilities.go b/internal/tools/lsp-utilities.go
+--- a/internal/tools/lsp-utilities.go
++++ b/internal/tools/lsp-utilities.go
+@@ -3,7 +3,6 @@
+ import (
+ 	"context"
+ 	"fmt"
+-	"net/url"
+ 	"os"
+ 	"strings"
+ 
+@@ -60,10 +59,7 @@
+ 
+ 	if found {
+ 		// Convert URI to filesystem path
+-		filePath, err := url.PathUnescape(strings.TrimPrefix(string(startLocation.URI), "file://"))
+-		if err != nil {
+-			return "", protocol.Location{}, fmt.Errorf("failed to unescape URI: %w", err)
+-		}
++		filePath := startLocation.URI.Path()
+ 
+ 		// Read the file to get the full lines of the definition
+ 		// because we may have a start and end column
+diff --git a/internal/tools/references.go b/internal/tools/references.go
+--- a/internal/tools/references.go
++++ b/internal/tools/references.go
+@@ -94,7 +94,7 @@
+ 		for _, uriStr := range uris {
+ 			uri := protocol.DocumentUri(uriStr)
+ 			fileRefs := refsByFile[uri]
+-			filePath := strings.TrimPrefix(uriStr, "file://")
++			filePath := uri.Path()
+ 
+ 			// Format file header
+ 			fileInfo := fmt.Sprintf("---\n\n%s\nReferences in File: %d\n",
+diff --git a/internal/tools/rename-symbol.go b/internal/tools/rename-symbol.go
+--- a/internal/tools/rename-symbol.go
++++ b/internal/tools/rename-symbol.go
+@@ -21,7 +21,7 @@
+ 	}
+ 
+ 	// Convert 1-indexed line/column to 0-indexed for LSP protocol
+-	uri := protocol.DocumentUri("file://" + filePath)
++	uri := protocol.URIFromPath(filePath)
+ 	position := protocol.Position{
+ 		Line:      uint32(line - 1),
+ 		Character: uint32(column - 1),
+diff --git a/internal/tools/utilities.go b/internal/tools/utilities.go
+--- a/internal/tools/utilities.go
++++ b/internal/tools/utilities.go
+@@ -11,7 +11,7 @@
+ )
+ 
+ func ExtractTextFromLocation(loc protocol.Location) (string, error) {
+-	path := strings.TrimPrefix(string(loc.URI), "file://")
++	path := loc.URI.Path()
+ 
+ 	content, err := os.ReadFile(path)
+ 	if err != nil {
+diff --git a/internal/utilities/codex_compatibility_test.go b/internal/utilities/codex_compatibility_test.go
+new file mode 100644
+--- /dev/null
++++ b/internal/utilities/codex_compatibility_test.go
+@@ -0,0 +1,23 @@
++package utilities
++
++import (
++	"github.com/isaacphi/mcp-language-server/internal/protocol"
++	"os"
++	"path/filepath"
++	"testing"
++)
++
++func TestCodexCompatibilityEdit(t *testing.T) {
++	path := filepath.Join(t.TempDir(), "space 日本語 #%.ts")
++	if err := os.WriteFile(path, []byte("日本語😀 greet\n"), 0600); err != nil {
++		t.Fatal(err)
++	}
++	err := ApplyTextEdits(protocol.URIFromPath(path), []protocol.TextEdit{{Range: protocol.Range{Start: protocol.Position{Character: 6}, End: protocol.Position{Character: 11}}, NewText: "welcome"}})
++	if err != nil {
++		t.Fatal(err)
++	}
++	content, err := os.ReadFile(path)
++	if err != nil || string(content) != "日本語😀 welcome\n" {
++		t.Fatalf("edit: %q %v", content, err)
++	}
++}
+diff --git a/internal/utilities/edit.go b/internal/utilities/edit.go
+--- a/internal/utilities/edit.go
++++ b/internal/utilities/edit.go
+@@ -22,7 +22,7 @@
+ 
+ // ApplyTextEdits applies a sequence of text edits to a file specified by URI
+ func ApplyTextEdits(uri protocol.DocumentUri, edits []protocol.TextEdit) error {
+-	path := strings.TrimPrefix(string(uri), "file://")
++	path := uri.Path()
+ 
+ 	// Read the file content
+ 	content, err := osReadFile(path)
+@@ -116,15 +116,17 @@
+ 
+ 	// Get the prefix of the start line
+ 	startLineContent := lines[startLine]
+-	if startChar < 0 || startChar > len(startLineContent) {
+-		startChar = len(startLineContent)
++	startChar, err := protocol.UTF16Offset(startLineContent, startChar)
++	if err != nil {
++		return nil, err
+ 	}
+ 	prefix := startLineContent[:startChar]
+ 
+ 	// Get the suffix of the end line
+ 	endLineContent := lines[endLine]
+-	if endChar < 0 || endChar > len(endLineContent) {
+-		endChar = len(endLineContent)
++	endChar, err = protocol.UTF16Offset(endLineContent, endChar)
++	if err != nil {
++		return nil, err
+ 	}
+ 	suffix := endLineContent[endChar:]
+ 
+@@ -173,7 +175,7 @@
+ // ApplyDocumentChange applies a DocumentChange (create/rename/delete operations)
+ func ApplyDocumentChange(change protocol.DocumentChange) error {
+ 	if change.CreateFile != nil {
+-		path := strings.TrimPrefix(string(change.CreateFile.URI), "file://")
++		path := protocol.DocumentUri(change.CreateFile.URI).Path()
+ 		if change.CreateFile.Options != nil {
+ 			if change.CreateFile.Options.Overwrite {
+ 				// Proceed with overwrite
+@@ -189,7 +191,7 @@
+ 	}
+ 
+ 	if change.DeleteFile != nil {
+-		path := strings.TrimPrefix(string(change.DeleteFile.URI), "file://")
++		path := protocol.DocumentUri(change.DeleteFile.URI).Path()
+ 		if change.DeleteFile.Options != nil && change.DeleteFile.Options.Recursive {
+ 			if err := osRemoveAll(path); err != nil {
+ 				return fmt.Errorf("failed to delete directory recursively: %w", err)
+@@ -202,8 +204,8 @@
+ 	}
+ 
+ 	if change.RenameFile != nil {
+-		oldPath := strings.TrimPrefix(string(change.RenameFile.OldURI), "file://")
+-		newPath := strings.TrimPrefix(string(change.RenameFile.NewURI), "file://")
++		oldPath := protocol.DocumentUri(change.RenameFile.OldURI).Path()
++		newPath := protocol.DocumentUri(change.RenameFile.NewURI).Path()
+ 		if change.RenameFile.Options != nil {
+ 			if !change.RenameFile.Options.Overwrite {
+ 				if _, err := osStat(newPath); err == nil {
+diff --git a/internal/utilities/edit_test.go b/internal/utilities/edit_test.go
+--- a/internal/utilities/edit_test.go
++++ b/internal/utilities/edit_test.go
+@@ -3,6 +3,7 @@
+ import (
+ 	"errors"
+ 	"os"
++	"path/filepath"
+ 	"reflect"
+ 	"strings"
+ 	"testing"
+@@ -30,6 +31,7 @@
+ 
+ 	// Replace with mocks
+ 	osReadFile = func(filename string) ([]byte, error) {
++		filename = filepath.ToSlash(filename)
+ 		if err, ok := mfs.errors[filename+"_read"]; ok {
+ 			return nil, err
+ 		}
+@@ -40,6 +42,7 @@
+ 	}
+ 
+ 	osWriteFile = func(filename string, data []byte, perm os.FileMode) error {
++		filename = filepath.ToSlash(filename)
+ 		if err, ok := mfs.errors[filename+"_write"]; ok {
+ 			return err
+ 		}
+@@ -51,6 +54,7 @@
+ 	}
+ 
+ 	osStat = func(name string) (os.FileInfo, error) {
++		name = filepath.ToSlash(name)
+ 		if err, ok := mfs.errors[name+"_stat"]; ok {
+ 			return nil, err
+ 		}
+@@ -61,6 +65,7 @@
+ 	}
+ 
+ 	osRemove = func(name string) error {
++		name = filepath.ToSlash(name)
+ 		if err, ok := mfs.errors[name+"_remove"]; ok {
+ 			return err
+ 		}
+@@ -72,6 +77,7 @@
+ 	}
+ 
+ 	osRemoveAll = func(path string) error {
++		path = filepath.ToSlash(path)
+ 		if err, ok := mfs.errors[path+"_removeall"]; ok {
+ 			return err
+ 		}
+@@ -85,6 +91,7 @@
+ 	}
+ 
+ 	osRename = func(oldpath, newpath string) error {
++		oldpath, newpath = filepath.ToSlash(oldpath), filepath.ToSlash(newpath)
+ 		if err, ok := mfs.errors[oldpath+"_rename"]; ok {
+ 			return err
+ 		}
+diff --git a/internal/watcher/testing/gitignore_test.go b/internal/watcher/testing/gitignore_test.go
+--- a/internal/watcher/testing/gitignore_test.go
++++ b/internal/watcher/testing/gitignore_test.go
+@@ -187,11 +187,11 @@
+ 		waitCtx, waitCancel := context.WithTimeout(ctx, 2*time.Second)
+ 		defer waitCancel()
+ 
+-		if !mockClient.WaitForEvent(waitCtx) {
++		if !mockClient.WaitForEvent(waitCtx, string(protocol.URIFromPath(filePath)), protocol.FileChangeType(protocol.Created)) {
+ 			t.Fatal("Timed out waiting for file creation event")
+ 		}
+ 
+-		uri := "file://" + filePath
++		uri := string(protocol.URIFromPath(filePath))
+ 		count := mockClient.CountEvents(uri, protocol.FileChangeType(protocol.Created))
+ 		if count == 0 {
+ 			t.Errorf("No create event received for non-ignored file %s", filePath)
+diff --git a/internal/watcher/testing/mock_client.go b/internal/watcher/testing/mock_client.go
+--- a/internal/watcher/testing/mock_client.go
++++ b/internal/watcher/testing/mock_client.go
+@@ -2,6 +2,7 @@
+ 
+ import (
+ 	"context"
++	"os"
+ 	"sync"
+ 
+ 	"github.com/isaacphi/mcp-language-server/internal/protocol"
+@@ -68,7 +69,7 @@
+ 
+ 	// Record this as a change event
+ 	m.events = append(m.events, FileEvent{
+-		URI:  "file://" + path,
++		URI:  string(protocol.URIFromPath(path)),
+ 		Type: protocol.FileChangeType(protocol.Changed),
+ 	})
+ 
+@@ -117,8 +118,14 @@
+ 	defer m.mu.Unlock()
+ 
+ 	// Make a copy to avoid race conditions
+-	result := make([]FileEvent, len(m.events))
+-	copy(result, m.events)
++	result := make([]FileEvent, 0, len(m.events))
++	for _, event := range m.events {
++		// Windows also emits parent directory changes; these tests assert file events.
++		if info, err := os.Stat(protocol.DocumentUri(event.URI).Path()); err == nil && info.IsDir() {
++			continue
++		}
++		result = append(result, event)
++	}
+ 	return result
+ }
+ 
+@@ -143,14 +150,16 @@
+ 	m.events = []FileEvent{}
+ }
+ 
+-// WaitForEvent waits for at least one event to be received or context to be done
+-func (m *MockLSPClient) WaitForEvent(ctx context.Context) bool {
+-	select {
+-	case <-m.eventsReceived:
+-		return true
+-	case <-ctx.Done():
+-		return false
++// Creation and change notifications can arrive in either order on Windows.
++func (m *MockLSPClient) WaitForEvent(ctx context.Context, uri string, eventType protocol.FileChangeType) bool {
++	for m.CountEvents(uri, eventType) == 0 {
++		select {
++		case <-m.eventsReceived:
++		case <-ctx.Done():
++			return false
++		}
+ 	}
++	return true
+ }
+ 
+ // Verify the MockLSPClient implements the watcher.LSPClient interface
+diff --git a/internal/watcher/testing/watcher_test.go b/internal/watcher/testing/watcher_test.go
+--- a/internal/watcher/testing/watcher_test.go
++++ b/internal/watcher/testing/watcher_test.go
+@@ -94,13 +94,13 @@
+ 		waitCtx, waitCancel := context.WithTimeout(ctx, 2*time.Second)
+ 		defer waitCancel()
+ 
+-		if !mockClient.WaitForEvent(waitCtx) {
++		if !mockClient.WaitForEvent(waitCtx, string(protocol.URIFromPath(filePath)), protocol.FileChangeType(protocol.Created)) {
+ 			t.Logf("Events received so far: %+v", mockClient.GetEvents())
+ 			t.Fatal("Timed out waiting for file creation event")
+ 		}
+ 
+ 		// Check for create notification
+-		uri := "file://" + filePath
++		uri := string(protocol.URIFromPath(filePath))
+ 		count := mockClient.CountEvents(uri, protocol.FileChangeType(protocol.Created))
+ 		if count == 0 {
+ 			t.Errorf("No create event received for %s", filePath)
+@@ -125,12 +125,12 @@
+ 		waitCtx, waitCancel := context.WithTimeout(ctx, 2*time.Second)
+ 		defer waitCancel()
+ 
+-		if !mockClient.WaitForEvent(waitCtx) {
++		if !mockClient.WaitForEvent(waitCtx, string(protocol.URIFromPath(filePath)), protocol.FileChangeType(protocol.Changed)) {
+ 			t.Fatal("Timed out waiting for file modification event")
+ 		}
+ 
+ 		// Check for change notification
+-		uri := "file://" + filePath
++		uri := string(protocol.URIFromPath(filePath))
+ 		count := mockClient.CountEvents(uri, protocol.FileChangeType(protocol.Changed))
+ 		if count == 0 {
+ 			t.Errorf("No change event received for %s", filePath)
+@@ -155,12 +155,12 @@
+ 		waitCtx, waitCancel := context.WithTimeout(ctx, 2*time.Second)
+ 		defer waitCancel()
+ 
+-		if !mockClient.WaitForEvent(waitCtx) {
++		if !mockClient.WaitForEvent(waitCtx, string(protocol.URIFromPath(filePath)), protocol.FileChangeType(protocol.Deleted)) {
+ 			t.Fatal("Timed out waiting for file deletion event")
+ 		}
+ 
+ 		// Check for delete notification
+-		uri := "file://" + filePath
++		uri := string(protocol.URIFromPath(filePath))
+ 		count := mockClient.CountEvents(uri, protocol.FileChangeType(protocol.Deleted))
+ 		if count == 0 {
+ 			t.Errorf("No delete event received for %s", filePath)
+@@ -322,12 +322,12 @@
+ 		waitCtx, waitCancel := context.WithTimeout(ctx, 2*time.Second)
+ 		defer waitCancel()
+ 
+-		if !mockClient.WaitForEvent(waitCtx) {
++		if !mockClient.WaitForEvent(waitCtx, string(protocol.URIFromPath(filePath)), protocol.FileChangeType(protocol.Created)) {
+ 			t.Fatal("Timed out waiting for file creation event")
+ 		}
+ 
+ 		// Check that notification was sent
+-		uri := "file://" + filePath
++		uri := string(protocol.URIFromPath(filePath))
+ 		count := mockClient.CountEvents(uri, protocol.FileChangeType(protocol.Created))
+ 		if count == 0 {
+ 			t.Errorf("No create event received for non-ignored file %s", filePath)
+@@ -402,7 +402,7 @@
+ 		// Wait for the initial create event
+ 		waitCtx, waitCancel := context.WithTimeout(ctx, 2*time.Second)
+ 		defer waitCancel()
+-		mockClient.WaitForEvent(waitCtx)
++		mockClient.WaitForEvent(waitCtx, string(protocol.URIFromPath(filePath)), protocol.FileChangeType(protocol.Created))
+ 
+ 		// Reset events again to clear the creation event
+ 		mockClient.ResetEvents()
+@@ -421,7 +421,7 @@
+ 		time.Sleep(config.DebounceTime + 200*time.Millisecond)
+ 
+ 		// Check for change notifications
+-		uri := "file://" + filePath
++		uri := string(protocol.URIFromPath(filePath))
+ 		count := mockClient.CountEvents(uri, protocol.FileChangeType(protocol.Changed))
+ 
+ 		// We should get only 1 or at most 2 change notifications due to debouncing
+diff --git a/internal/watcher/watcher.go b/internal/watcher/watcher.go
+--- a/internal/watcher/watcher.go
++++ b/internal/watcher/watcher.go
+@@ -220,7 +220,7 @@
+ 				return
+ 			}
+ 
+-			uri := fmt.Sprintf("file://%s", event.Name)
++			uri := string(protocol.URIFromPath(event.Name))
+ 
+ 			// Check if this is a file (not a directory) and should be excluded
+ 			isFile := false
+@@ -488,7 +488,6 @@
+ 	}
+ 
+ 	// For relative patterns
+-	basePath = strings.TrimPrefix(basePath, "file://")
+ 	basePath = filepath.ToSlash(basePath)
+ 
+ 	// Make path relative to basePath for matching
+@@ -532,7 +531,7 @@
+ // handleFileEvent sends file change notifications
+ func (w *WorkspaceWatcher) handleFileEvent(ctx context.Context, uri string, changeType protocol.FileChangeType) {
+ 	// If the file is open and it's a change event, use didChange notification
+-	filePath := uri[7:] // Remove "file://" prefix
++	filePath := protocol.DocumentUri(uri).Path()
+ 	if changeType == protocol.FileChangeType(protocol.Changed) && w.client.IsFileOpen(filePath) {
+ 		err := w.client.NotifyChange(ctx, filePath)
+ 		if err != nil {
+diff --git a/main.go b/main.go
+--- a/main.go
++++ b/main.go
+@@ -110,7 +110,7 @@
+ 
+ 	s.mcpServer = server.NewMCPServer(
+ 		"MCP Language Server",
+-		"v0.0.2",
++		"v0.1.1-codex.1",
+ 		server.WithLogging(),
+ 		server.WithRecovery(),
+ 	)
+@@ -185,6 +185,7 @@
+ 		os.Exit(1)
+ 	}
+ 
++	cleanup(server, done)
+ 	<-done
+ 	coreLogger.Info("Server shutdown complete for PID: %d", os.Getpid())
+ 	os.Exit(0)

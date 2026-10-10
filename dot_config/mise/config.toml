@@ -57,7 +57,7 @@ codixing-mcp = "github:ferax564/codixing"
 ast-index = "github:defendend/Claude-ast-index-search"
 
 [tasks.codex-code-search-install]
-description = "Restore Codixing and ast-index plugins for Codex on Windows"
+description = "Restore Codixing, ast-index, and language server plugins for Codex on Windows"
 run = 'powershell -NoProfile -ExecutionPolicy Bypass -File "{{ env.USERPROFILE }}/.codex/install-code-search.ps1"'
 
 [tasks.nvim-startuptime-install]
