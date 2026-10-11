@@ -1,0 +1,2 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- .chezmoi.stdin | fromToml | deleteValueAtPath "agents.max_threads" | setValueAtPath "agents.max_concurrent_threads_per_session" 5 | toToml }}

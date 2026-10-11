@@ -38,6 +38,10 @@ Codex のプラグインコピーはシンボリックリンクを省くため�
 Codixing は mise 経由で指定バージョンの MCP を起動し、チャットの作業フォルダーを索引化する。
 認証情報、Codex の設定ファイル全体、セッション、プラグインキャッシュ、検索用データベースは Git に含めない。
 
+`dot_codex/modify_config.toml` はサブエージェントの同時実行上限を5に設定する。
+`chezmoi apply ~/.codex/config.toml` で既存の設定値を保ちながら適用し、設定本体はローカルに残す。
+TOML は再整形され、コメントは保持しない。
+
 ## 使用
 
 Codixing は「Codixing でこのプロジェクトを GraphRAG 検索して」と依頼する。
@@ -64,6 +68,7 @@ MATLAB は導入対象外。
 
 ```powershell
 rtk proxy powershell -NoProfile -File "$HOME/.local/share/chezmoi/tests/codex_code_search.ps1"
+rtk proxy powershell -NoProfile -File "$HOME/.local/share/chezmoi/tests/codex_agents.ps1"
 ```
 
 別 OS への自動インストールは対象外。mise のリリース選択は移植可能だが、復元タスクは Windows 用。
