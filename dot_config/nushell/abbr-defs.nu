@@ -1,4 +1,6 @@
 $env.config.abbreviations = {
+    "..": "cd ../"
+
     # git
     g: "git"
     gs: "git status"

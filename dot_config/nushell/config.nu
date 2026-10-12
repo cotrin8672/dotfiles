@@ -20,6 +20,7 @@
 use ($nu.default-config-dir | path join mise.nu)
 source ($nu.default-config-dir | path join prompt.nu)
 source ($nu.default-config-dir | path join zoxide.nu)
+alias cd = z
 source ($nu.config-path | path dirname | path join completion bat-completions.nu)
 source ($nu.config-path | path dirname | path join completion cargo-completions.nu)
 source ($nu.config-path | path dirname | path join completion curl-completions.nu)
