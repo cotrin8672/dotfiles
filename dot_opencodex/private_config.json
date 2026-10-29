@@ -1,0 +1,246 @@
+{
+    "port":  10100,
+    "managementUsageMaxReadBytes":  67108864,
+    "appOwnedMemoryBudgetMb":  256,
+    "providers":  {
+                      "openai":  {
+                                     "adapter":  "openai-responses",
+                                     "baseUrl":  "https://chatgpt.com/backend-api/codex",
+                                     "codexAccountMode":  "pool",
+                                     "authMode":  "forward"
+                                 },
+                      "claude-cli":  {
+                                         "adapter":  "claude-cli",
+                                         "baseUrl":  "https://api.anthropic.com",
+                                         "authMode":  "key",
+                                         "keyOptional":  true,
+                                         "defaultModel":  "claude-sonnet-5",
+                                         "models":  [
+                                                        "claude-fable-5-1",
+                                                        "claude-fable-5",
+                                                        "claude-sonnet-5-5",
+                                                        "claude-sonnet-5",
+                                                        "claude-opus-5-5",
+                                                        "claude-opus-5",
+                                                        "claude-opus-4-8",
+                                                        "claude-opus-4-7",
+                                                        "claude-opus-4-6",
+                                                        "claude-sonnet-4-6",
+                                                        "claude-haiku-5-5",
+                                                        "claude-haiku-4-5"
+                                                    ],
+                                         "liveModels":  false,
+                                         "modelContextWindows":  {
+                                                                     "claude-fable-5-1":  256000,
+                                                                     "claude-sonnet-5-5":  256000,
+                                                                     "claude-sonnet-5":  256000,
+                                                                     "claude-fable-5":  256000,
+                                                                     "claude-opus-5-5":  256000,
+                                                                     "claude-opus-5":  256000,
+                                                                     "claude-opus-4-8":  256000,
+                                                                     "claude-opus-4-7":  256000,
+                                                                     "claude-opus-4-6":  256000,
+                                                                     "claude-sonnet-4-6":  256000,
+                                                                     "claude-haiku-5-5":  256000,
+                                                                     "claude-haiku-4-5":  256000
+                                                                 },
+                                         "defaultMaxOutputTokens":  64000,
+                                         "reasoningEfforts":  [
+                                                                  "low",
+                                                                  "medium",
+                                                                  "high",
+                                                                  "xhigh",
+                                                                  "max"
+                                                              ],
+                                         "modelReasoningEfforts":  {
+                                                                       "claude-fable-5-1":  [
+                                                                                                "low",
+                                                                                                "medium",
+                                                                                                "high",
+                                                                                                "xhigh",
+                                                                                                "max"
+                                                                                            ],
+                                                                       "claude-fable-5":  [
+                                                                                              "low",
+                                                                                              "medium",
+                                                                                              "high",
+                                                                                              "xhigh",
+                                                                                              "max"
+                                                                                          ],
+                                                                       "claude-sonnet-5-5":  [
+                                                                                                 "low",
+                                                                                                 "medium",
+                                                                                                 "high",
+                                                                                                 "xhigh",
+                                                                                                 "max"
+                                                                                             ],
+                                                                       "claude-sonnet-5":  [
+                                                                                               "low",
+                                                                                               "medium",
+                                                                                               "high",
+                                                                                               "xhigh",
+                                                                                               "max"
+                                                                                           ],
+                                                                       "claude-opus-5-5":  [
+                                                                                               "low",
+                                                                                               "medium",
+                                                                                               "high",
+                                                                                               "xhigh",
+                                                                                               "max"
+                                                                                           ],
+                                                                       "claude-opus-5":  [
+                                                                                             "low",
+                                                                                             "medium",
+                                                                                             "high",
+                                                                                             "xhigh",
+                                                                                             "max"
+                                                                                         ],
+                                                                       "claude-opus-4-8":  [
+                                                                                               "low",
+                                                                                               "medium",
+                                                                                               "high",
+                                                                                               "xhigh",
+                                                                                               "max"
+                                                                                           ],
+                                                                       "claude-opus-4-7":  [
+                                                                                               "low",
+                                                                                               "medium",
+                                                                                               "high",
+                                                                                               "xhigh",
+                                                                                               "max"
+                                                                                           ],
+                                                                       "claude-opus-4-6":  [
+                                                                                               "low",
+                                                                                               "medium",
+                                                                                               "high",
+                                                                                               "xhigh",
+                                                                                               "max"
+                                                                                           ],
+                                                                       "claude-sonnet-4-6":  [
+                                                                                                 "low",
+                                                                                                 "medium",
+                                                                                                 "high",
+                                                                                                 "xhigh",
+                                                                                                 "max"
+                                                                                             ],
+                                                                       "claude-haiku-5-5":  [
+                                                                                                "low",
+                                                                                                "medium",
+                                                                                                "high",
+                                                                                                "xhigh",
+                                                                                                "max"
+                                                                                            ],
+                                                                       "claude-haiku-4-5":  [
+                                                                                                "low",
+                                                                                                "medium",
+                                                                                                "high",
+                                                                                                "xhigh",
+                                                                                                "max"
+                                                                                            ]
+                                                                   },
+                                         "noVisionModels":  [
+                                                                "claude-fable-5-1",
+                                                                "claude-fable-5",
+                                                                "claude-sonnet-5-5",
+                                                                "claude-sonnet-5",
+                                                                "claude-opus-5-5",
+                                                                "claude-opus-5",
+                                                                "claude-opus-4-8",
+                                                                "claude-opus-4-7",
+                                                                "claude-opus-4-6",
+                                                                "claude-sonnet-4-6",
+                                                                "claude-haiku-5-5",
+                                                                "claude-haiku-4-5"
+                                                            ],
+                                         "selectedModels":  [
+                                                                "claude-opus-5-5"
+                                                            ]
+                                     },
+                      "strata":  {
+                                     "adapter":  "openai-responses",
+                                     "baseUrl":  "https://desktop-home.tail5947dd.ts.net:8443/v1",
+                                     "authMode":  "local",
+                                     "defaultModel":  "strata",
+                                     "allowPrivateNetwork":  true
+                                 }
+                  },
+    "defaultProvider":  "openai",
+    "fastRows":  true,
+    "emptyCompletionRetry":  false,
+    "dropCodexSafetyBuffering":  false,
+    "openaiProviderTierVersion":  2,
+    "subagentModelsVersion":  3,
+    "subagentModels":  [
+                           "gpt-6-astra",
+                           "gpt-6.1-sol",
+                           "gpt-6-luna",
+                           "claude-cli/claude-opus-5-5"
+                       ],
+    "multiAgentSurfaceAdvisoryVersion":  1,
+    "clientIntegrations":  {
+                               "codex":  true,
+                               "grok":  false,
+                               "claude-desktop":  false
+                           },
+    "multiAgentGuidanceEnabled":  true,
+    "codexShimAutoRestore":  true,
+    "multiAgentMode":  "v1",
+    "websockets":  false,
+    "codexAutoStart":  true,
+    "claudeCode":  {
+                       "enabled":  false,
+                       "injectAgents":  false,
+                       "systemEnv":  false,
+                       "authMode":  "subscription",
+                       "authModeMigratedAt":  "2026-10-29T13:40:48.663Z"
+                   },
+    "modelDiscovery":  {
+                           "knownModels":  {
+                                               "openai":  {
+                                                              "ids":  [
+
+                                                                      ],
+                                                              "removed":  [
+
+                                                                          ],
+                                                              "updatedAt":  "2026-10-29T13:40:52.009Z"
+                                                          }
+                                           }
+                       },
+    "providerContextCapValues":  {
+                                     "claude-cli":  256000
+                                 },
+    "providerContextCaps":  {
+                                "claude-cli":  256000
+                            },
+    "disabledModels":  [
+                           "gpt-6-astra",
+                           "gpt-6.1-sol",
+                           "gpt-6.1-terra",
+                           "gpt-6-sol",
+                           "gpt-6-luna",
+                           "gpt-5.6-sol",
+                           "gpt-5.6-terra",
+                           "gpt-5.6-luna",
+                           "gpt-5.5"
+                       ],
+    "customModels":  [
+                         {
+                             "id":  "cf171b01-cfee-46ff-a3a5-3f3cd36cc0d7",
+                             "provider":  "strata",
+                             "modelId":  "strata",
+                             "displayName":  "Qwen3.8 Flash Next IQ2 XS (Strata)",
+                             "contextWindow":  32768,
+                             "inputModalities":  [
+                                                     "text"
+                                                 ],
+                             "addedAt":  "2026-10-29T15:06:54.917Z"
+                         }
+                     ],
+    "customModelCatalogMigration":  {
+                                        "version":  1,
+                                        "legacyOwnedSlugs":  [
+
+                                                             ]
+                                    }
+}
