@@ -235,3 +235,16 @@ NODE_REPL_INSTRUCTIONS_USE_CASE_COMPUTER_USE = ""
 
 [windows]
   sandbox = "elevated"
+
+[model_providers.strata]
+name = "Strata (Tailnet)"
+base_url = "https://desktop-home.tail5947dd.ts.net:8443/v1"
+wire_api = "responses"
+requires_openai_auth = false
+stream_idle_timeout_ms = 600000
+
+[profiles.strata]
+model = "strata"
+model_provider = "strata"
+model_context_window = 32768
+model_auto_compact_token_limit = 15000
