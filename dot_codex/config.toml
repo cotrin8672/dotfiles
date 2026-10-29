@@ -1,9 +1,17 @@
 cli_auth_credentials_store = "file"
-model = "gpt-6.1-sol"
-model_reasoning_effort = "max"
-notify = ["C:\\Users\\gummy\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\cfb32733c877621e\\bin\\node_modules\\@oai\\sky\\bin\\windows\\codex-computer-use.exe", "turn-ended"]
+model = "gpt-6.1-terra"
+model_reasoning_effort = "high"
 service_tier = "default"
+approval_policy = "never"
+approvals_reviewer = "user"
+sandbox_mode = "danger-full-access"
 
+notify = [ "C:\\Users\\gummy\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\6ef99b3d04073aa7\\bin\\node_modules\\@oai\\sky\\bin\\windows\\codex-computer-use.exe", "turn-ended" ]
+model_catalog_json = "~/.codex/opencodex-catalog.json"
+# Auto-injected by opencodex (undo: ocx restore)
+openai_base_url = "http://127.0.0.1:10100/v1"
+# Auto-injected by opencodex (undo: ocx restore)
+experimental_realtime_ws_base_url = "http://127.0.0.1:10100/v1"
 [agents]
   max_concurrent_threads_per_session = 5
 
@@ -14,20 +22,22 @@ service_tier = "default"
   reduced-motion-preference = "off"
   show-context-window-usage = true
   usePointerCursors = false
+keepRemoteControlAwakeWhilePluggedIn = true
+appearanceDarkCodeThemeId = "monokai"
   [desktop.appearanceDarkChromeTheme]
-    accent = "#3a83f7"
-    accentSource = "chatgpt"
+    accent = "#99947c"
+    accentSource = "custom"
     contrast = 60
-    ink = "#ffffff"
+    ink = "#f8f8f2"
     opaqueWindows = true
-    surface = "#181818"
+    surface = "#272822"
     [desktop.appearanceDarkChromeTheme.fonts]
-      code = "\"Hack Nerd Font Mono\""
-      ui = "\"UDEV Gothic 35NFLG\""
+      code = '"Hack Nerd Font Mono"'
+      ui = '"UDEV Gothic 35NFLG"'
     [desktop.appearanceDarkChromeTheme.semanticColors]
-      diffAdded = "#40c977"
-      diffRemoved = "#fa423e"
-      skill = "#ad7bf9"
+      diffAdded = "#86b42b"
+      diffRemoved = "#c4265e"
+      skill = "#8c6bc8"
   [desktop.appearanceLightChromeTheme]
     accent = "#3a83f7"
     accentSource = "chatgpt"
@@ -60,11 +70,14 @@ service_tier = "default"
     [hooks.state."ast-index@ast-index-plugins:hooks/hooks.json:session_start:0:0"]
       trusted_hash = "sha256:b1c57239596d258d83bd60a08fb9709fda8a241315f2e44c566a18c04f9bd86f"
     [hooks.state."ponytail@ponytail:hooks/claude-codex-hooks.json:session_start:0:0"]
-      trusted_hash = "sha256:7ee5d5ae1f4a9e55f1f429f2960c2f9f32293f198c0e8e2e42b2fb3b4eeda142"
+      trusted_hash = "sha256:defea43402fc8edba23234c694a1117cf80efc2da38968a40a1004cd9d63f725"
+trusted_content_hash = "sha256:a0bc488d89c6c7c7b7a15977ed7f0b62cc622643d6a5f51785c0392c26847283"
     [hooks.state."ponytail@ponytail:hooks/claude-codex-hooks.json:subagent_start:0:0"]
-      trusted_hash = "sha256:7954d675ef3bafd5e5a6073ae51d7de57a08f21340f241c332f99078e955675d"
+      trusted_hash = "sha256:5b2c1dfa8c7ecc5e8881c8e69479f65d46ed727e0bc5b8e7b4553cee9e5c3daf"
+trusted_content_hash = "sha256:a0bc488d89c6c7c7b7a15977ed7f0b62cc622643d6a5f51785c0392c26847283"
     [hooks.state."ponytail@ponytail:hooks/claude-codex-hooks.json:user_prompt_submit:0:0"]
-      trusted_hash = "sha256:8c9efc5a5e649c8cdca3f0b7bf4cba81d9717d1bc930c7dbc18b6efd66c7c58c"
+      trusted_hash = "sha256:5aa5ec474e0bb546f207794993b37fdf7507e54a64e09216be164c5b7b42a197"
+trusted_content_hash = "sha256:a0bc488d89c6c7c7b7a15977ed7f0b62cc622643d6a5f51785c0392c26847283"
 
 [marketplaces]
   [marketplaces.ast-index-plugins]
@@ -73,12 +86,14 @@ service_tier = "default"
   [marketplaces.codixing-local]
     source = "\\\\?\\C:\\Users\\gummy\\.codex\\plugin-sources\\codixing-local"
     source_type = "local"
-  [marketplaces.openai-bundled]
-    source = "\\\\?\\C:\\Users\\gummy\\.codex\\.tmp\\bundled-marketplaces\\openai-bundled"
-    source_type = "local"
-  [marketplaces.openai-primary-runtime]
-    source = "\\\\?\\C:\\Users\\gummy\\.cache\\codex-runtimes\\codex-primary-runtime\\plugins\\openai-primary-runtime"
-    source_type = "local"
+
+[marketplaces.openai-bundled]
+source_type = "local"
+source = '\\?\C:\Users\gummy\.codex\.tmp\bundled-marketplaces\openai-bundled'
+
+[marketplaces.openai-primary-runtime]
+source_type = "local"
+source = '\\?\C:\Users\gummy\.cache\codex-runtimes\codex-primary-runtime\plugins\openai-primary-runtime'
   [marketplaces.ponytail]
     last_revision = "2ed6c52c9d7e5e56942508591085fd45dea277d3"
     last_updated = "2026-08-08T11:18:39Z"
@@ -96,26 +111,27 @@ service_tier = "default"
       KICAD_MCP_WORKSPACE_ROOT = "C:\\Users\\gummy\\Downloads\\roBa-main"
   [mcp_servers.node_repl]
     args = []
-    command = "C:\\Users\\gummy\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\cfb32733c877621e\\bin\\node_repl.exe"
-    env_vars = ["CODEX_WINDOWS_REGISTERED_CORE"]
+    command = 'C:\Users\gummy\AppData\Local\OpenAI\Codex\runtimes\cua_node\6ef99b3d04073aa7\bin\node_repl.exe'
+    env_vars = ["BROWSER_USE_ACCESS_EXECUTOR_ID", "BROWSER_USE_ACCESS_PIPE_PATH", "BROWSER_USE_ACCESS_VERIFYING_IDENTITY", "CODEX_WINDOWS_REGISTERED_CORE"]
     startup_timeout_sec = 120
     [mcp_servers.node_repl.env]
+      NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
+      NODE_REPL_NODE_MODULE_DIRS = 'C:\Users\gummy\AppData\Local\OpenAI\Codex\runtimes\cua_node\6ef99b3d04073aa7\bin\node_modules'
+      NODE_REPL_NODE_PATH = 'C:\Users\gummy\AppData\Local\OpenAI\Codex\runtimes\cua_node\6ef99b3d04073aa7\bin\node.exe'
+      NODE_REPL_TRUSTED_CODE_PATHS = 'C:\Users\gummy\.codex;C:\Users\gummy\AppData\Local\OpenAI\Codex\runtimes\cua_node\6ef99b3d04073aa7\bin\node_modules'
+      CODEX_HOME = 'C:\Users\gummy\.codex'
       BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab,mcpapps"
-      BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
-      BROWSER_USE_CODEX_APP_VERSION = "26.1007.21434"
       BROWSER_USE_TINYSKY_ENABLED = "1"
-      CODEX_CLI_PATH = "C:\\Users\\gummy\\AppData\\Local\\OpenAI\\Codex\\bin\\2e5e00daee91c61d\\codex.exe"
-      CODEX_HOME = "C:\\Users\\gummy\\.codex"
       NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = ""
       NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = ""
-      NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
-      NODE_REPL_NODE_MODULE_DIRS = "C:\\Users\\gummy\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\cfb32733c877621e\\bin\\node_modules"
-      NODE_REPL_NODE_PATH = "C:\\Users\\gummy\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\cfb32733c877621e\\bin\\node.exe"
-      NODE_REPL_TRUSTED_CODE_PATHS = "C:\\Users\\gummy\\.codex;C:\\Users\\gummy\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\cfb32733c877621e\\bin\\node_modules"
-      NODE_REPL_TRUSTED_SERVICES = "{\"browser\":\"C:/Users/gummy/.codex/plugins/cache/openai-bundled/browser/26.1007.21434/scripts/browser-service.mjs\",\"sky\":\"@oai/sky/service\"}"
-      NODE_REPL_UNTRUSTED_ENV_ALLOWLIST = "CODEX_WINDOWS_REGISTERED_CORE"
+      BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
+      BROWSER_USE_CODEX_APP_VERSION = "26.1023.51421"
+      NODE_REPL_TRUSTED_SERVICES = '{"browser":"C:/Users/gummy/.codex/plugins/cache/openai-bundled/browser/26.1023.51421/scripts/browser-service.mjs","sky":"@oai/sky/service"}'
       SKY_CUA_NATIVE_PIPE = "1"
-      SKY_CUA_NATIVE_PIPE_DIRECTORY = "\\\\.\\pipe\\codex-computer-use-353c16a6-625b-44c2-bee3-53dd66809207"
+      SKY_CUA_NATIVE_PIPE_DIRECTORY = '\\.\pipe\codex-computer-use-415a2b17-79d6-4d66-b17a-5ef57af726fd'
+      CODEX_CLI_PATH = 'C:\Users\gummy\AppData\Local\OpenAI\Codex\bin\0ab0e7a8f3779036\codex.exe'
+      NODE_REPL_UNTRUSTED_ENV_ALLOWLIST = "CODEX_WINDOWS_REGISTERED_CORE"
+NODE_REPL_INSTRUCTIONS_USE_CASE_COMPUTER_USE = ""
   [mcp_servers.openaiDeveloperDocs]
     url = "https://developers.openai.com/mcp"
 
@@ -123,8 +139,6 @@ service_tier = "default"
   [plugins."ast-index@ast-index-plugins"]
     enabled = true
   [plugins."browser@openai-bundled"]
-    enabled = true
-  [plugins."code-review@openai-bundled"]
     enabled = true
   [plugins."codex-app-tools@openai-bundled"]
     enabled = true
