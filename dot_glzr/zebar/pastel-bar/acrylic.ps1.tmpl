@@ -18,7 +18,8 @@ function Update-PillAcrylic([int]$ParentId) {
             $blur.Brush = $script:PillCompositor.CreateHostBackdropBrush()
             $tint = $script:PillCompositor.CreateSpriteVisual()
             $smoke = New-Object Windows.UI.Color
-            if ($row[3] -eq 1) { $smoke.A = 115; $smoke.R = 53; $smoke.G = 56; $smoke.B = 61 }
+            # The spacer gets a lighter, darker-hued tint so the pills stay distinct on top of it.
+            if ($row[3]) { $smoke.A = 110; $smoke.R = 30; $smoke.G = 32; $smoke.B = 36 }
             else { $smoke.A = 179; $smoke.R = 53; $smoke.G = 56; $smoke.B = 61 }
             $tint.Brush = $script:PillCompositor.CreateColorBrush($smoke)
             $root.Children.InsertAtTop($blur)
@@ -29,8 +30,8 @@ function Update-PillAcrylic([int]$ParentId) {
         $visuals = $script:PillVisuals[$key]
         $visuals.root.Size = $size
         $visuals.shape.Size = $size
-        $radius = if ($row[3] -eq 1) { 0 } else { $row[2]/2 }
-        $visuals.shape.CornerRadius = New-Object System.Numerics.Vector2([float]$radius, [float]$radius)
+        $radius = if ($row[3]) { 0 } else { [float]($row[2]/2) }
+        $visuals.shape.CornerRadius = New-Object System.Numerics.Vector2($radius, $radius)
         $visuals.blur.Size = $size
         $visuals.tint.Size = $size
     }

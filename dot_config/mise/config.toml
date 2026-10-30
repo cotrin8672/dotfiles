@@ -2,7 +2,7 @@
 fd = "latest"
 bun = "latest"
 go = "latest"
-node = "22"
+node = "22.23.4"
 "npm:typescript" = "latest"
 pnpm = "latest"
 rg = "latest"
@@ -39,6 +39,7 @@ carapace = "latest"
 zellij = "latest"
 ast-index = "3.56.0"
 "github:cotrin8672/opencodex" = { version = "2.95.0-claude-json.1", version_prefix = "v", asset_pattern = "ocx-2.95.0-claude-json.1-bun-windows-x64.zip", bin_path = "." }
+"npm:@openai/codex" = "latest"
 
 [tools.codixing]
 version = "0.48.0"

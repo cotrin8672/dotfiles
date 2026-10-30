@@ -1,13 +1,13 @@
 cli_auth_credentials_store = "file"
-model = "gpt-6.1-terra"
-model_reasoning_effort = "high"
+model = "claude-cli/claude-opus-5-5"
+model_reasoning_effort = "medium"
 service_tier = "default"
 approval_policy = "never"
 approvals_reviewer = "user"
 sandbox_mode = "danger-full-access"
 
-notify = [ "C:\\Users\\gummy\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\6ef99b3d04073aa7\\bin\\node_modules\\@oai\\sky\\bin\\windows\\codex-computer-use.exe", "turn-ended" ]
-model_catalog_json = "~/.codex/opencodex-catalog.json"
+model_catalog_json = "C:\\Users\\gummy\\.codex\\opencodex-catalog.json"
+notify = [ "C:\\Users\\gummy\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\5c41f77a7900391c\\bin\\node_modules\\@oai\\sky\\bin\\windows\\codex-computer-use.exe", "turn-ended" ]
 # Auto-injected by opencodex (undo: ocx restore)
 openai_base_url = "http://127.0.0.1:10100/v1"
 # Auto-injected by opencodex (undo: ocx restore)
@@ -111,25 +111,25 @@ source = '\\?\C:\Users\gummy\.cache\codex-runtimes\codex-primary-runtime\plugins
       KICAD_MCP_WORKSPACE_ROOT = "C:\\Users\\gummy\\Downloads\\roBa-main"
   [mcp_servers.node_repl]
     args = []
-    command = 'C:\Users\gummy\AppData\Local\OpenAI\Codex\runtimes\cua_node\6ef99b3d04073aa7\bin\node_repl.exe'
+    command = 'C:\Users\gummy\AppData\Local\OpenAI\Codex\runtimes\cua_node\5c41f77a7900391c\bin\node_repl.exe'
     env_vars = ["BROWSER_USE_ACCESS_EXECUTOR_ID", "BROWSER_USE_ACCESS_PIPE_PATH", "BROWSER_USE_ACCESS_VERIFYING_IDENTITY", "CODEX_WINDOWS_REGISTERED_CORE"]
     startup_timeout_sec = 120
     [mcp_servers.node_repl.env]
       NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
-      NODE_REPL_NODE_MODULE_DIRS = 'C:\Users\gummy\AppData\Local\OpenAI\Codex\runtimes\cua_node\6ef99b3d04073aa7\bin\node_modules'
-      NODE_REPL_NODE_PATH = 'C:\Users\gummy\AppData\Local\OpenAI\Codex\runtimes\cua_node\6ef99b3d04073aa7\bin\node.exe'
-      NODE_REPL_TRUSTED_CODE_PATHS = 'C:\Users\gummy\.codex;C:\Users\gummy\AppData\Local\OpenAI\Codex\runtimes\cua_node\6ef99b3d04073aa7\bin\node_modules'
+      NODE_REPL_NODE_MODULE_DIRS = 'C:\Users\gummy\AppData\Local\OpenAI\Codex\runtimes\cua_node\5c41f77a7900391c\bin\node_modules'
+      NODE_REPL_NODE_PATH = 'C:\Users\gummy\AppData\Local\OpenAI\Codex\runtimes\cua_node\5c41f77a7900391c\bin\node.exe'
+      NODE_REPL_TRUSTED_CODE_PATHS = 'C:\Users\gummy\.codex;C:\Users\gummy\AppData\Local\OpenAI\Codex\runtimes\cua_node\5c41f77a7900391c\bin\node_modules'
       CODEX_HOME = 'C:\Users\gummy\.codex'
       BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab,mcpapps"
       BROWSER_USE_TINYSKY_ENABLED = "1"
       NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = ""
       NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = ""
       BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
-      BROWSER_USE_CODEX_APP_VERSION = "26.1023.51421"
-      NODE_REPL_TRUSTED_SERVICES = '{"browser":"C:/Users/gummy/.codex/plugins/cache/openai-bundled/browser/26.1023.51421/scripts/browser-service.mjs","sky":"@oai/sky/service"}'
+      BROWSER_USE_CODEX_APP_VERSION = "26.1027.30824"
+      NODE_REPL_TRUSTED_SERVICES = '{"browser":"C:/Users/gummy/.codex/plugins/cache/openai-bundled/browser/26.1027.30824/scripts/browser-service.mjs","sky":"@oai/sky/service"}'
       SKY_CUA_NATIVE_PIPE = "1"
-      SKY_CUA_NATIVE_PIPE_DIRECTORY = '\\.\pipe\codex-computer-use-415a2b17-79d6-4d66-b17a-5ef57af726fd'
-      CODEX_CLI_PATH = 'C:\Users\gummy\AppData\Local\OpenAI\Codex\bin\0ab0e7a8f3779036\codex.exe'
+      SKY_CUA_NATIVE_PIPE_DIRECTORY = '\\.\pipe\codex-computer-use-e91d93c1-00f2-4551-b309-abcb1a280cbd'
+      CODEX_CLI_PATH = 'C:\Users\gummy\AppData\Local\OpenAI\Codex\bin\22cfb1d302613eae\codex.exe'
       NODE_REPL_UNTRUSTED_ENV_ALLOWLIST = "CODEX_WINDOWS_REGISTERED_CORE"
 NODE_REPL_INSTRUCTIONS_USE_CASE_COMPUTER_USE = ""
   [mcp_servers.openaiDeveloperDocs]
@@ -230,6 +230,7 @@ NODE_REPL_INSTRUCTIONS_USE_CASE_COMPUTER_USE = ""
     path = "C:\\Users\\gummy\\.codex\\skills\\hatch-pet\\SKILL.md"
 
 [tui]
+screen_reader_detection_done = true
   [tui.model_availability_nux]
     "gpt-5.5" = 2
 
