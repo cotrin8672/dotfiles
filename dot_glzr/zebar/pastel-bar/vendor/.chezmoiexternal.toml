@@ -1,0 +1,7 @@
+["zebar.js"]
+type = "file"
+url = "https://esm.sh/zebar@3.0.0/es2022/zebar.bundle.mjs"
+executable = true
+checksum.sha256 = "db9a9d1ae9603c81e272bb35656954ef0c20bde4bef0c959017c8cb11a8ab05e"
+filter.command = "powershell.exe"
+filter.args = ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", {{ joinPath .chezmoi.sourceDir "dot_glzr" "zebar" "pastel-bar" "vendor" "filter-zebar.ps1" | quote }}]

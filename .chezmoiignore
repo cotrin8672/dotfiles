@@ -1,1 +1,11 @@
 .config/starship/starship.toml
+
+{{ if ne .chezmoi.os "windows" }}
+.glzr
+{{ end }}
+
+# Zebar runtime state and local backups
+.glzr/zebar/pastel-bar/data
+.glzr/zebar/pastel-bar/data/**
+.glzr/zebar/*.log
+.glzr/zebar/settings.before-*.json

@@ -1,0 +1,98 @@
+param([switch]$Once)
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = New-Object Text.UTF8Encoding($false)
+Add-Type -Path (Join-Path $PSScriptRoot 'NativeMonitor.cs') -ReferencedAssemblies System.Drawing
+. (Join-Path $PSScriptRoot 'quota.ps1')
+if (!$Once) { . (Join-Path $PSScriptRoot 'acrylic.ps1') }
+
+$parentId = [PastelNative]::ParentId()
+$parent = if ($parentId) { [Diagnostics.Process]::GetProcessById($parentId) } else { $null }
+$layoutReader = if (!$Once) { New-Object IO.StreamReader([Console]::OpenStandardInput()) } else { $null }
+$layoutTask = if ($layoutReader) { $layoutReader.ReadLineAsync() } else { $null }
+$lastLayout = [DateTime]::UtcNow
+$pillWindows = 0
+$history = @{ cpu = New-Object 'Collections.Generic.List[object]'; gpu = New-Object 'Collections.Generic.List[object]'; ram = New-Object 'Collections.Generic.List[object]' }
+$gpu = $null; $gpuTask = $null; $gpuUsage = $null; $gpuDetail = 'NVIDIA GPU unavailable'; $gpuAt = [DateTime]::MinValue
+try {
+    $nvidia = Get-Command nvidia-smi.exe -ErrorAction SilentlyContinue
+    if ($nvidia) {
+        $start = New-Object Diagnostics.ProcessStartInfo
+        $start.FileName = $nvidia.Source
+        $start.Arguments = '--query-gpu=name,utilization.gpu,memory.used,memory.total --format=csv,noheader,nounits --loop-ms=1000'
+        $start.UseShellExecute = $false; $start.CreateNoWindow = $true
+        $start.RedirectStandardOutput = $true; $start.RedirectStandardError = $true
+        $gpu = New-Object Diagnostics.Process; $gpu.StartInfo = $start
+        [void]$gpu.Start()
+        if (![PastelNative]::TrackGpu($gpu)) { [Console]::Error.WriteLine('GPU sampler lifetime could not be attached') }
+        $gpuTask = $gpu.StandardOutput.ReadLineAsync()
+    }
+    $active = @{ title='Desktop'; app='Windows'; icon=$null }
+    $ai = @{}; $nextQuota = [DateTime]::MinValue; $nextHardware = [DateTime]::MinValue
+    $hardware = @{ cpu=@{usage=$null;history=@()}; gpu=@{usage=$null;history=@()}; ram=@{usage=$null;history=@()} }
+    [void][PastelNative]::Hardware()
+    do {
+        if ($parent -and $parent.HasExited) { break }
+        if ($layoutTask -and $layoutTask.IsCompleted) {
+            $layoutLine = $layoutTask.GetAwaiter().GetResult()
+            if ($null -eq $layoutLine) { $layoutTask = $null } else {
+                try {
+                    $layout = $layoutLine | ConvertFrom-Json
+                    if ($layout.stop -eq $true) { break }
+                    if ($layout.heartbeat -eq $true) {
+                        $lastLayout = [DateTime]::UtcNow
+                        [PastelNative]::StylePillWindows($parentId)
+                        $pillWindows = Update-PillAcrylic $parentId
+                    }
+                } catch { [Console]::Error.WriteLine('Pill layout could not be applied') }
+                $layoutTask = $layoutReader.ReadLineAsync()
+            }
+        }
+        $now = [DateTime]::UtcNow
+        if (!$Once) { [PastelAcrylic]::Pump() }
+        if (!$Once -and ($now - $lastLayout).TotalSeconds -gt 20) { break }
+        while ($gpuTask -and $gpuTask.IsCompleted) {
+            $line = $gpuTask.GetAwaiter().GetResult()
+            if ($null -eq $line) { $gpuTask=$null; break }
+            $fields = $line.Split(',')
+            $parsed = 0.0
+            if ($fields.Length -eq 4 -and [double]::TryParse($fields[1].Trim(), [Globalization.NumberStyles]::Float, [Globalization.CultureInfo]::InvariantCulture, [ref]$parsed)) {
+                $gpuUsage = [Math]::Max(0, [Math]::Min(100, $parsed))
+                $gpuDetail = '{0} | VRAM {1} / {2} MiB' -f $fields[0].Trim(),$fields[2].Trim(),$fields[3].Trim()
+                $gpuAt = $now
+            }
+            $gpuTask = $gpu.StandardOutput.ReadLineAsync()
+        }
+        if ($now -ge $nextHardware) {
+            $sample = [PastelNative]::Hardware()
+            $cpuUsage = if ([double]::IsNaN($sample[0])) { $null } else { [Math]::Round($sample[0],1) }
+            $ramUsage = if ([double]::IsNaN($sample[1])) { $null } else { [Math]::Round($sample[1],1) }
+            if (($now - $gpuAt).TotalSeconds -gt 10) { $gpuUsage = $null }
+            $values = @{cpu=$cpuUsage;gpu=$gpuUsage;ram=$ramUsage}
+            foreach ($key in @('cpu','gpu','ram')) {
+                $history[$key].Add($values[$key])
+                if ($history[$key].Count -gt 60) { $history[$key].RemoveAt(0) }
+                $hardware[$key] = @{usage=$values[$key];history=$history[$key].ToArray()}
+            }
+            $hardware.cpu.detail = 'CPU usage | Last 60 seconds'
+            $hardware.gpu.detail = $gpuDetail
+            $hardware.ram.detail = 'RAM {0:N1} / {1:N1} GiB' -f ($sample[2]/1GB),($sample[3]/1GB)
+            $nextHardware = $now.AddSeconds(1)
+        }
+        $foreground = [PastelNative]::ActiveWindow()
+        if ($foreground) { $active=@{title=$foreground[0];app=$foreground[1];icon=$foreground[2]} }
+        if ($now -ge $nextQuota) {
+            $ai = Get-UsageSnapshot
+            $nextQuota=$now.AddSeconds(2)
+        }
+        $state = @{hardware=$hardware;activeWindow=$active;ai=$ai;connected=$true;appearance=@{pillWindows=$pillWindows}}
+        [Console]::WriteLine(($state | ConvertTo-Json -Depth 12 -Compress))
+        [Console]::Out.Flush()
+        if (!$Once) { Start-Sleep -Milliseconds 400 }
+    } while (!$Once)
+} finally {
+    if ($gpu) { if (!$gpu.HasExited) { $gpu.Kill() }; $gpu.Dispose() }
+    if ($script:QuotaLeader) { $script:QuotaMutex.ReleaseMutex() }
+    $script:QuotaMutex.Dispose(); $script:UsageHttp.Dispose()
+    if ($parent) { $parent.Dispose() }
+    if ($layoutReader) { $layoutReader.Dispose() }
+}

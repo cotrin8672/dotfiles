@@ -1,0 +1,25 @@
+{
+    "$schema":  "https://github.com/glzr-io/zebar/raw/v3.3.1/resources/settings-schema.json",
+    "startupConfigs":  [
+                           {
+                               "widget":  "bar",
+                               "preset":  "default",
+                               "pack":  "pastel-bar"
+                           },
+                           {
+                               "widget":  "hardware",
+                               "preset":  "default",
+                               "pack":  "pastel-bar"
+                           },
+                           {
+                               "widget":  "active",
+                               "preset":  "default",
+                               "pack":  "pastel-bar"
+                           },
+                           {
+                               "widget":  "ai",
+                               "preset":  "default",
+                               "pack":  "pastel-bar"
+                           }
+                       ]
+}

@@ -1,0 +1,77 @@
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Text;
+
+public static class PastelAcrylic
+{
+    [StructLayout(LayoutKind.Sequential)] struct Rect { public int Left, Top, Right, Bottom; }
+    [StructLayout(LayoutKind.Sequential)] struct QueueOptions { public int Size, ThreadType, ApartmentType; }
+    [StructLayout(LayoutKind.Sequential)] struct Message { public IntPtr Window; public uint Id; public UIntPtr WParam; public IntPtr LParam; public uint Time; public int X, Y; public uint Private; }
+    delegate bool WindowCallback(IntPtr window, IntPtr parameter);
+    [DllImport("CoreMessaging.dll")] static extern int CreateDispatcherQueueController(QueueOptions options, out IntPtr controller);
+    [DllImport("user32.dll")] static extern bool EnumWindows(WindowCallback callback, IntPtr parameter);
+    [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int GetWindowText(IntPtr window, StringBuilder text, int count);
+    [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
+    [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr window, out Rect rect);
+    [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern IntPtr CreateWindowEx(uint extended, string className, string title, uint style, int x, int y, int width, int height, IntPtr parent, IntPtr menu, IntPtr instance, IntPtr parameter);
+    [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr window, IntPtr after, int x, int y, int width, int height, uint flags);
+    [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr window, int attribute, ref int value, int size);
+    [DllImport("user32.dll")] static extern bool PeekMessage(out Message message, IntPtr window, uint min, uint max, uint flags);
+    [DllImport("user32.dll")] static extern bool TranslateMessage(ref Message message);
+    [DllImport("user32.dll")] static extern IntPtr DispatchMessage(ref Message message);
+    [ComImport, Guid("29E691FA-4567-4DCA-B319-D0F207EB6807"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IDesktopInterop { void CreateDesktopWindowTarget(IntPtr window, bool topmost, out IntPtr target); }
+    static IntPtr queue;
+    static readonly Dictionary<IntPtr,IntPtr> layers = new Dictionary<IntPtr,IntPtr>();
+
+    public static void Initialize()
+    {
+        if (queue != IntPtr.Zero) return;
+        QueueOptions options = new QueueOptions { Size=Marshal.SizeOf(typeof(QueueOptions)), ThreadType=2, ApartmentType=2 };
+        Marshal.ThrowExceptionForHR(CreateDispatcherQueueController(options, out queue));
+    }
+    public static object Target(object compositor, IntPtr window)
+    {
+        IntPtr target;
+        ((IDesktopInterop)compositor).CreateDesktopWindowTarget(window, false, out target);
+        try { return Marshal.GetObjectForIUnknown(target); }
+        finally { Marshal.Release(target); }
+    }
+    public static long[][] Sync(int parentId)
+    {
+        var result = new List<long[]>();
+        EnumWindows((window, parameter) => {
+            uint pid; GetWindowThreadProcessId(window, out pid);
+            if (pid != parentId) return true;
+            StringBuilder text = new StringBuilder(256); GetWindowText(window, text, text.Capacity);
+            string title = text.ToString();
+            if (title != "Pastel Bar - Hardware" && title != "Pastel Bar - Window" && title != "Pastel Bar - AI") return true;
+            Rect rect; if (!GetWindowRect(window, out rect)) return true;
+            IntPtr layer;
+            if (!layers.TryGetValue(window, out layer))
+            {
+                // The composition target owns these pixels, including transparent rounded corners.
+                layer = CreateWindowEx(0x08200008, "STATIC", "Pastel Acrylic - " + title, 0x80000000,
+                    rect.Left, rect.Top, rect.Right-rect.Left, rect.Bottom-rect.Top, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                if (layer == IntPtr.Zero) throw new System.ComponentModel.Win32Exception();
+                int enabled = 1;
+                Marshal.ThrowExceptionForHR(DwmSetWindowAttribute(layer, 17, ref enabled, 4));
+                layers[window] = layer;
+            }
+            SetWindowPos(layer, window, rect.Left, rect.Top, rect.Right-rect.Left, rect.Bottom-rect.Top, 0x250);
+            result.Add(new long[] { layer.ToInt64(), rect.Right-rect.Left, rect.Bottom-rect.Top });
+            return true;
+        }, IntPtr.Zero);
+        return result.ToArray();
+    }
+    public static void Pump()
+    {
+        Message message;
+        while (PeekMessage(out message, IntPtr.Zero, 0, 0, 1))
+        {
+            TranslateMessage(ref message);
+            DispatchMessage(ref message);
+        }
+    }
+}

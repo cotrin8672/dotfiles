@@ -1,0 +1,37 @@
+[Windows.UI.Composition.Compositor, Windows.UI.Composition, ContentType=WindowsRuntime] > $null
+[Windows.UI.Composition.Desktop.DesktopWindowTarget, Windows.UI.Composition, ContentType=WindowsRuntime] > $null
+Add-Type -Path (Join-Path $PSScriptRoot 'AcrylicLayer.cs')
+[PastelAcrylic]::Initialize()
+$script:PillCompositor = New-Object Windows.UI.Composition.Compositor
+$script:PillVisuals = @{}
+
+function Update-PillAcrylic([int]$ParentId) {
+    foreach ($row in [PastelAcrylic]::Sync($ParentId)) {
+        $key = [long]$row[0]
+        $size = New-Object System.Numerics.Vector2([float]$row[1], [float]$row[2])
+        if (!$script:PillVisuals.ContainsKey($key)) {
+            $target = [Windows.UI.Composition.Desktop.DesktopWindowTarget]([PastelAcrylic]::Target($script:PillCompositor, [IntPtr]$key))
+            $root = $script:PillCompositor.CreateContainerVisual()
+            $shape = $script:PillCompositor.CreateRoundedRectangleGeometry()
+            $root.Clip = $script:PillCompositor.CreateGeometricClip($shape)
+            $blur = $script:PillCompositor.CreateSpriteVisual()
+            $blur.Brush = $script:PillCompositor.CreateHostBackdropBrush()
+            $tint = $script:PillCompositor.CreateSpriteVisual()
+            $smoke = New-Object Windows.UI.Color
+            $smoke.A = 179; $smoke.R = 53; $smoke.G = 56; $smoke.B = 61
+            $tint.Brush = $script:PillCompositor.CreateColorBrush($smoke)
+            $root.Children.InsertAtTop($blur)
+            $root.Children.InsertAtTop($tint)
+            $target.Root = $root
+            $script:PillVisuals[$key] = @{ target=$target;root=$root;shape=$shape;blur=$blur;tint=$tint }
+        }
+        $visuals = $script:PillVisuals[$key]
+        $visuals.root.Size = $size
+        $visuals.shape.Size = $size
+        $visuals.shape.CornerRadius = New-Object System.Numerics.Vector2([float]($row[2]/2), [float]($row[2]/2))
+        $visuals.blur.Size = $size
+        $visuals.tint.Size = $size
+    }
+    [PastelAcrylic]::Pump()
+    return $script:PillVisuals.Count
+}

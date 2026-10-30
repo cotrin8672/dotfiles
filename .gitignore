@@ -9,3 +9,8 @@ nvim.log
 $log
 .kensaku*
 .codex-nvim/
+
+# Zebar runtime state and local backups
+dot_glzr/zebar/pastel-bar/data/
+dot_glzr/zebar/*.log
+dot_glzr/zebar/settings.before-*.json
