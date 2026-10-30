@@ -161,18 +161,6 @@
       "selectedModels": [
         "claude-opus-5-5"
       ]
-    },
-    "strata": {
-      "adapter": "openai-responses",
-      "baseUrl": "https://desktop-home.tail5947dd.ts.net:8443/v1",
-      "authMode": "local",
-      "defaultModel": "strata",
-      "allowPrivateNetwork": true,
-      "initialModelSelection": {
-        "version": 1,
-        "registrationId": "0f6ed233-3eb7-4a94-8835-1a4ef8f34f66",
-        "status": "pending"
-      }
     }
   },
   "defaultProvider": "openai",
@@ -230,19 +218,7 @@
     "gpt-5.6-luna",
     "gpt-5.5"
   ],
-  "customModels": [
-    {
-      "id": "cf171b01-cfee-46ff-a3a5-3f3cd36cc0d7",
-      "provider": "strata",
-      "modelId": "strata",
-      "displayName": "Qwen3.8 Flash Next IQ2 XS (Strata)",
-      "contextWindow": 32768,
-      "inputModalities": [
-        "text"
-      ],
-      "addedAt": "2026-10-29T15:06:54.917Z"
-    }
-  ],
+  "customModels": [],
   "customModelCatalogMigration": {
     "version": 1,
     "legacyOwnedSlugs": []
