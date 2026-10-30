@@ -38,7 +38,7 @@ carapace = "latest"
 "github:cordx56/rustowl" = "0.4.0"
 zellij = "latest"
 ast-index = "3.56.0"
-"npm:@bitkyc08/opencodex" = "latest"
+"github:cotrin8672/opencodex" = { version = "2.95.0-claude-json.1", version_prefix = "v", asset_pattern = "ocx-2.95.0-claude-json.1-bun-windows-x64.zip", bin_path = "." }
 
 [tools.codixing]
 version = "0.48.0"
