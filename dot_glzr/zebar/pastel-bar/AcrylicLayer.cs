@@ -46,7 +46,8 @@ public static class PastelAcrylic
             if (pid != parentId) return true;
             StringBuilder text = new StringBuilder(256); GetWindowText(window, text, text.Capacity);
             string title = text.ToString();
-            if (title != "Pastel Bar - Hardware" && title != "Pastel Bar - Window" && title != "Pastel Bar - AI") return true;
+            bool spacer = title == "Pastel Bar - Spacer";
+            if (!spacer && title != "Pastel Bar - Hardware" && title != "Pastel Bar - Window" && title != "Pastel Bar - AI") return true;
             Rect rect; if (!GetWindowRect(window, out rect)) return true;
             IntPtr layer;
             if (!layers.TryGetValue(window, out layer))
@@ -60,7 +61,7 @@ public static class PastelAcrylic
                 layers[window] = layer;
             }
             SetWindowPos(layer, window, rect.Left, rect.Top, rect.Right-rect.Left, rect.Bottom-rect.Top, 0x250);
-            result.Add(new long[] { layer.ToInt64(), rect.Right-rect.Left, rect.Bottom-rect.Top });
+            result.Add(new long[] { layer.ToInt64(), rect.Right-rect.Left, rect.Bottom-rect.Top, spacer ? 1 : 0 });
             return true;
         }, IntPtr.Zero);
         return result.ToArray();

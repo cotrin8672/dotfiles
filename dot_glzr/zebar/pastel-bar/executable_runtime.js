@@ -9,6 +9,7 @@ if (!new URLSearchParams(location.search).has('preview')) {
   await widget.window.tauri.clearEffects();
 
   if (group === 'bar') {
+    // Acrylic comes from acrylic.ps1: the system backdrop turns flat gray while this never-focused window is inactive.
     await widget.window.tauri.setIgnoreCursorEvents(true);
   } else {
     const channel = new BroadcastChannel('pastel-bar-snapshots');

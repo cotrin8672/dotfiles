@@ -18,7 +18,8 @@ function Update-PillAcrylic([int]$ParentId) {
             $blur.Brush = $script:PillCompositor.CreateHostBackdropBrush()
             $tint = $script:PillCompositor.CreateSpriteVisual()
             $smoke = New-Object Windows.UI.Color
-            $smoke.A = 179; $smoke.R = 53; $smoke.G = 56; $smoke.B = 61
+            if ($row[3] -eq 1) { $smoke.A = 115; $smoke.R = 53; $smoke.G = 56; $smoke.B = 61 }
+            else { $smoke.A = 179; $smoke.R = 53; $smoke.G = 56; $smoke.B = 61 }
             $tint.Brush = $script:PillCompositor.CreateColorBrush($smoke)
             $root.Children.InsertAtTop($blur)
             $root.Children.InsertAtTop($tint)
@@ -28,7 +29,8 @@ function Update-PillAcrylic([int]$ParentId) {
         $visuals = $script:PillVisuals[$key]
         $visuals.root.Size = $size
         $visuals.shape.Size = $size
-        $visuals.shape.CornerRadius = New-Object System.Numerics.Vector2([float]($row[2]/2), [float]($row[2]/2))
+        $radius = if ($row[3] -eq 1) { 0 } else { $row[2]/2 }
+        $visuals.shape.CornerRadius = New-Object System.Numerics.Vector2([float]$radius, [float]$radius)
         $visuals.blur.Size = $size
         $visuals.tint.Size = $size
     }

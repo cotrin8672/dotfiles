@@ -42,13 +42,13 @@
       const end = Number(element.dataset.endsAt);
       const duration = Number(element.dataset.duration);
       if (!Number.isFinite(end) || !Number.isFinite(duration) || duration <= 0) {
-        element.style.setProperty('--elapsed', '0%');
+        element.style.setProperty('--remaining', '0%');
         element.removeAttribute('aria-valuenow');
         return;
       }
-      const elapsed = Math.max(0, Math.min(100, (1 - (end - now) / duration) * 100));
-      element.style.setProperty('--elapsed', elapsed + '%');
-      element.setAttribute('aria-valuenow', elapsed.toFixed(1));
+      const remaining = Math.max(0, Math.min(100, (end - now) / duration * 100));
+      element.style.setProperty('--remaining', remaining + '%');
+      element.setAttribute('aria-valuenow', remaining.toFixed(1));
     });
   }
 
@@ -117,7 +117,7 @@
       frame.dataset.endsAt = String(end.getTime());
       frame.dataset.duration = String((seconds || 0) * 1000);
       frame.setAttribute('role', 'progressbar');
-      frame.setAttribute('aria-label', name + ' ' + window.label + ' リセット周期の経過 / 次のリセット: ' + date(window.resetsAt));
+      frame.setAttribute('aria-label', name + ' ' + window.label + ' リセットまでの残り時間 / 次のリセット: ' + date(window.resetsAt));
       frame.setAttribute('aria-valuemin', '0');
       frame.setAttribute('aria-valuemax', '100');
       for (const className of ['frame-base', 'frame-progress']) {
