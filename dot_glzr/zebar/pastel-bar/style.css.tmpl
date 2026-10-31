@@ -6,7 +6,7 @@
   --cpu: #93b8ee;
   --gpu: #88cba8;
   --ram: #dca1bd;
-  --codex: #b6a3db;
+  --codex: #447975;
   --claude: #e7a08a;
   --muted: #adb2bc;
   --track: rgba(236, 236, 241, .16);
@@ -46,8 +46,8 @@ body { user-select: none; }
 .cpu { --accent: var(--cpu); }
 .gpu { --accent: var(--gpu); }
 .ram { --accent: var(--ram); }
-.codex { --accent: var(--codex); }
-.claude { --accent: var(--claude); }
+.codex { --accent: var(--codex); --frame: #a6cec7; }
+.claude { --accent: var(--claude); --frame: #ffc38d; }
 .metric .icon, .provider .icon { color: var(--accent); }
 .reading { display: flex; flex-direction: column; justify-content: center; gap: 0; width: 38px; flex: 0 0 38px; }
 .caption { font-size: 8px; line-height: 11px; font-weight: 600; letter-spacing: .3px; color: var(--muted); }
@@ -59,23 +59,26 @@ body { user-select: none; }
 .active-window .icon { width: 17px; height: 17px; color: var(--muted); }
 #app-icon { object-fit: contain; flex-shrink: 0; }
 #window-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; line-height: 18px; }
+#window-title-text { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: top; }
+#window-title.is-scrolling { text-overflow: clip; }
+#window-title.is-scrolling #window-title-text { max-width: none; overflow: visible; }
 .ai { justify-self: end; padding: 0 4px; }
-.provider { display: flex; align-items: center; gap: 8px; height: 24px; padding: 0 12px; }
+.provider { display: flex; align-items: center; gap: 10px; height: 24px; padding: 0 16px; }
 .provider .icon { width: 21px; height: 21px; }
 .provider .brand-icon { width: 21px; height: 21px; object-fit: contain; flex-shrink: 0; }
 .codex .brand-icon { filter: brightness(0) invert(1); }
-.provider-name { min-width: 37px; font-size: 10px; line-height: 11px; font-weight: 600; }
-.quotas { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 108px; }
-.quota { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 35px; align-items: center; gap: 4px; width: 108px; height: 14px; padding: 0 6px; overflow: hidden; border-radius: 4px; line-height: 14px; }
+.provider-name { min-width: 37px; font-size: 12px; line-height: 12px; font-weight: 600; }
+.quotas { display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 108px; }
+.quota { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 35px; align-items: center; gap: 4px; width: 108px; height: 11px; padding: 0 6px; overflow: hidden; border-radius: 3px; line-height: 11px; }
 .track { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; background: var(--track); }
 .fill { display: block; height: 100%; background: var(--accent); opacity: .42; }
 .quota:nth-child(2) .fill { opacity: .34; }
-.quota-value { position: relative; font-size: 12px; font-weight: 400; text-align: right; font-variant-numeric: tabular-nums; }
-.reset-time { position: relative; font-size: 10px; font-weight: 400; line-height: 14px; font-variant-numeric: tabular-nums; }
+.quota-value { position: relative; font-size: 10px; font-weight: 400; text-align: right; font-variant-numeric: tabular-nums; }
+.reset-time { position: relative; font-size: 9px; font-weight: 400; line-height: 11px; font-variant-numeric: tabular-nums; }
 .reset-frame { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.reset-frame rect { fill: none; stroke-width: 1; }
-.frame-base { stroke: var(--accent); stroke-opacity: .18; }
-.frame-progress { stroke: var(--accent); stroke-opacity: .6; clip-path: inset(0 calc(100% - var(--remaining, 0%)) 0 0) view-box; }
+.reset-frame rect { fill: none; stroke-width: 1.5; }
+.frame-base { stroke: var(--frame); stroke-opacity: .18; }
+.reset-frame .frame-progress { stroke: var(--frame); stroke-width: 1.5; clip-path: inset(0 calc(100% - var(--remaining, 0%)) 0 0) view-box; }
 .empty { color: var(--muted); font-size: 11px; }
 .provider.stale .quotas { opacity: .55; }
 .provider.stale .provider-name::after { content: " ·"; color: #ad8960; }
@@ -91,7 +94,7 @@ body.disconnected .active-window { opacity: .7; }
 :root[data-group="active"] .active-window { max-width: none; }
 :root[data-group="hardware"] .metric { padding: 0 12px; gap: 8px; }
 :root[data-group="hardware"] .spark { width: 60px; }
-:root[data-group="ai"] .provider { padding: 0 12px; gap: 8px; }
+:root[data-group="ai"] .provider { padding: 0 16px; gap: 10px; }
 :root[data-group="ai"] .provider-name { display: inline; }
 :root[data-group="ai"] .quotas { min-width: 108px; }
 @media (max-width: 1250px) {

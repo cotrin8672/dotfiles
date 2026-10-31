@@ -1,0 +1,46 @@
+:root {
+  color-scheme: dark;
+  font-family: "Segoe UI Variable", "Segoe UI", sans-serif;
+  color: #ececf1;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: transparent; overflow: hidden; }
+body { user-select: none; }
+.spotify {
+  /* The shared acrylic layer behind this window draws the pill background. */
+  display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: center; gap: 6px;
+  width: 100%; height: 34px; padding: 0 16px 0 10px;
+  opacity: 0; transform: translateY(-2px); pointer-events: none;
+  transition: opacity 220ms ease-out, transform 220ms ease-out;
+}
+.spotify.is-visible { opacity: 1; transform: none; pointer-events: auto; }
+.record {
+  position: relative; display: grid; place-items: center; flex: 0 0 22px; height: 22px;
+  border: 1px solid #777980; border-radius: 50%;
+  background: repeating-radial-gradient(circle at center, #34353a 0, #34353a 2px, #4b4d53 2.5px, #4b4d53 3px);
+  animation: spin 9s linear infinite; animation-play-state: paused;
+}
+.record::after { content: ""; position: absolute; top: 3px; left: 5px; width: 4px; height: 2px; border-radius: 50%; background: #b5b7ba; transform: rotate(-35deg); }
+.spotify.is-playing .record { animation-play-state: running; }
+.record-label { width: 6px; height: 6px; border-radius: 50%; background: #c2c2c4; box-shadow: inset 0 0 0 2px #929396; }
+.details { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; min-width: 0; }
+.track { display: block; width: 100%; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; line-height: 14px; }
+.track-title { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; text-align: left; vertical-align: top; }
+.track.is-scrolling { text-align: left; text-overflow: clip; }
+.track.is-scrolling .track-title { max-width: none; overflow: visible; }
+.controls { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 18px; }
+button {
+  display: grid; place-items: center; width: 24px; height: 18px; padding: 0;
+  border: 0; border-radius: 4px; background: transparent; color: #d8dae0; cursor: pointer;
+}
+button:hover:not(:disabled) { background: rgba(255, 255, 255, .1); color: #fff; }
+button:focus-visible { outline: 1px solid #d3d5da; outline-offset: -2px; }
+button:disabled { opacity: .3; cursor: default; }
+button svg { width: 14px; height: 14px; fill: currentColor; }
+.pause-icon, .is-playing .play-icon { display: none; }
+.is-playing .pause-icon { display: block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .spotify { transition: none; }
+  .record { animation: none; }
+}

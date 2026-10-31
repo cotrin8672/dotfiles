@@ -129,6 +129,9 @@ function Get-UsageSnapshot {
                 $state.at = 0L; $state.next = 0L
                 $state.switchedAt = $now
             }
+            if ($identity -and $state.authFailed -and $identity.access -cne $state.identity.access) {
+                $state.failures = 0; $state.next = 0L; $state.authFailed = $false
+            }
             $state.identity = $identity; $state.key = $identity.key
             $state.view.plan = $identity.plan
         }
@@ -152,10 +155,21 @@ function Get-UsageSnapshot {
                 }
             }
         } catch { } # An atomic cache replacement may briefly make the file unavailable.
+        # An old token's auth/network failure must not delay a renewed login; keep same-account 429 backoff.
+        if ($state.task -and $state.task.IsCompleted -and ($state.requestKey -ne $state.key -or $state.requestAccess -cne $state.identity.access)) {
+            $obsoleteResponse = $null
+            try { $obsoleteResponse = $state.task.GetAwaiter().GetResult() } catch { }
+            if (!$obsoleteResponse -or $state.requestKey -ne $state.key -or [int]$obsoleteResponse.StatusCode -in @(401, 403)) {
+                if ($obsoleteResponse) { $obsoleteResponse.Dispose() }
+                $state.task = $null
+                $state.failures = 0; $state.next = 0L; $state.authFailed = $false
+            }
+        }
         if ($state.task -and $state.task.IsCompleted) {
             $response = $null
             try {
                 $response = $state.task.GetAwaiter().GetResult()
+                $state.authFailed = [int]$response.StatusCode -in @(401, 403)
                 if (!$response.IsSuccessStatusCode) {
                     $retry = $response.Headers.RetryAfter
                     if ($retry -and $retry.Delta) { $state.next = [Math]::Max($state.next, $now + $retry.Delta.TotalMilliseconds) }
@@ -192,6 +206,7 @@ function Get-UsageSnapshot {
                 [void]$request.Headers.TryAddWithoutValidation('User-Agent', 'claude-code/2.1.90')
             } else { [void]$request.Headers.TryAddWithoutValidation('ChatGPT-Account-Id', $state.identity.account) }
             $state.requestKey = $state.key
+            $state.requestAccess = $state.identity.access
             $state.task = $script:UsageHttp.SendAsync($request)
             $state.next = $now + 300000
         }

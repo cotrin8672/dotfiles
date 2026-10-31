@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pastel Bar - Weather</title>
+  <link rel="stylesheet" href="./weather.css">
+</head>
+<body>
+  <svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="weather-sun" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M19 5l-1.5 1.5m-11 11L5 19"/>
+    </symbol>
+    <symbol id="weather-moon" viewBox="0 0 24 24">
+      <path d="M20 15.5A8.5 8.5 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5z"/>
+    </symbol>
+    <symbol id="weather-cloud-sun" viewBox="0 0 24 24">
+      <path d="M12 5V3m6.4 4.6 1.4-1.4M20 12h2M7 5.3 5.6 4M15.4 9a4 4 0 0 0-7.2 2.1"/>
+      <path d="M7 19h10a3.5 3.5 0 0 0 .1-7 5.5 5.5 0 0 0-10.5 1.2A3 3 0 0 0 7 19z"/>
+    </symbol>
+    <symbol id="weather-cloud-moon" viewBox="0 0 24 24">
+      <path d="M14 4a5 5 0 0 0 6 6 5 5 0 0 1-2 2"/>
+      <path d="M7 19h10a3.5 3.5 0 0 0 .1-7 5.5 5.5 0 0 0-10.5 1.2A3 3 0 0 0 7 19z"/>
+    </symbol>
+    <symbol id="weather-cloud" viewBox="0 0 24 24">
+      <path d="M6.5 18h11a4 4 0 0 0 0-8 6 6 0 0 0-11.4 1.5A3.3 3.3 0 0 0 6.5 18z"/>
+    </symbol>
+    <symbol id="weather-rain" viewBox="0 0 24 24">
+      <path d="M7 15h10a3.5 3.5 0 0 0 .1-7 5.5 5.5 0 0 0-10.5 1.2A3 3 0 0 0 7 15zm2 3-1 3m5-3-1 3m5-3-1 3"/>
+    </symbol>
+    <symbol id="weather-snow" viewBox="0 0 24 24">
+      <path d="M7 15h10a3.5 3.5 0 0 0 .1-7 5.5 5.5 0 0 0-10.5 1.2A3 3 0 0 0 7 15zm2 2v4m-2-2h4m5-2v4m-2-2h4"/>
+    </symbol>
+    <symbol id="weather-thunder" viewBox="0 0 24 24">
+      <path d="M7 15h3m5 0h2a3.5 3.5 0 0 0 .1-7 5.5 5.5 0 0 0-10.5 1.2A3 3 0 0 0 7 15zm6-2-3 5h3l-1 4 4-6h-3z"/>
+    </symbol>
+  </svg>
+  <main class="pill" aria-label="Weather and date">
+    <div class="weather" id="weather" aria-label="Current weather">
+      <svg class="icon" aria-hidden="true"><use id="weather-icon" href="#weather-cloud"/></svg>
+      <strong class="temperature" id="temperature">--°C</strong>
+      <span class="visually-hidden" id="condition">Unavailable</span>
+    </div>
+    <span class="separator" aria-hidden="true"></span>
+    <button class="date" id="open-calendar" type="button" aria-label="Open calendar" title="Open calendar">
+      <svg class="icon calendar-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>
+      </svg>
+      <span class="reading"><small id="date"></small><strong id="time"></strong></span>
+    </button>
+  </main>
+  <script type="module" src="./weather.js"></script>
+</body>
+</html>

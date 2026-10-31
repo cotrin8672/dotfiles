@@ -16,6 +16,12 @@ public static class PastelAcrylic
     [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr window, out Rect rect);
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern IntPtr CreateWindowEx(uint extended, string className, string title, uint style, int x, int y, int width, int height, IntPtr parent, IntPtr menu, IntPtr instance, IntPtr parameter);
     [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr window, IntPtr after, int x, int y, int width, int height, uint flags);
+    [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr window, int command);
+    [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr window);
+    [DllImport("user32.dll")] static extern IntPtr SetThreadDpiAwarenessContext(IntPtr context);
+    [DllImport("user32.dll")] static extern IntPtr MonitorFromWindow(IntPtr window, uint flags);
+    [StructLayout(LayoutKind.Sequential)] struct MonitorInfo { public int Size; public Rect Monitor, Work; public uint Flags; }
+    [DllImport("user32.dll")] static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo info);
     [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr window, int attribute, ref int value, int size);
     [DllImport("user32.dll")] static extern bool PeekMessage(out Message message, IntPtr window, uint min, uint max, uint flags);
     [DllImport("user32.dll")] static extern bool TranslateMessage(ref Message message);
@@ -24,10 +30,12 @@ public static class PastelAcrylic
     interface IDesktopInterop { void CreateDesktopWindowTarget(IntPtr window, bool topmost, out IntPtr target); }
     static IntPtr queue;
     static readonly Dictionary<IntPtr,IntPtr> layers = new Dictionary<IntPtr,IntPtr>();
+    public static bool LayoutConstrained { get; private set; }
 
     public static void Initialize()
     {
         if (queue != IntPtr.Zero) return;
+        SetThreadDpiAwarenessContext(new IntPtr(-4));
         QueueOptions options = new QueueOptions { Size=Marshal.SizeOf(typeof(QueueOptions)), ThreadType=2, ApartmentType=2 };
         Marshal.ThrowExceptionForHR(CreateDispatcherQueueController(options, out queue));
     }
@@ -38,6 +46,87 @@ public static class PastelAcrylic
         try { return Marshal.GetObjectForIUnknown(target); }
         finally { Marshal.Release(target); }
     }
+    public static int[] FitSizes(int width, int[] original, int margin, double scale)
+    {
+        var sizes = (int[])original.Clone();
+        int center = sizes.Length - 3;
+        sizes[center] = (int)Math.Round(320 * scale);
+        if (center == 2)
+            sizes[1] = (int)Math.Round(132 * scale);
+        int leftTotal = 0, rightTotal = 0;
+        for (int i = 0; i < center; i++) leftTotal += sizes[i];
+        for (int i = center + 1; i < sizes.Length; i++) rightTotal += sizes[i];
+        sizes[center] = Math.Max((int)Math.Round(120 * scale), Math.Min(sizes[center], width - 2 * (margin + Math.Max(leftTotal, rightTotal))));
+        return sizes;
+    }
+    public static int[] Positions(int left, int width, int[] sizes, int preferredGap, int margin)
+    {
+        int center = sizes.Length - 3;
+        var result = new int[sizes.Length];
+        result[center] = left + (width - sizes[center]) / 2;
+        int leftTotal = 0, rightTotal = 0;
+        for (int i = 0; i < center; i++) leftTotal += sizes[i];
+        for (int i = center + 1; i < sizes.Length; i++) rightTotal += sizes[i];
+        int leftRemaining = result[center] - left - margin - leftTotal;
+        int rightRemaining = left + width - margin - result[center] - sizes[center] - rightTotal;
+        if (leftRemaining < 0 || rightRemaining < 0) throw new ArgumentException("Monitor too narrow for all pills with the active window centered.");
+        int gap = Math.Max(0, Math.Min(preferredGap, Math.Min(leftRemaining / center, rightRemaining / (sizes.Length - center - 1))));
+        int x = result[center];
+        for (int i = center - 1; i >= 0; i--) { x -= sizes[i] + gap; result[i] = x; }
+        x = result[center] + sizes[center] + gap;
+        for (int i = center + 1; i < sizes.Length; i++) { result[i] = x; x += sizes[i] + gap; }
+        return result;
+    }
+    public static void Arrange(int parentId, bool spotifyOpen)
+    {
+        var windows = new Dictionary<string, IntPtr>();
+        bool spotifyVisible = false;
+        EnumWindows((window, parameter) => {
+            uint pid; GetWindowThreadProcessId(window, out pid);
+            if (pid != parentId) return true;
+            StringBuilder text = new StringBuilder(256); GetWindowText(window, text, text.Capacity);
+            string title = text.ToString();
+            if (title == "Pastel Bar - Spotify") { spotifyVisible = true; windows["Spotify"] = window; }
+            else if (title == "Pastel Bar - Spotify Hidden") windows["Spotify"] = window;
+            else if (title.StartsWith("Pastel Bar - ")) windows[title.Substring(13)] = window;
+            return true;
+        }, IntPtr.Zero);
+        if (!windows.ContainsKey("Spacer") || !windows.ContainsKey("Hardware") || !windows.ContainsKey("Window") || !windows.ContainsKey("AI") || !windows.ContainsKey("Weather")) return;
+        var names = new List<string> { "Hardware" };
+        if ((spotifyOpen || spotifyVisible) && windows.ContainsKey("Spotify")) names.Add("Spotify");
+        names.AddRange(new[] { "Window", "AI", "Weather" });
+        Rect spacer;
+        if (!GetWindowRect(windows["Spacer"], out spacer)) return;
+        var monitor = new MonitorInfo { Size = Marshal.SizeOf(typeof(MonitorInfo)) };
+        if (!GetMonitorInfo(MonitorFromWindow(windows["Spacer"], 2), ref monitor)) return;
+        var rects = new Rect[names.Count];
+        var sizes = new int[names.Count];
+        for (int i = 0; i < names.Count; i++)
+        {
+            if (!GetWindowRect(windows[names[i]], out rects[i])) return;
+            sizes[i] = rects[i].Right - rects[i].Left;
+        }
+        double scale = (spacer.Bottom - spacer.Top) / 52.0;
+        int margin = (int)Math.Round(16 * scale);
+        int center = names.IndexOf("Window");
+        int width = monitor.Monitor.Right - monitor.Monitor.Left;
+        sizes = FitSizes(width, sizes, margin, scale);
+        int[] positions;
+        try { positions = Positions(monitor.Monitor.Left, width, sizes, (int)Math.Round(56 * scale), margin); LayoutConstrained = false; }
+        catch (ArgumentException)
+        {
+            LayoutConstrained = true;
+            // At unsupported widths preserve side windows; the active window still stays centered.
+            SetWindowPos(windows["Window"], IntPtr.Zero, monitor.Monitor.Left + (width - sizes[center]) / 2, rects[center].Top, sizes[center], rects[center].Bottom - rects[center].Top, 0x14);
+            return;
+        }
+        for (int i = 0; i < names.Count; i++)
+        {
+            if (positions[i] != rects[i].Left || sizes[i] != rects[i].Right - rects[i].Left)
+                SetWindowPos(windows[names[i]], IntPtr.Zero, positions[i], rects[i].Top, sizes[i], rects[i].Bottom - rects[i].Top, 0x14);
+            if (!IsWindowVisible(windows[names[i]])) ShowWindow(windows[names[i]], 4);
+        }
+    }
     public static long[][] Sync(int parentId)
     {
         var result = new List<long[]>();
@@ -46,7 +135,13 @@ public static class PastelAcrylic
             if (pid != parentId) return true;
             StringBuilder text = new StringBuilder(256); GetWindowText(window, text, text.Capacity);
             string title = text.ToString();
-            if (title != "Pastel Bar - Spacer" && title != "Pastel Bar - Hardware" && title != "Pastel Bar - Window" && title != "Pastel Bar - AI") return true;
+            if (title == "Pastel Bar - Spotify Hidden" || !IsWindowVisible(window))
+            {
+                IntPtr hidden;
+                if (layers.TryGetValue(window, out hidden)) ShowWindow(hidden, 0);
+                return true;
+            }
+            if (title != "Pastel Bar - Spacer" && title != "Pastel Bar - Hardware" && title != "Pastel Bar - Window" && title != "Pastel Bar - AI" && title != "Pastel Bar - Spotify" && title != "Pastel Bar - Weather") return true;
             Rect rect; if (!GetWindowRect(window, out rect)) return true;
             IntPtr layer;
             if (!layers.TryGetValue(window, out layer))
@@ -60,7 +155,7 @@ public static class PastelAcrylic
                 layers[window] = layer;
             }
             SetWindowPos(layer, window, rect.Left, rect.Top, rect.Right-rect.Left, rect.Bottom-rect.Top, 0x250);
-            result.Add(new long[] { layer.ToInt64(), rect.Right-rect.Left, rect.Bottom-rect.Top, title == "Pastel Bar - Spacer" ? 1 : 0 });
+            result.Add(new long[] { layer.ToInt64(), rect.Right-rect.Left, rect.Bottom-rect.Top, title == "Pastel Bar - Spacer" ? 1 : 0, title == "Pastel Bar - Spotify" ? 1 : 0 });
             return true;
         }, IntPtr.Zero);
         return result.ToArray();

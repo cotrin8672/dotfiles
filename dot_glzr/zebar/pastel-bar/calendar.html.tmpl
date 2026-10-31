@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calendar</title>
+  <link rel="stylesheet" href="./calendar.css">
+</head>
+<body>
+  <main class="calendar" aria-label="Calendar">
+    <header class="calendar-header">
+      <h1 id="month" aria-live="polite" aria-atomic="true"></h1>
+      <div class="month-controls">
+        <button id="previous" type="button" aria-label="Previous month" autofocus>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button id="next" type="button" aria-label="Next month">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+    </header>
+    <table aria-labelledby="month">
+      <thead><tr>
+        <th scope="col" aria-label="Sunday">Sun</th>
+        <th scope="col" aria-label="Monday">Mon</th>
+        <th scope="col" aria-label="Tuesday">Tue</th>
+        <th scope="col" aria-label="Wednesday">Wed</th>
+        <th scope="col" aria-label="Thursday">Thu</th>
+        <th scope="col" aria-label="Friday">Fri</th>
+        <th scope="col" aria-label="Saturday">Sat</th>
+      </tr></thead>
+      <tbody id="days"></tbody>
+    </table>
+  </main>
+  <script type="module" src="./calendar.js"></script>
+</body>
+</html>

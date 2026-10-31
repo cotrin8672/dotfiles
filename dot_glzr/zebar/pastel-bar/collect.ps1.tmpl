@@ -40,8 +40,6 @@ try {
                     if ($layout.stop -eq $true) { break }
                     if ($layout.heartbeat -eq $true) {
                         $lastLayout = [DateTime]::UtcNow
-                        [PastelNative]::StylePillWindows($parentId)
-                        $pillWindows = Update-PillAcrylic $parentId
                     }
                 } catch { [Console]::Error.WriteLine('Pill layout could not be applied') }
                 $layoutTask = $layoutReader.ReadLineAsync()
@@ -50,6 +48,12 @@ try {
         $now = [DateTime]::UtcNow
         if (!$Once) { [PastelAcrylic]::Pump() }
         if (!$Once -and ($now - $lastLayout).TotalSeconds -gt 20) { break }
+        $spotifyOpen = @(Get-Process -Name Spotify -ErrorAction SilentlyContinue).Count -gt 0
+        if (!$Once) {
+            [PastelNative]::StylePillWindows($parentId)
+            [PastelAcrylic]::Arrange($parentId, $spotifyOpen)
+            $pillWindows = Update-PillAcrylic $parentId
+        }
         while ($gpuTask -and $gpuTask.IsCompleted) {
             $line = $gpuTask.GetAwaiter().GetResult()
             if ($null -eq $line) { $gpuTask=$null; break }
@@ -84,7 +88,8 @@ try {
             $ai = Get-UsageSnapshot
             $nextQuota=$now.AddSeconds(2)
         }
-        $state = @{hardware=$hardware;activeWindow=$active;ai=$ai;connected=$true;appearance=@{pillWindows=$pillWindows}}
+        $layoutConstrained = if (!$Once) { [PastelAcrylic]::LayoutConstrained } else { $false }
+        $state = @{hardware=$hardware;activeWindow=$active;ai=$ai;spotifyOpen=$spotifyOpen;connected=$true;appearance=@{pillWindows=$pillWindows;layoutConstrained=$layoutConstrained}}
         [Console]::WriteLine(($state | ConvertTo-Json -Depth 12 -Compress))
         [Console]::Out.Flush()
         if (!$Once) { Start-Sleep -Milliseconds 400 }

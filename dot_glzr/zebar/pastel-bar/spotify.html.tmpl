@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pastel Bar - Spotify Hidden</title>
+  <link rel="stylesheet" href="./spotify.css">
+</head>
+<body>
+  <main class="spotify" id="spotify" aria-label="Spotify" aria-hidden="true" inert>
+    <span class="record" aria-hidden="true"><span class="record-label"></span></span>
+    <div class="details">
+    <span class="track" id="track"><span class="track-title" id="track-title">Spotify</span></span>
+    <div class="controls">
+      <button id="previous" type="button" aria-label="Previous track" title="Previous track" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2v14H6zm3 7 10-7v14z"/></svg>
+      </button>
+      <button id="togglePlayPause" type="button" aria-label="Play" title="Play" disabled>
+        <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        <svg class="pause-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zm6 0h4v14h-4z"/></svg>
+      </button>
+      <button id="next" type="button" aria-label="Next track" title="Next track" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h2v14h-2zM5 5l10 7-10 7z"/></svg>
+      </button>
+    </div>
+    </div>
+  </main>
+  <script type="module" src="./spotify.js"></script>
+</body>
+</html>

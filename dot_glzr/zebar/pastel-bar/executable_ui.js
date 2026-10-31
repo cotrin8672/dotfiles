@@ -8,6 +8,48 @@
     return value && Number.isFinite(parsed.getTime()) ? parsed.toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '不明';
   };
 
+  const windowTitle = document.getElementById('window-title');
+  const windowTitleText = document.getElementById('window-title-text');
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  let titleAnimation = null, titleOverflow = 0, disposed = false;
+  function stopWindowTitleScroll() {
+    titleAnimation?.cancel();
+    titleAnimation = null;
+    windowTitle.classList.toggle('is-scrolling', false);
+  }
+  function updateWindowTitleScroll() {
+    if (disposed || document.hidden || reducedMotion.matches || !windowTitle.clientWidth) {
+      stopWindowTitleScroll();
+      return;
+    }
+    const overflow = Math.max(0, windowTitleText.scrollWidth - windowTitle.clientWidth);
+    if (titleAnimation && titleOverflow === overflow) return;
+    stopWindowTitleScroll();
+    if (!overflow) return;
+    titleOverflow = overflow;
+    windowTitle.classList.toggle('is-scrolling', true);
+    const travel = overflow / 22 * 1000;
+    const duration = 2400 + travel;
+    titleAnimation = windowTitleText.animate([
+      { transform: 'translateX(0)', offset: 0 },
+      { transform: 'translateX(0)', offset: 1200 / duration },
+      { transform: `translateX(-${overflow}px)`, offset: (1200 + travel) / duration },
+      { transform: `translateX(-${overflow}px)`, offset: 1 },
+    ], { duration, iterations: Infinity, easing: 'linear' });
+  }
+  const titleResize = new ResizeObserver(updateWindowTitleScroll);
+  titleResize.observe(windowTitle);
+  titleResize.observe(windowTitleText);
+  reducedMotion.addEventListener('change', updateWindowTitleScroll);
+  document.addEventListener('visibilitychange', updateWindowTitleScroll);
+  addEventListener('beforeunload', () => {
+    disposed = true;
+    stopWindowTitleScroll();
+    titleResize.disconnect();
+    reducedMotion.removeEventListener('change', updateWindowTitleScroll);
+    document.removeEventListener('visibilitychange', updateWindowTitleScroll);
+  });
+
   function plot(history) {
     let line = '', area = '', segment = [];
     const close = () => {
@@ -113,7 +155,7 @@
       }
       const frame = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       frame.classList.add('reset-frame');
-      frame.setAttribute('viewBox', '0 0 108 14');
+      frame.setAttribute('viewBox', '0 0 108 11');
       frame.dataset.endsAt = String(end.getTime());
       frame.dataset.duration = String((seconds || 0) * 1000);
       frame.setAttribute('role', 'progressbar');
@@ -122,12 +164,13 @@
       frame.setAttribute('aria-valuemax', '100');
       for (const className of ['frame-base', 'frame-progress']) {
         const outline = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        const inset = .75;
         outline.setAttribute('class', className);
-        outline.setAttribute('x', '.5');
-        outline.setAttribute('y', '.5');
-        outline.setAttribute('width', '107');
-        outline.setAttribute('height', '13');
-        outline.setAttribute('rx', '3.5');
+        outline.setAttribute('x', inset);
+        outline.setAttribute('y', inset);
+        outline.setAttribute('width', 108 - inset * 2);
+        outline.setAttribute('height', 11 - inset * 2);
+        outline.setAttribute('rx', 3 - inset);
         frame.append(outline);
       }
       row.append(track, reset, value, frame);
@@ -145,12 +188,17 @@
     for (const key of ['cpu', 'gpu', 'ram']) renderHardware(key, state.hardware[key] || {});
     const active = state.activeWindow;
     const pill = document.getElementById('active-window');
-    document.getElementById('window-title').textContent = active.title || 'Desktop';
+    const title = active.title || 'Desktop';
+    if (windowTitleText.textContent !== title) {
+      stopWindowTitleScroll();
+      windowTitleText.textContent = title;
+    }
     pill.title = [active.app, active.title].filter(Boolean).join('\n');
     const icon = document.getElementById('app-icon');
     const validIcon = typeof active.icon === 'string' && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(active.icon);
     if (validIcon && icon.getAttribute('src') !== active.icon) icon.src = active.icon;
     icon.hidden = !validIcon;
+    updateWindowTitleScroll();
     for (const key of ['codex', 'claude']) renderProvider(key, state.ai[key] || {});
   }
   document.getElementById('app-icon').addEventListener('error', event => {

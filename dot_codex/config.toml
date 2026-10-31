@@ -1,13 +1,13 @@
 cli_auth_credentials_store = "file"
-model = "claude-cli/claude-opus-5-5"
-model_reasoning_effort = "medium"
+model = "gpt-6.1-terra"
+model_reasoning_effort = "max"
 service_tier = "default"
 approval_policy = "never"
 approvals_reviewer = "user"
 sandbox_mode = "danger-full-access"
 
-model_catalog_json = "C:\\Users\\gummy\\.codex\\opencodex-catalog.json"
 notify = [ "C:\\Users\\gummy\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\5c41f77a7900391c\\bin\\node_modules\\@oai\\sky\\bin\\windows\\codex-computer-use.exe", "turn-ended" ]
+model_catalog_json = "C:\\Users\\gummy\\.codex\\opencodex-catalog.json"
 # Auto-injected by opencodex (undo: ocx restore)
 openai_base_url = "http://127.0.0.1:10100/v1"
 # Auto-injected by opencodex (undo: ocx restore)
@@ -128,7 +128,7 @@ source = '\\?\C:\Users\gummy\.cache\codex-runtimes\codex-primary-runtime\plugins
       BROWSER_USE_CODEX_APP_VERSION = "26.1027.30824"
       NODE_REPL_TRUSTED_SERVICES = '{"browser":"C:/Users/gummy/.codex/plugins/cache/openai-bundled/browser/26.1027.30824/scripts/browser-service.mjs","sky":"@oai/sky/service"}'
       SKY_CUA_NATIVE_PIPE = "1"
-      SKY_CUA_NATIVE_PIPE_DIRECTORY = '\\.\pipe\codex-computer-use-e91d93c1-00f2-4551-b309-abcb1a280cbd'
+      SKY_CUA_NATIVE_PIPE_DIRECTORY = '\\.\pipe\codex-computer-use-e85f4e7e-6417-4282-9bae-146ba48d50b2'
       CODEX_CLI_PATH = 'C:\Users\gummy\AppData\Local\OpenAI\Codex\bin\22cfb1d302613eae\codex.exe'
       NODE_REPL_UNTRUSTED_ENV_ALLOWLIST = "CODEX_WINDOWS_REGISTERED_CORE"
 NODE_REPL_INSTRUCTIONS_USE_CASE_COMPUTER_USE = ""
