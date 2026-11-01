@@ -53,21 +53,21 @@ public static class PastelNative
     static string lastIcon;
     static uint lastPid;
     static string lastApp;
-    static IntPtr gpuJob;
+    static IntPtr childJob;
 
-    public static bool TrackGpu(Process process)
+    public static bool TrackChild(Process process)
     {
-        if (gpuJob == IntPtr.Zero)
+        if (childJob == IntPtr.Zero)
         {
-            gpuJob = CreateJobObject(IntPtr.Zero, null);
+            childJob = CreateJobObject(IntPtr.Zero, null);
             JobLimits limits = new JobLimits();
-            limits.Basic.Flags = 0x2000; // Kill the GPU sampler when the collector process exits.
-            if (!SetInformationJobObject(gpuJob, 9, ref limits, Marshal.SizeOf(limits)))
+            limits.Basic.Flags = 0x2000; // Kill child processes when the collector exits, including a crash.
+            if (!SetInformationJobObject(childJob, 9, ref limits, Marshal.SizeOf(limits)))
             {
-                CloseHandle(gpuJob); gpuJob = IntPtr.Zero; return false;
+                CloseHandle(childJob); childJob = IntPtr.Zero; return false;
             }
         }
-        return AssignProcessToJobObject(gpuJob, process.Handle);
+        return AssignProcessToJobObject(childJob, process.Handle);
     }
 
     public static void StylePillWindows(int parentId)

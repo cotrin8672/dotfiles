@@ -75,33 +75,55 @@ if (typeof document !== 'undefined') {
       }
       // Pill windows never take focus, so clicking here does not blur an open calendar: toggle it explicitly.
       const calendarChannel = new BroadcastChannel('pastel-bar-calendar');
-      let calendarOpen = false, opening = false, closedAt = 0;
+      let calendarOpen = false, opening = false, calendarReady = false, preparing = null, pendingCalendar = null;
+      const sendCalendar = () => {
+        if (!calendarReady || !pendingCalendar) return;
+        const placement = pendingCalendar;
+        pendingCalendar = null;
+        calendarChannel.postMessage({ type: 'open', x: parseFloat(placement.offsetX), y: parseFloat(placement.offsetY) });
+      };
+      const prepareCalendar = () => {
+        if (calendarReady || preparing) return;
+        preparing = startWidgetPreset('calendar', 'hidden').catch(async error => {
+          if (pendingCalendar) return startWidget('calendar', pendingCalendar, {});
+          throw error;
+        }).catch(error => {
+          preparing = null; opening = false;
+          console.warn('Unable to prepare calendar', error);
+        });
+      };
       calendarChannel.onmessage = ({ data }) => {
+        if (data?.type === 'ready') { calendarReady = true; sendCalendar(); }
+        if (data?.type === 'preparing') { preparing ??= Promise.resolve(); }
         if (data?.type === 'opened') { calendarOpen = true; opening = false; }
-        if (data?.type === 'closed') { calendarOpen = false; closedAt = Date.now(); }
+        if (data?.type === 'closed') { calendarOpen = false; opening = false; }
+        if (data?.type === 'gone' || data?.type === 'failed') { calendarReady = false; preparing = null; calendarOpen = false; opening = false; }
       };
       calendarChannel.postMessage({ type: 'status' });
+      const warmup = setTimeout(prepareCalendar, 100);
+      document.addEventListener('pointerdown', event => {
+        if (calendarOpen && !document.getElementById('open-calendar').contains(event.target)) {
+          calendarChannel.postMessage({ type: 'close' });
+        }
+      });
       document.getElementById('open-calendar').addEventListener('click', async () => {
         if (calendarOpen) { calendarOpen = false; calendarChannel.postMessage({ type: 'close' }); return; }
-        if (opening || Date.now() - closedAt < 400) return;
+        if (opening) return;
         opening = true;
-        setTimeout(() => { opening = false; }, 1500);
         try {
           const [position, size] = await Promise.all([window.outerPosition(), window.outerSize()]);
-          await startWidget('calendar', calendarPlacement(position, size, globalThis.devicePixelRatio), {});
+          pendingCalendar = calendarPlacement(position, size, globalThis.devicePixelRatio);
         } catch (error) {
-          try {
-            await startWidgetPreset('calendar', 'default');
-          } catch (fallbackError) {
-            console.warn('Unable to open calendar', fallbackError);
-          }
+          pendingCalendar = calendarPlacement({ x: 0, y: 8 }, { width: globalThis.screen.width - 16, height: 34 }, 1);
         }
+        if (calendarReady) sendCalendar();
+        else prepareCalendar();
       });
       const providers = createProviderGroup({ weather: { type: 'weather', refreshInterval: 3600000 } });
       providers.onOutput(({ weather }) => updateWeather(weather));
       providers.onError(() => updateWeather(null));
       updateWeather(providers.outputMap.weather);
-      globalThis.addEventListener('beforeunload', () => providers.stopAll().catch(() => {}));
+      globalThis.addEventListener('beforeunload', () => { clearTimeout(warmup); calendarChannel.close(); providers.stopAll().catch(() => {}); });
     } catch (error) {
       console.warn('Weather provider unavailable', error);
       updateWeather(null);

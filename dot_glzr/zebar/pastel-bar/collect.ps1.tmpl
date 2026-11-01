@@ -23,7 +23,7 @@ try {
         $start.RedirectStandardOutput = $true; $start.RedirectStandardError = $true
         $gpu = New-Object Diagnostics.Process; $gpu.StartInfo = $start
         [void]$gpu.Start()
-        if (![PastelNative]::TrackGpu($gpu)) { [Console]::Error.WriteLine('GPU sampler lifetime could not be attached') }
+        if (![PastelNative]::TrackChild($gpu)) { [Console]::Error.WriteLine('GPU sampler lifetime could not be attached') }
         $gpuTask = $gpu.StandardOutput.ReadLineAsync()
     }
     $active = @{ title='Desktop'; app='Windows'; icon=$null }
@@ -52,7 +52,6 @@ try {
         if (!$Once) {
             [PastelNative]::StylePillWindows($parentId)
             [PastelAcrylic]::Arrange($parentId, $spotifyOpen)
-            $pillWindows = Update-PillAcrylic $parentId
         }
         while ($gpuTask -and $gpuTask.IsCompleted) {
             $line = $gpuTask.GetAwaiter().GetResult()
@@ -92,6 +91,10 @@ try {
         $state = @{hardware=$hardware;activeWindow=$active;ai=$ai;spotifyOpen=$spotifyOpen;connected=$true;appearance=@{pillWindows=$pillWindows;layoutConstrained=$layoutConstrained}}
         [Console]::WriteLine(($state | ConvertTo-Json -Depth 12 -Compress))
         [Console]::Out.Flush()
+        if (!$Once) {
+            $pillWindows = Update-PillAcrylic $parentId
+            [PastelAcrylic]::AnimateHardware()
+        }
         if (!$Once) { Start-Sleep -Milliseconds 400 }
     } while (!$Once)
 } finally {

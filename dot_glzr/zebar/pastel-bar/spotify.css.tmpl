@@ -10,10 +10,10 @@ body { user-select: none; }
   /* The shared acrylic layer behind this window draws the pill background. */
   display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: center; gap: 6px;
   width: 100%; height: 34px; padding: 0 16px 0 10px;
-  opacity: 0; transform: translateY(-2px); pointer-events: none;
-  transition: opacity 220ms ease-out, transform 220ms ease-out;
+  opacity: 0; pointer-events: none;
+  transition: opacity 120ms ease-out;
 }
-.spotify.is-visible { opacity: 1; transform: none; pointer-events: auto; }
+.spotify.is-visible { opacity: 1; pointer-events: auto; }
 .record {
   position: relative; display: grid; place-items: center; flex: 0 0 22px; height: 22px;
   border: 1px solid #777980; border-radius: 50%;

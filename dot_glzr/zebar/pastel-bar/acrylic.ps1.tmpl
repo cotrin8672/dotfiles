@@ -61,7 +61,7 @@ function Update-PillAcrylic([int]$ParentId) {
             $fade = $script:PillCompositor.CreateScalarKeyFrameAnimation()
             $fade.InsertKeyFrame([float]0, [float]0)
             $fade.InsertKeyFrame([float]1, [float]1)
-            $fade.Duration = [TimeSpan]::FromMilliseconds(220)
+            $fade.Duration = [TimeSpan]::FromMilliseconds(120)
             $visuals.root.StartAnimation('Opacity', $fade)
         }
     }

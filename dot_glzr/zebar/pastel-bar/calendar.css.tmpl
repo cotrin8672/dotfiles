@@ -5,7 +5,7 @@
   color: #efeff1;
 }
 * { box-sizing: border-box; }
-html, body { width: 100%; height: 100%; margin: 0; background: transparent; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent; }
 body { user-select: none; }
 [hidden] { display: none !important; }
 .calendar {
@@ -16,7 +16,11 @@ body { user-select: none; }
   padding: 14px 14px 12px;
   border-radius: 13px;
   background: #36383d;
+  animation: calendar-in 140ms cubic-bezier(.33, 1, .68, 1);
 }
+/* Keep the WebView alive after the short exit so the next opening is immediate. */
+.calendar.is-closing { animation: none; opacity: 0; transform: translateY(-4px); transition: opacity 110ms ease-in, transform 110ms ease-in; }
+@keyframes calendar-in { from { opacity: 0; transform: translateY(-4px); } }
 .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 h1 { margin: 0; font-size: 12px; font-weight: 500; }
 .month-controls { display: flex; gap: 2px; }
@@ -30,13 +34,44 @@ h1 { margin: 0; font-size: 12px; font-weight: 500; }
   border-radius: 4px;
   color: #e8e8ea;
   background: transparent;
+  font: inherit;
   cursor: pointer;
 }
+.month-controls .today-button { width: auto; padding: 0 7px; font-size: 11px; }
 .month-controls button:hover { background: #505258; }
 .month-controls button:focus-visible { outline: 2px solid #b6a3db; outline-offset: 1px; }
 .month-controls svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-table { flex: 1; width: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; font-size: 11px; font-variant-numeric: tabular-nums; }
-th { height: 23px; color: #adafb5; font-weight: 400; }
-td { height: 24px; padding: 0; }
-td span { display: grid; place-items: center; width: 24px; height: 24px; margin: auto; border-radius: 50%; }
-td .today { color: #292a2e; background: #dedfe2; font-weight: 500; }
+.weekdays, .week { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 11px; }
+.calendar-grid { display: flex; flex-direction: column; }
+.weekdays { height: 23px; align-items: center; color: #adafb5; }
+/* Six 32px weeks; the JS keeps a bounded buffer of rows around this viewport. */
+.weeks {
+  flex: 0 0 192px;
+  height: 192px;
+  overflow-y: auto;
+  overflow-anchor: none;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  border-radius: 4px;
+  outline: none;
+}
+.weeks::-webkit-scrollbar { display: none; }
+.weeks:focus-visible { box-shadow: inset 0 0 0 1px #b6a3db; }
+.week { height: 32px; align-items: center; }
+.day {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin: auto;
+  border-radius: 50%;
+  font-variant-numeric: tabular-nums;
+  transition: color 120ms ease-out;
+}
+.day.is-outside { color: #75777d; }
+.day.today { color: #292a2e; background: #dedfe2; font-weight: 500; }
+@media (prefers-reduced-motion: reduce) {
+  .calendar { animation: none; }
+  .calendar.is-closing { transition: none; }
+  .day { transition: none; }
+}

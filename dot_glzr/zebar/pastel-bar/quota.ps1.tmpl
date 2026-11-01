@@ -1,5 +1,6 @@
 # Local proxy observations are preferred; a quiet or stopped proxy is supplemented by a
-# read-only usage GET at most every five minutes. Never send a model prompt or refresh OAuth.
+# read-only usage GET at most every five minutes. Claude Code owns expired-login renewal;
+# its initialization-only process never receives a model prompt.
 $script:ProxyHome = if ($env:OPENCODEX_HOME) { $env:OPENCODEX_HOME } else { Join-Path $env:USERPROFILE '.opencodex' }
 $script:QuotaState = @{}
 $script:CacheStamps = @{}
@@ -43,6 +44,7 @@ function New-QuotaWindow([string]$Id, [string]$Label, $Percent, $Reset, $Duratio
 }
 
 function Read-UsageIdentity([string]$Provider) {
+    $expiresAt = $null; $canRefresh = $false
     if ($Provider -eq 'codex') {
         $dir = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $env:USERPROFILE '.codex' }
         $auth = Read-LocalJson (Join-Path $dir 'auth.json')
@@ -62,6 +64,8 @@ function Read-UsageIdentity([string]$Provider) {
         $auth = Read-LocalJson (Join-Path $dir '.credentials.json')
         $token = $auth.claudeAiOauth.accessToken
         $plan = $auth.claudeAiOauth.subscriptionType
+        $expiresAt = To-IsoTime $auth.claudeAiOauth.expiresAt
+        $canRefresh = [bool]$auth.claudeAiOauth.refreshToken
         $accountPath = if ($env:CLAUDE_CONFIG_DIR) { Join-Path $dir '.claude.json' } else { Join-Path $env:USERPROFILE '.claude.json' }
         $identity = (Read-LocalJson $accountPath).oauthAccount.accountUuid
         if (!$identity) { $identity = $auth.claudeAiOauth.refreshToken }
@@ -70,7 +74,39 @@ function Read-UsageIdentity([string]$Provider) {
     if (!$token -or !$identity) { return $null }
     $sha = [Security.Cryptography.SHA256]::Create()
     try { $key = [BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($identity))).Replace('-', '').ToLowerInvariant() } finally { $sha.Dispose() }
-    return @{ access = $token; account = $identity; key = $key; plan = $plan; endpoint = $endpoint }
+    return @{ access = $token; account = $identity; key = $key; plan = $plan; endpoint = $endpoint; expiresAt = $expiresAt; canRefresh = $canRefresh }
+}
+
+function Start-ClaudeCredentialRefresh {
+    $command = Get-Command claude.exe -CommandType Application -ErrorAction SilentlyContinue
+    $path = if ($command) { $command.Source } else { Join-Path $env:USERPROFILE '.local\bin\claude.exe' }
+    if (!(Test-Path -LiteralPath $path -PathType Leaf)) { return $null }
+    $start = New-Object Diagnostics.ProcessStartInfo
+    $start.FileName = $path
+    $start.Arguments = '--init-only --setting-sources "" --settings "{\"disableAllHooks\":true}" --strict-mcp-config --mcp-config "{\"mcpServers\":{}}"'
+    $start.WorkingDirectory = $PSScriptRoot
+    $start.UseShellExecute = $false; $start.CreateNoWindow = $true
+    $start.RedirectStandardInput = $true; $start.RedirectStandardOutput = $true; $start.RedirectStandardError = $true
+    # Use the same saved login as the usage GET, even when the shell selects another provider.
+    foreach ($name in @('ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_BASE_URL', 'CLAUDE_CODE_OAUTH_TOKEN', 'CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_CODE_USE_VERTEX', 'CLAUDE_CODE_USE_FOUNDRY')) {
+        $start.EnvironmentVariables.Remove($name)
+    }
+    $start.EnvironmentVariables['CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC'] = '1'
+    $start.EnvironmentVariables['DISABLE_AUTOUPDATER'] = '1'
+    $process = New-Object Diagnostics.Process
+    $process.StartInfo = $start
+    $started = $false
+    try {
+        $started = $process.Start()
+        if (![PastelNative]::TrackChild($process)) { throw 'Claude login renewal lifetime could not be attached' }
+        $process.StandardInput.Close()
+        [void]$process.StandardOutput.ReadToEndAsync()
+        [void]$process.StandardError.ReadToEndAsync()
+        return $process
+    } catch {
+        if ($started) { try { if (!$process.HasExited) { $process.Kill() } } catch { } }
+        $process.Dispose(); throw
+    }
 }
 
 function Convert-ProxyQuota([string]$Provider, $Quota) {
@@ -121,6 +157,11 @@ function Get-UsageSnapshot {
             $script:QuotaState[$provider] = @{ view = @{ status='loading'; plan=$null; windows=@(); updatedAt=$null; message='Waiting for usage data' }; at=0L; next=0L; failures=0; key=$null; task=$null; identityCheck=0L }
         }
         $state = $script:QuotaState[$provider]
+        if ($state.refresh -and ($state.refresh.HasExited -or $now - $state.refreshStarted -ge 30000)) {
+            try { if (!$state.refresh.HasExited) { $state.refresh.Kill() } } catch { }
+            $state.refresh.Dispose(); $state.refresh = $null
+            $state.identityCheck = 0L
+        }
         if ($now -ge $state.identityCheck) {
             $identity = Read-UsageIdentity $provider
             $state.identityCheck = $now + 30000
@@ -197,7 +238,15 @@ function Get-UsageSnapshot {
             }
         }
         $expired = @($state.view.windows | Where-Object { $_.resetsAt -and [DateTimeOffset]::Parse($_.resetsAt).ToUnixTimeMilliseconds() -le $now }).Count -gt 0
-        if (!$state.task -and $state.identity -and $now -ge $state.next -and ($now - $state.at -ge 300000 -or $expired)) {
+        if ($provider -eq 'claude' -and !$state.refresh -and $state.identity.canRefresh -and $state.identity.expiresAt -and
+            [DateTimeOffset]::Parse($state.identity.expiresAt).ToUnixTimeMilliseconds() -le $now -and $now -ge $state.refreshNext) {
+            $state.refreshNext = $now + 300000
+            try {
+                $state.refresh = Start-ClaudeCredentialRefresh
+                $state.refreshStarted = $now
+            } catch { $state.view.message = 'Claude login renewal unavailable; retaining last observation' }
+        }
+        if (!$state.task -and !$state.refresh -and $state.identity -and $now -ge $state.next -and ($now - $state.at -ge 300000 -or $expired)) {
             $request = New-Object Net.Http.HttpRequestMessage([Net.Http.HttpMethod]::Get, $state.identity.endpoint)
             $request.Headers.Authorization = New-Object Net.Http.Headers.AuthenticationHeaderValue('Bearer', $state.identity.access)
             $request.Headers.Accept.ParseAdd('application/json')

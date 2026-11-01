@@ -80,12 +80,37 @@ test('renders preview without Zebar and handles provider updates and calendar cl
             stopAll: async () => {},
           };
         }
+        let peer;
+        function preparePeer() {
+          if (peer) throw Error('duplicate calendar');
+          peer = new BroadcastChannel('pastel-bar-calendar');
+          const root = document.documentElement;
+          root.dataset.creates = String(Number(root.dataset.creates || 0) + 1);
+          peer.onmessage = ({ data }) => {
+            if (data.type === 'status') peer.postMessage({ type: 'ready' });
+            if (data.type === 'open') {
+              root.dataset.positions = (root.dataset.positions || '') + data.x + ',' + data.y + ';';
+              peer.postMessage({ type: 'opened' });
+            }
+            if (data.type === 'close') {
+              root.dataset.closes = String(Number(root.dataset.closes || 0) + 1);
+              peer.postMessage({ type: 'closed' });
+            }
+          };
+          peer.postMessage({ type: 'preparing' });
+          setTimeout(() => peer.postMessage({ type: 'ready' }), 1);
+        }
         export async function startWidget(name, placement, args) {
           if (location.search.includes('launchfailure')) throw Error('launch unavailable');
           const root = document.documentElement;
           root.dataset.calls = (root.dataset.calls || '') + [name, placement.offsetX, placement.offsetY, placement.width, placement.height, placement.monitorSelection.type, placement.dockToEdge.enabled, Object.keys(args).length].join(',') + ';';
+          preparePeer();
         }
-        export async function startWidgetPreset(name, preset) { document.documentElement.dataset.fallback = name + ',' + preset; }
+        export async function startWidgetPreset(name, preset) {
+          document.documentElement.dataset.preset = name + ',' + preset;
+          if (location.search.includes('launchfailure') || location.search.includes('presetfailure')) throw Error('preset unavailable');
+          preparePeer();
+        }
       `);
     } else if (files[url.pathname]) {
       const [file, contentType] = files[url.pathname];
@@ -112,7 +137,16 @@ test('renders preview without Zebar and handles provider updates and calendar cl
         </script>`);
       }
       if (url.pathname === '/weather.html' && !url.searchParams.has('preview')) {
-        content = content.replace('</body>', `<script>addEventListener('load', () => setTimeout(() => { const button = document.getElementById('open-calendar'); button.click(); setTimeout(() => button.click(), 20); }, 30));</script></body>`);
+        // Deliver mocked native messages on the same virtual clock as the headless browser.
+        content = content.replace('<head>', `<head><script>
+          const channels = new Map();
+          window.BroadcastChannel = class {
+            constructor(name) { this.peers = channels.get(name) || new Set(); channels.set(name, this.peers); this.peers.add(this); }
+            postMessage(data) { for (const peer of this.peers) if (peer !== this) queueMicrotask(() => peer.onmessage?.({ data })); }
+            close() { this.peers.delete(this); }
+          };
+        </script>`);
+        content = content.replace('</body>', `<script>addEventListener('load', () => setTimeout(() => { const button = document.getElementById('open-calendar'); button.click(); setTimeout(() => button.click(), 40); setTimeout(() => button.click(), 80); setTimeout(() => document.getElementById('weather').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })), 120); }, 150));</script></body>`);
       }
       response.writeHead(200, { 'Content-Type': contentType });
       response.end(content);
@@ -155,14 +189,25 @@ test('renders preview without Zebar and handles provider updates and calendar cl
   assert.match(live, /data-provider="\{&quot;weather&quot;:\{&quot;type&quot;:&quot;weather&quot;,&quot;refreshInterval&quot;:3600000\}\}"/);
   assert.match(live, /id="temperature">13°C</);
   assert.match(live, /id="condition">Light rain</);
-  // The second, quick click must not open a duplicate calendar while the first is starting.
-  assert.match(live, /data-calls="calendar,945px,50px,255px,275px,primary,false,0;"/);
+  assert.match(live, /data-preset="calendar,hidden"/);
+  assert.match(live, /data-creates="1"/);
+  assert.match(live, /data-positions="945,50;745,50;"/);
+  assert.match(live, /data-closes="2"/);
+  assert.doesNotMatch(live, /data-calls=/);
 
   const failure = await render('?failure&fallback');
   assert.match(failure, /id="temperature">--°C</);
   assert.match(failure, /id="condition">Unavailable</);
-  assert.match(failure, /data-fallback="calendar,default"/);
+  assert.match(failure, /data-preset="calendar,hidden"/);
+  assert.match(failure, /data-positions="-?\d+,50;-?\d+,50;"/);
+  assert.match(failure, /data-creates="1"/);
+
+  const presetFailure = await render('?presetfailure');
+  assert.match(presetFailure, /data-calls="calendar,945px,50px,255px,275px,primary,false,0;"/);
+  assert.match(presetFailure, /data-creates="1"/);
+  assert.match(presetFailure, /data-positions="945,50;745,50;"/);
 
   const launchFailure = await render('?launchfailure');
-  assert.match(launchFailure, /data-fallback="calendar,default"/);
+  assert.match(launchFailure, /data-preset="calendar,hidden"/);
+  assert.doesNotMatch(launchFailure, /data-creates=/);
 });

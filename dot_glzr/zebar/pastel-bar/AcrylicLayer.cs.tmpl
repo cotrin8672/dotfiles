@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 
 public static class PastelAcrylic
 {
@@ -26,10 +27,86 @@ public static class PastelAcrylic
     [DllImport("user32.dll")] static extern bool PeekMessage(out Message message, IntPtr window, uint min, uint max, uint flags);
     [DllImport("user32.dll")] static extern bool TranslateMessage(ref Message message);
     [DllImport("user32.dll")] static extern IntPtr DispatchMessage(ref Message message);
+    [StructLayout(LayoutKind.Sequential)] struct MousePoint { public int X, Y; }
+    [StructLayout(LayoutKind.Sequential)] struct MouseInfo { public MousePoint Point; public uint Data, Flags, Time; public UIntPtr Extra; }
+    delegate IntPtr MouseCallback(int code, IntPtr message, IntPtr data);
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode)] static extern IntPtr GetModuleHandle(string name);
+    [DllImport("user32.dll")] static extern IntPtr SetWindowsHookEx(int type, MouseCallback callback, IntPtr module, uint thread);
+    [DllImport("user32.dll")] static extern IntPtr CallNextHookEx(IntPtr hook, int code, IntPtr message, IntPtr data);
+    [DllImport("user32.dll")] static extern int GetMessage(out Message message, IntPtr window, uint min, uint max);
+    [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern IntPtr FindWindow(string className, string title);
+    [DllImport("user32.dll")] static extern bool PostMessage(IntPtr window, uint message, IntPtr wparam, IntPtr lparam);
+    [DllImport("user32.dll")] static extern bool SystemParametersInfo(uint action, uint parameter, out bool value, uint update);
     [ComImport, Guid("29E691FA-4567-4DCA-B319-D0F207EB6807"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     interface IDesktopInterop { void CreateDesktopWindowTarget(IntPtr window, bool topmost, out IntPtr target); }
     static IntPtr queue;
     static readonly Dictionary<IntPtr,IntPtr> layers = new Dictionary<IntPtr,IntPtr>();
+    static Thread mouseThread;
+    static MouseCallback mouseCallback;
+    struct HardwareMove { public IntPtr Window; public int Left; }
+    static HardwareMove? pendingHardware;
+    static bool hadSpotifySlot;
+    static bool spotifyBackdrop;
+
+    public static void AnimateHardware()
+    {
+        if (!pendingHardware.HasValue) return;
+        var move = pendingHardware.Value; pendingHardware = null;
+        Rect from; if (!GetWindowRect(move.Window, out from)) return;
+        IntPtr background; layers.TryGetValue(move.Window, out background);
+        bool enabled;
+        bool animate = !SystemParametersInfo(0x1042, 0, out enabled, 0) || enabled;
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        for (double t = 0; t < 1; )
+        {
+            t = animate ? Math.Min(1, clock.Elapsed.TotalMilliseconds / 180) : 1;
+            int x = from.Left + (int)Math.Round((move.Left - from.Left) * (1 - Math.Pow(1 - t, 3)));
+            SetWindowPos(move.Window, IntPtr.Zero, x, from.Top, 0, 0, 0x15);
+            if (background != IntPtr.Zero) SetWindowPos(background, IntPtr.Zero, x, from.Top, 0, 0, 0x215);
+            Pump();
+            if (t < 1) Thread.Sleep(8);
+        }
+    }
+
+    public static bool Inside(int x, int y, int left, int top, int right, int bottom)
+    {
+        return x >= left && x < right && y >= top && y < bottom;
+    }
+    static bool Hit(IntPtr window, int parentId, MousePoint point)
+    {
+        uint pid; GetWindowThreadProcessId(window, out pid);
+        Rect rect;
+        return pid == parentId && IsWindowVisible(window) && GetWindowRect(window, out rect) && Inside(point.X, point.Y, rect.Left, rect.Top, rect.Right, rect.Bottom);
+    }
+    static void WatchCalendar(int parentId)
+    {
+        if (mouseThread != null || parentId <= 0) return;
+        // A separate message loop keeps outside clicks responsive during quota requests.
+        mouseThread = new Thread(() => {
+            mouseCallback = (code, message, data) => {
+                long kind = message.ToInt64();
+                if (code >= 0 && (kind == 0x201 || kind == 0x204 || kind == 0x207))
+                {
+                    IntPtr calendar = FindWindow(null, "Pastel Calendar");
+                    uint pid; GetWindowThreadProcessId(calendar, out pid);
+                    if (pid == parentId && IsWindowVisible(calendar))
+                    {
+                        MousePoint point = ((MouseInfo)Marshal.PtrToStructure(data, typeof(MouseInfo))).Point;
+                        // The weather WebView handles its own trigger and other pill clicks.
+                        if (!Hit(calendar, parentId, point) && !Hit(FindWindow(null, "Pastel Bar - Weather"), parentId, point))
+                            PostMessage(calendar, 0x10, IntPtr.Zero, IntPtr.Zero);
+                    }
+                }
+                return CallNextHookEx(IntPtr.Zero, code, message, data);
+            };
+            IntPtr hook = SetWindowsHookEx(14, mouseCallback, GetModuleHandle(null), 0);
+            if (hook == IntPtr.Zero) return;
+            Message item;
+            while (GetMessage(out item, IntPtr.Zero, 0, 0) > 0) { TranslateMessage(ref item); DispatchMessage(ref item); }
+        });
+        mouseThread.IsBackground = true;
+        mouseThread.Start();
+    }
     public static bool LayoutConstrained { get; private set; }
 
     public static void Initialize()
@@ -79,6 +156,7 @@ public static class PastelAcrylic
     }
     public static void Arrange(int parentId, bool spotifyOpen)
     {
+        spotifyBackdrop = spotifyOpen;
         var windows = new Dictionary<string, IntPtr>();
         bool spotifyVisible = false;
         EnumWindows((window, parameter) => {
@@ -93,7 +171,8 @@ public static class PastelAcrylic
         }, IntPtr.Zero);
         if (!windows.ContainsKey("Spacer") || !windows.ContainsKey("Hardware") || !windows.ContainsKey("Window") || !windows.ContainsKey("AI") || !windows.ContainsKey("Weather")) return;
         var names = new List<string> { "Hardware" };
-        if ((spotifyOpen || spotifyVisible) && windows.ContainsKey("Spotify")) names.Add("Spotify");
+        bool spotifySlot = (spotifyOpen || spotifyVisible) && windows.ContainsKey("Spotify");
+        if (spotifySlot) names.Add("Spotify");
         names.AddRange(new[] { "Window", "AI", "Weather" });
         Rect spacer;
         if (!GetWindowRect(windows["Spacer"], out spacer)) return;
@@ -123,25 +202,32 @@ public static class PastelAcrylic
         for (int i = 0; i < names.Count; i++)
         {
             if (positions[i] != rects[i].Left || sizes[i] != rects[i].Right - rects[i].Left)
-                SetWindowPos(windows[names[i]], IntPtr.Zero, positions[i], rects[i].Top, sizes[i], rects[i].Bottom - rects[i].Top, 0x14);
+            {
+                if (names[i] == "Hardware" && spotifySlot != hadSpotifySlot && sizes[i] == rects[i].Right - rects[i].Left)
+                    pendingHardware = new HardwareMove { Window = windows[names[i]], Left = positions[i] };
+                else SetWindowPos(windows[names[i]], IntPtr.Zero, positions[i], rects[i].Top, sizes[i], rects[i].Bottom - rects[i].Top, 0x14);
+            }
             if (!IsWindowVisible(windows[names[i]])) ShowWindow(windows[names[i]], 4);
         }
+        hadSpotifySlot = spotifySlot;
     }
     public static long[][] Sync(int parentId)
     {
+        WatchCalendar(parentId);
         var result = new List<long[]>();
         EnumWindows((window, parameter) => {
             uint pid; GetWindowThreadProcessId(window, out pid);
             if (pid != parentId) return true;
             StringBuilder text = new StringBuilder(256); GetWindowText(window, text, text.Capacity);
             string title = text.ToString();
-            if (title == "Pastel Bar - Spotify Hidden" || !IsWindowVisible(window))
+            bool spotify = title == "Pastel Bar - Spotify" || title == "Pastel Bar - Spotify Hidden";
+            if ((spotify && !spotifyBackdrop) || !IsWindowVisible(window))
             {
                 IntPtr hidden;
                 if (layers.TryGetValue(window, out hidden)) ShowWindow(hidden, 0);
                 return true;
             }
-            if (title != "Pastel Bar - Spacer" && title != "Pastel Bar - Hardware" && title != "Pastel Bar - Window" && title != "Pastel Bar - AI" && title != "Pastel Bar - Spotify" && title != "Pastel Bar - Weather") return true;
+            if (!spotify && title != "Pastel Bar - Spacer" && title != "Pastel Bar - Hardware" && title != "Pastel Bar - Window" && title != "Pastel Bar - AI" && title != "Pastel Bar - Weather") return true;
             Rect rect; if (!GetWindowRect(window, out rect)) return true;
             IntPtr layer;
             if (!layers.TryGetValue(window, out layer))
@@ -155,7 +241,7 @@ public static class PastelAcrylic
                 layers[window] = layer;
             }
             SetWindowPos(layer, window, rect.Left, rect.Top, rect.Right-rect.Left, rect.Bottom-rect.Top, 0x250);
-            result.Add(new long[] { layer.ToInt64(), rect.Right-rect.Left, rect.Bottom-rect.Top, title == "Pastel Bar - Spacer" ? 1 : 0, title == "Pastel Bar - Spotify" ? 1 : 0 });
+            result.Add(new long[] { layer.ToInt64(), rect.Right-rect.Left, rect.Bottom-rect.Top, title == "Pastel Bar - Spacer" ? 1 : 0, spotify ? 1 : 0 });
             return true;
         }, IntPtr.Zero);
         return result.ToArray();

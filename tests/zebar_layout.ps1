@@ -66,6 +66,11 @@ if (($pack.widgets | Where-Object name -eq spotify).presets[0].width -ne '132px'
 if (($pack.widgets | Where-Object name -eq hardware).presets[0].width -ne '400px') { throw 'Hardware preset width differs from tested layout' }
 if (($pack.widgets | Where-Object name -eq ai).presets[0].width -ne '351px') { throw 'AI preset width differs from tested layout' }
 if (($pack.widgets | Where-Object name -eq active).presets[0].offsetX -ne '0px') { throw 'Active window must also start centered' }
+$calendar = $pack.widgets | Where-Object name -eq calendar
+$hidden = $calendar.presets | Where-Object name -eq hidden
+if ($calendar.focused -ne $false -or $hidden.offsetX -ne '-10000px' -or $hidden.offsetY -ne '-10000px' -or $hidden.width -ne '255px' -or $hidden.height -ne '275px') { throw 'Calendar prewarming must stay offscreen without taking focus' }
 $tint = Get-Content -Raw (Join-Path $PSScriptRoot '../dot_glzr/zebar/pastel-bar/acrylic.ps1.tmpl')
 if ($tint -notmatch 'else \{ \$smoke.A = 153; \$smoke.R = 53; \$smoke.G = 56; \$smoke.B = 61 \}' -or $tint -notmatch 'if \(\$row\[3\]\) \{ \$smoke.A = 110; \$smoke.R = 30; \$smoke.G = 32; \$smoke.B = 36 \}') { throw 'Normal pill tint must be 60% with unchanged RGB and spacer tint' }
+if ($tint -notmatch 'FromMilliseconds\(120\)') { throw 'Spotify must use the short simple fade' }
+if (![PastelAcrylic]::Inside(-20, 30, -100, 10, 0, 50) -or [PastelAcrylic]::Inside(0, 30, -100, 10, 0, 50) -or [PastelAcrylic]::Inside(-20, 50, -100, 10, 0, 50) -or [PastelAcrylic]::Inside(-101, 30, -100, 10, 0, 50)) { throw 'Popup outside-click bounds must work at edges and on negative monitor coordinates' }
 Write-Output 'Zebar layout checks passed'
