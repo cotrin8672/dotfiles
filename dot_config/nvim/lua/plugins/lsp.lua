@@ -149,6 +149,13 @@ return {
 			capabilities = capabilities,
 		})
 
+		vim.lsp.config("fatou", {
+			capabilities = capabilities,
+			cmd = { "fatou", "lsp" },
+			filetypes = { "julia" },
+			root_markers = { "Project.toml", "JuliaProject.toml", ".git" },
+		})
+
 		vim.lsp.config("ts_ls", {
 			capabilities = capabilities,
 		})
@@ -181,6 +188,7 @@ return {
 			"bashls",
 			"clangd",
 			"cssls",
+			"fatou",
 			"html",
 			"lua_ls",
 			"marksman",

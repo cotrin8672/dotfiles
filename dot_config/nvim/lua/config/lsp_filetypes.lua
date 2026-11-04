@@ -8,6 +8,7 @@ return {
 	"javascriptreact",
 	"json",
 	"jsonc",
+	"julia",
 	"latex",
 	"lua",
 	"markdown",
