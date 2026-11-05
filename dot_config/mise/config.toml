@@ -35,7 +35,6 @@ lefthook = "latest"
 gradle = "latest"
 carapace = "latest"
 "github:anomalyco/opencode" = "latest"
-"github:jolars/fatou" = "latest"
 "github:cordx56/rustowl" = "0.4.0"
 zellij = "latest"
 ast-index = "3.56.0"
@@ -71,6 +70,10 @@ run = "go install github.com/rhysd/vim-startuptime@latest"
 [tasks.nvim-startuptime]
 description = "Measure Neovim startup time with vim-startuptime"
 run = "vim-startuptime -vimpath nvim +qall"
+
+[tasks.julia-lsp-install]
+description = "Install LanguageServer.jl for Neovim"
+run = 'julia --startup-file=no --project=@nvim-lspconfig -e "using Pkg; Pkg.add(ARGS)" LanguageServer'
 
 [settings]
 experimental = true

@@ -80,6 +80,12 @@ return {
 		},
 		sources = {
 			default = function()
+				if vim.bo.filetype == "julia" then
+					local before = vim.api.nvim_get_current_line():sub(1, vim.api.nvim_win_get_cursor(0)[2])
+					if before:match('include%s*%(%s*"[^"]*$') then
+						return { "path" }
+					end
+				end
 				return require("mcdev.blink").route_sources({
 					"snippets",
 					"lazydev",
@@ -109,6 +115,36 @@ return {
 					score_offset = function(ctx)
 						return vim.bo[ctx.bufnr].filetype == "matlab" and 5 or -1
 					end,
+				},
+				path = {
+					override = {
+						get_trigger_characters = function(self)
+							local chars = self:get_trigger_characters()
+							if vim.bo.filetype == "julia" then
+								table.insert(chars, '"')
+							end
+							return chars
+						end,
+						get_completions = function(self, ctx, callback)
+							local start = ctx.line:sub(1, ctx.pos.col):match('include%s*%(%s*"()[^"/\\]*$')
+							if vim.bo[ctx.bufnr].filetype ~= "julia" or not start then
+								return self:get_completions(ctx, callback)
+							end
+							-- Blink needs a slash to recognize bare include filenames.
+							ctx = vim.deepcopy(ctx)
+							ctx.line = ctx.line:sub(1, start - 1) .. "./" .. ctx.line:sub(start)
+							ctx.pos.col = ctx.pos.col + 2
+							ctx.bounds.start_col = ctx.bounds.start_col + 2
+							return self:get_completions(ctx, function(response)
+								for _, item in ipairs(response and response.items or {}) do
+									local range = item.textEdit.range
+									range.start.character = range.start.character - 2
+									range["end"].character = range["end"].character - 2
+								end
+								callback(response)
+							end)
+						end,
+					},
 				},
 				lsp = {
 					transform_items = function(ctx, items)

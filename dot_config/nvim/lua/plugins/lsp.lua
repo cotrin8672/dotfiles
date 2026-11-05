@@ -149,11 +149,10 @@ return {
 			capabilities = capabilities,
 		})
 
-		vim.lsp.config("fatou", {
+		vim.lsp.config("julials", {
 			capabilities = capabilities,
-			cmd = { "fatou", "lsp" },
-			filetypes = { "julia" },
-			root_markers = { "Project.toml", "JuliaProject.toml", ".git" },
+			-- Neovim's Windows HOME fallback is not inherited by child processes.
+			cmd_env = { HOME = vim.env.HOME },
 		})
 
 		vim.lsp.config("ts_ls", {
@@ -188,8 +187,8 @@ return {
 			"bashls",
 			"clangd",
 			"cssls",
-			"fatou",
 			"html",
+			"julials",
 			"lua_ls",
 			"marksman",
 			"nushell",
