@@ -23,6 +23,7 @@
   | setValueAtPath "providers.mistral.liveModels" false
   | deleteValueAtPath "providers.mistral.initialModelSelection"
   | setValueAtPath "providers.mistral.reasoningEfforts" (list)
+  | setValueAtPath "providers.mistral.modelReasoningEfforts.mistral-large-4" (list "low" "medium" "high")
   | setValueAtPath "providers.mistral.modelContextWindows.codestral-latest" 256000
   | setValueAtPath "providers.mistral.modelContextWindows.mistral-large-4" 1048576
   | setValueAtPath "providers.mistral.modelContextWindows.deepseek-v4-1-flash-1017" 1048576

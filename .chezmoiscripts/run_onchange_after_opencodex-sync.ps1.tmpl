@@ -11,6 +11,9 @@ if ($opencodex) {
     if ($running) {
         & $opencodex.Source provider edit mistral --live-models off
         if ($LASTEXITCODE -ne 0) { throw 'OpenCodex live provider reload failed' }
+        $efforts = (Get-Content -Raw -LiteralPath '{{ joinPath .chezmoi.destDir ".opencodex" "config.json" | replace "'" "''" }}' | ConvertFrom-Json).providers.mistral.modelReasoningEfforts.'mistral-large-4'
+        & $opencodex.Source models set mistral/mistral-large-4 --reasoning-efforts ($efforts -join ',')
+        if ($LASTEXITCODE -ne 0) { throw 'OpenCodex reasoning effort update failed' }
     }
     & $opencodex.Source sync
     if ($LASTEXITCODE -ne 0) { throw 'OpenCodex model catalog sync failed' }

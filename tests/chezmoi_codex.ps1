@@ -48,6 +48,7 @@ function Test-OpenCodexConfig {
     if ($provider.liveModels -isnot [bool] -or $provider.liveModels) { throw 'Mistral live model discovery must be disabled' }
     if ('initialModelSelection' -in $provider.PSObject.Properties.Name) { throw 'Mistral retained an invalid initial model selection marker' }
     if ('reasoningEfforts' -notin $provider.PSObject.Properties.Name -or @($provider.reasoningEfforts).Count -ne 0) { throw 'Mistral reasoning efforts must be explicitly empty' }
+    if (($provider.modelReasoningEfforts.'mistral-large-4' -join ',') -cne 'low,medium,high') { throw 'Mistral Large 4 must expose only low, medium, and high reasoning efforts' }
     foreach ($model in $mistralModels.Keys) {
         if ($provider.modelContextWindows.$model -ne $mistralModels[$model].Context -or ($provider.modelInputModalities.$model -join ',') -cne $mistralModels[$model].Modalities) {
             throw "Incorrect Mistral context or input modalities for $model"
@@ -185,7 +186,7 @@ exit /b 0
     $env:PATH = $fakeBin + [IO.Path]::PathSeparator + $originalPath
     if ((Get-Command ocx).Source -ne $fakeOcx) { throw 'Refusing to run sync without the fixture ocx' }
     Copy-Item -LiteralPath (Join-Path $repository '.chezmoiscripts/run_onchange_after_opencodex-sync.ps1.tmpl') -Destination (Join-Path $source '.chezmoiscripts/run_onchange_after_opencodex-sync.ps1.tmpl')
-    $expectedCalls = 'provider snapshot --json,provider edit mistral --live-models off,sync'
+    $expectedCalls = 'provider snapshot --json,provider edit mistral --live-models off,models set mistral/mistral-large-4 --reasoning-efforts low,medium,high,sync'
     foreach ($pass in 1..2) {
         & chezmoi --source $source --destination $destination --config $configFile --persistent-state (Join-Path $fixture 'state.boltdb') --force apply
         if ($LASTEXITCODE -ne 0) { throw 'Fixture apply with the OpenCodex sync hook failed' }
