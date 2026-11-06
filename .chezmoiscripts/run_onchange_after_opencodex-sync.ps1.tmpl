@@ -1,0 +1,18 @@
+{{- if eq .chezmoi.os "windows" -}}
+# Models: {{ include (joinPath .chezmoi.sourceDir "dot_opencodex" "modify_private_config.json") | sha256sum }}
+# Defaults: {{ includeTemplate "opencodex-config.json" . | sha256sum }}
+$ErrorActionPreference = 'Stop'
+$opencodex = Get-Command ocx -ErrorAction SilentlyContinue
+if ($opencodex) {
+    $running = try {
+        & $opencodex.Source provider snapshot --json *> $null
+        $LASTEXITCODE -eq 0
+    } catch { $false }
+    if ($running) {
+        & $opencodex.Source provider edit mistral --live-models off
+        if ($LASTEXITCODE -ne 0) { throw 'OpenCodex live provider reload failed' }
+    }
+    & $opencodex.Source sync
+    if ($LASTEXITCODE -ne 0) { throw 'OpenCodex model catalog sync failed' }
+}
+{{- end }}
