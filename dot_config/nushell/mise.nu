@@ -4,7 +4,9 @@ const MISE_CONFIG_NAMES = [
     ".tool-versions"
     ".mise.local.toml"
     "mise.local.toml"
+    ".miserc.toml"
 ]
+const MISE_CONFIG_DIRS = ["mise" ".mise" ".config/mise"]
 const MISE_MUTATING_COMMANDS = [
     "use"
     "unuse"
@@ -71,6 +73,11 @@ def path-stamp [path: path] {
     }
 }
 
+def mise-glob [pattern: string] {
+    # Nu's glob patterns need forward slashes, including on Windows.
+    try { glob ($pattern | str replace --all '\' '/') --no-dir } catch { [] }
+}
+
 def mise-config-paths [] {
     mut paths = []
     let selected_env = ($env.MISE_ENV? | default "")
@@ -79,10 +86,21 @@ def mise-config-paths [] {
         for name in $MISE_CONFIG_NAMES {
             $paths = ($paths | append ($dir | path join $name))
         }
-        if $selected_env != "" {
-            $paths = ($paths | append ($dir | path join $"mise.($selected_env).toml"))
-            $paths = ($paths | append ($dir | path join $".mise.($selected_env).toml"))
+        for selected in ($selected_env | split row "," | where { $in != "" }) {
+            for prefix in ["mise" ".mise" ".config/mise"] {
+                $paths = ($paths | append ($dir | path join $"($prefix).($selected).toml"))
+                $paths = ($paths | append ($dir | path join $"($prefix).($selected).local.toml"))
+            }
         }
+        for config_dir in $MISE_CONFIG_DIRS {
+            let root = ($dir | path join $config_dir)
+            if ($root | path exists) {
+                $paths = ($paths | append (mise-glob ($root | path join "*.toml")))
+                $paths = ($paths | append (mise-glob ($root | path join "conf.d" "**" "*.toml")))
+            }
+        }
+        let xdg_mise = ($dir | path join ".config" "mise.toml")
+        $paths = ($paths | append $xdg_mise | append ($dir | path join ".config" "mise.local.toml"))
     }
 
     let config_home = (
@@ -90,24 +108,48 @@ def mise-config-paths [] {
         | default ($nu.home-dir | path join ".config")
         | path join "mise"
     )
-    $paths = ($paths | append ($config_home | path join "config.toml"))
+    $paths = ($paths | append (mise-glob ($config_home | path join "*.toml")))
     $paths = ($paths | append ($nu.home-dir | path join ".tool-versions"))
-    $paths = ($paths | append (try {
-        glob ($config_home | path join "conf.d" "*.toml") --no-dir
-    } catch {
-        []
-    }))
+    $paths = ($paths | append (mise-glob ($config_home | path join "conf.d" "**" "*.toml")))
 
-    if "MISE_CONFIG_FILE" in $env {
-        $paths = ($paths | append ($env.MISE_CONFIG_FILE | path expand))
+    for key in ["MISE_CONFIG_FILE" "MISE_GLOBAL_CONFIG_FILE" "MISE_SYSTEM_CONFIG_FILE"] {
+        if $key in $env {
+            $paths = ($paths | append ($env | get $key | path expand))
+        }
     }
 
-    $paths | flatten | uniq | sort
+    $paths | flatten | uniq | where { |path| $path | path exists } | sort
+}
+
+def mise-needs-pwd [paths: list<string>] {
+    # Keep directory-sensitive configs on the original refresh path. Inspect
+    # only after a refresh, so ordinary prompts do not reparse TOML files.
+    $paths | any { |path|
+        let name = ($path | path basename)
+        if $name == ".tool-versions" {
+            false
+        } else if $name in [".miserc.toml" "miserc.toml"] {
+            true
+        } else {
+            try {
+                let config = (open --raw $path | from toml)
+                let settings = ($config.settings? | default {} | columns)
+                (
+                    (["env" "hooks" "watch_files" "daemons"] | any { |key| $key in $config })
+                    or (["auto_env" "idiomatic_version_file_enable_tools" "override_config_filenames" "override_tool_versions_filenames"] | any { |key| $key in $settings })
+                    or (($config | reject --optional tasks | to nuon) =~ '(?i)\b(PWD|cwd)\b')
+                )
+            } catch {
+                true
+            }
+        }
+    }
 }
 
 def mise-fingerprint [] {
+    let custom_discovery = (["MISE_OVERRIDE_CONFIG_FILENAMES" "MISE_OVERRIDE_TOOL_VERSIONS_FILENAMES" "MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS" "MISE_AUTO_ENV"] | any { |key| $key in $env })
     let context = [
-        $"PWD=($env.PWD)"
+        (if $custom_discovery or ($env.__MISE_NEEDS_PWD? | default true) { $"PWD=($env.PWD)" } else { "" })
         $"MISE_ENV=($env.MISE_ENV? | default '')"
         $"MISE_CONFIG_FILE=($env.MISE_CONFIG_FILE? | default '')"
     ]
@@ -128,6 +170,7 @@ def --env mise-refresh [--force] {
     ^mise hook-env -s nu --quiet
         | parse vars
         | update env
+    $env.__MISE_NEEDS_PWD = (mise-needs-pwd (mise-config-paths))
     $env.__MISE_FINGERPRINT = (mise-fingerprint)
 }
 
@@ -173,6 +216,7 @@ export def --env --wrapped main [command?: string, --help, ...rest: string] {
         ^mise $command ...$rest
             | parse vars
             | update env
+        $env.__MISE_NEEDS_PWD = (mise-needs-pwd (mise-config-paths))
         $env.__MISE_FINGERPRINT = (mise-fingerprint)
     } else {
         ^mise $command ...$rest
