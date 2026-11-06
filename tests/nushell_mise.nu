@@ -13,6 +13,9 @@ let failure = (try {
     let baseline = (mise-fingerprint)
     cd ($fixture | path join b)
     assert equal (mise-fingerprint) $baseline "Plain cd must not invalidate the environment"
+    $env.__MISE_NEEDS_PWD = "false"
+    assert equal (mise-fingerprint) $baseline "Inherited false strings must preserve the fingerprint"
+    $env.__MISE_NEEDS_PWD = false
 
     "[tools]\nnode = '22'\n" | save $config
     assert (not (mise-needs-pwd [$config])) "Static tools must allow reuse across directories"
@@ -44,6 +47,8 @@ let failure = (try {
     }
     $env.__MISE_NEEDS_PWD = true
     let sensitive = (mise-fingerprint)
+    $env.__MISE_NEEDS_PWD = "true"
+    assert equal (mise-fingerprint) $sensitive "Inherited true strings must preserve PWD sensitivity"
     cd ($fixture | path join b)
     assert ((mise-fingerprint) != $sensitive) "PWD-sensitive environments must refresh between siblings"
 

@@ -1,6 +1,15 @@
 {{- /* chezmoi:modify-template */ -}}
 {{- /* Preserve machine-local state; only the keys below are managed. */ -}}
-{{- $config := fromToml .chezmoi.stdin -}}
+{{- $input := .chezmoi.stdin -}}
+{{- $targetPath := joinPath .chezmoi.destDir ".codex" "config.toml" -}}
+{{- $target := lstat $targetPath -}}
+{{- if and (not $input) $target (eq $target.type "symlink") (not (stat $targetPath)) -}}
+{{- /* A pull can leave the old config link dangling after its source is deleted. */ -}}
+{{- $revision := output "git" "-C" .chezmoi.sourceDir "log" "-1" "--format=%H" "--diff-filter=AM" "--" "dot_codex/config.toml" | trim -}}
+{{- if not $revision -}}{{ fail "Cannot recover the old Codex config from Git history; restore the linked config before applying." }}{{- end -}}
+{{- $input = output "git" "-C" .chezmoi.sourceDir "show" (printf "%s:dot_codex/config.toml" $revision) -}}
+{{- end -}}
+{{- $config := fromToml $input -}}
 {{- $config = $config
   | setValueAtPath "cli_auth_credentials_store" "file"
   | setValueAtPath "model" "gpt-6.1-sol"

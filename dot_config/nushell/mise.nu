@@ -149,7 +149,7 @@ def mise-needs-pwd [paths: list<string>] {
 def mise-fingerprint [] {
     let custom_discovery = (["MISE_OVERRIDE_CONFIG_FILENAMES" "MISE_OVERRIDE_TOOL_VERSIONS_FILENAMES" "MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS" "MISE_AUTO_ENV"] | any { |key| $key in $env })
     let context = [
-        (if $custom_discovery or ($env.__MISE_NEEDS_PWD? | default true) { $"PWD=($env.PWD)" } else { "" })
+        (if $custom_discovery or ($env.__MISE_NEEDS_PWD? | default true | into bool) { $"PWD=($env.PWD)" } else { "" })
         $"MISE_ENV=($env.MISE_ENV? | default '')"
         $"MISE_CONFIG_FILE=($env.MISE_CONFIG_FILE? | default '')"
     ]
