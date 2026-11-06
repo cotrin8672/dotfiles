@@ -448,12 +448,12 @@ local function configure_buffer(bufnr)
 		desc = "Matlab split/join",
 	})
 
-	vim.keymap.set("n", "<leader>mr", "<Cmd>MatlabRunFile<CR>", {
+	vim.keymap.set("n", "<leader>ee", "<Cmd>MatlabRunFile<CR>", {
 		buffer = bufnr,
 		desc = "Matlab run file",
 	})
 
-	vim.keymap.set("x", "<leader>ms", ":<C-u>MatlabRunVisual<CR>", {
+	vim.keymap.set("x", "<leader>is", ":<C-u>MatlabRunVisual<CR>", {
 		buffer = bufnr,
 		desc = "Matlab run selection",
 	})
@@ -463,12 +463,22 @@ local function configure_buffer(bufnr)
 		desc = "Matlab run cell",
 	})
 
-	vim.keymap.set("n", "<leader>mi", "<Cmd>MatlabInterrupt<CR>", {
+	vim.keymap.set("n", "<leader>ei", "<Cmd>MatlabInterrupt<CR>", {
 		buffer = bufnr,
 		desc = "Matlab interrupt",
 	})
 
-	vim.keymap.set("n", "<leader>mw", "<Cmd>MatlabToggleCommandWindow<CR>", {
+	vim.keymap.set("n", "<leader>er", "<Cmd>MatlabRestartHere<CR>", {
+		buffer = bufnr,
+		desc = "Matlab restart execution session",
+	})
+
+	vim.keymap.set("n", "<leader>is", "<Cmd>MatlabRunSelection<CR>", {
+		buffer = bufnr,
+		desc = "Matlab run line",
+	})
+
+	vim.keymap.set("n", "<leader>it", "<Cmd>MatlabToggleCommandWindow<CR>", {
 		buffer = bufnr,
 		desc = "Matlab toggle command window",
 	})

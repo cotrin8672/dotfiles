@@ -16,6 +16,9 @@ return {
 				{ mode = "x", keys = "z" },
 			},
 			clues = {
+				{ mode = "n", keys = "<Leader>e", desc = "+execute / explorer" },
+				{ mode = "n", keys = "<Leader>i", desc = "+interactive" },
+				{ mode = "x", keys = "<Leader>i", desc = "+interactive" },
 				{ mode = "n", keys = "<Leader>f", desc = "+find" },
 				{ mode = "n", keys = "<Leader>g", desc = "+git" },
 				{ mode = "n", keys = "<Leader>p", desc = "+pick" },

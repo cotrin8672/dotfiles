@@ -3,6 +3,48 @@ return {
 	event = "User LazyFile",
 	config = function()
 		local lint = require("lint")
+		lint.linters.fatou = {
+			cmd = "fatou",
+			stdin = false,
+			args = { "lint", "--output", "json" },
+			stream = "stdout",
+			ignore_exitcode = true,
+			parser = function(output, bufnr)
+				if output:match("^%s*$") then
+					return {}
+				end
+				local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+				local newline_size = vim.bo[bufnr].fileformat == "dos" and 2 or 1
+				local starts = { 0 }
+				for i, line in ipairs(lines) do
+					starts[i + 1] = starts[i] + #line + newline_size
+				end
+				local function position(offset)
+					local row = 1
+					while row < #lines and starts[row + 1] <= offset do
+						row = row + 1
+					end
+					return row - 1, math.min(#lines[row], math.max(0, offset - starts[row]))
+				end
+				local diagnostics = {}
+				for _, item in ipairs(vim.json.decode(output)) do
+					local row, col = position(item.range.start)
+					local end_row, end_col = position(item.range["end"])
+					diagnostics[#diagnostics + 1] = {
+						lnum = row,
+						col = col,
+						end_lnum = end_row,
+						end_col = end_col,
+						message = item.message.body,
+						code = item.rule,
+						severity = item.severity == "error" and vim.diagnostic.severity.ERROR
+							or vim.diagnostic.severity.WARN,
+						source = "fatou",
+					}
+				end
+				return diagnostics
+			end,
+		}
 		lint.linters.ktlint.args = {
 			"--reporter=json",
 			"--stdin",
@@ -32,6 +74,7 @@ return {
 		lint.linters_by_ft = {
 			c = { "clangtidy" },
 			cpp = { "clangtidy" },
+			julia = { "fatou" },
 			javascript = { "eslint_d" },
 			javascriptreact = { "eslint_d" },
 			typescript = { "eslint_d" },

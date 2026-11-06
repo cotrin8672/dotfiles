@@ -126,18 +126,25 @@ return {
 							return chars
 						end,
 						get_completions = function(self, ctx, callback)
-							local start = ctx.line:sub(1, ctx.pos.col):match('include%s*%(%s*"()[^"/\\]*$')
-							if vim.bo[ctx.bufnr].filetype ~= "julia" or not start then
+							local start, path = ctx.line:sub(1, ctx.pos.col):match('include%s*%(%s*"()([^"]*)$')
+							if
+								vim.bo[ctx.bufnr].filetype ~= "julia"
+								or not start
+								or path:match("^[/\\~]")
+								or path:match("^%a:")
+							then
 								return self:get_completions(ctx, callback)
 							end
-							-- Blink needs a slash to recognize bare include filenames.
+							-- Blink needs ./ to recognize relative include paths.
 							ctx = vim.deepcopy(ctx)
 							ctx.line = ctx.line:sub(1, start - 1) .. "./" .. ctx.line:sub(start)
 							ctx.pos.col = ctx.pos.col + 2
 							ctx.bounds.start_col = ctx.bounds.start_col + 2
 							return self:get_completions(ctx, function(response)
 								for _, item in ipairs(response and response.items or {}) do
-									local range = item.textEdit.range
+									-- Path candidates share ranges; adjust each copy only once.
+									local range = vim.deepcopy(item.textEdit.range)
+									item.textEdit.range = range
 									range.start.character = range.start.character - 2
 									range["end"].character = range["end"].character - 2
 								end

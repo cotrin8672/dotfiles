@@ -4,11 +4,20 @@ return {
 	opts = {
 		formatters = {
 			["google-java-format"] = { prepend_args = { "--aosp" } },
+			fatou = {
+				command = "fatou",
+				args = { "format", "--safe", "-" },
+				stdin = true,
+				cwd = function(_, ctx)
+					return ctx.dirname
+				end,
+			},
 		},
 		formatters_by_ft = {
 			c = { "clang_format" },
 			cpp = { "clang_format" },
 			java = { "google-java-format" },
+			julia = { "fatou", lsp_format = "never" },
 			lua = { "stylua" },
 			nix = { "alejandra" },
 			css = { "prettier" },
@@ -37,8 +46,9 @@ return {
 				return
 			end
 			return {
-				lsp_format = "fallback",
-			}, require("config.lint").format_started(bufnr)
+				lsp_format = vim.bo[bufnr].filetype == "julia" and "never" or "fallback",
+			},
+				require("config.lint").format_started(bufnr)
 		end,
 	},
 	config = function(_, opts)

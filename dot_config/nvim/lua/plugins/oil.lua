@@ -2,7 +2,7 @@ return {
 	"stevearc/oil.nvim",
 	cmd = "Oil",
 	keys = {
-		{ "<leader>e", "<cmd>Oil --float<cr>", desc = "Oil: Float" },
+		{ "<leader>eo", "<cmd>Oil --float<cr>", desc = "Oil: Float" },
 	},
 	config = function(_, opts)
 		require("oil").setup(opts)
