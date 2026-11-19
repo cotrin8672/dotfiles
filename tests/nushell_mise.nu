@@ -2,6 +2,11 @@
 use std/assert
 source ../dot_config/nushell/mise.nu
 
+assert (not (mise-poll-config 'z:\julia' 'windows'))
+assert (not (mise-poll-config '\\nixos\share\julia' 'windows'))
+assert (mise-poll-config 'C:\work' 'windows')
+assert (mise-poll-config '/home/user' 'linux')
+
 let original_pwd = $env.PWD
 let fixture = (mktemp -d | path expand)
 assert equal ($fixture | path dirname) ($env.TEMP | path expand)

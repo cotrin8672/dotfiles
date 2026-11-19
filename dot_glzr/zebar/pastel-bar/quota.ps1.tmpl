@@ -34,8 +34,9 @@ function To-IsoTime($Value) {
 function New-QuotaWindow([string]$Id, [string]$Label, $Percent, $Reset, $DurationSeconds = $null) {
     if ($null -eq $Percent -or $Percent -is [string] -or $Percent -is [bool]) { return }
     $value = [double]$Percent
-    if ([double]::IsNaN($value) -or [double]::IsInfinity($value) -or $value -lt 0 -or $value -gt 100) { return }
-    $window = @{ id = $Id; label = $Label; usedPercent = $value; resetsAt = To-IsoTime $Reset }
+    if ([double]::IsNaN($value) -or [double]::IsInfinity($value) -or $value -lt 0) { return }
+    # Providers can report usage above 100%; keep the exhausted window visible.
+    $window = @{ id = $Id; label = $Label; usedPercent = [Math]::Min(100, $value); resetsAt = To-IsoTime $Reset }
     if ($null -ne $DurationSeconds -and $DurationSeconds -isnot [string] -and $DurationSeconds -isnot [bool]) {
         $duration = [double]$DurationSeconds
         if ($duration -gt 0 -and ![double]::IsNaN($duration) -and ![double]::IsInfinity($duration)) { $window.durationSeconds = $duration }
@@ -147,6 +148,9 @@ function Convert-RemoteQuota([string]$Provider, $Body) {
 
 function Get-UsageSnapshot {
     $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+    if (!$script:QuotaLeader) {
+        try { $script:QuotaLeader = $script:QuotaMutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $script:QuotaLeader = $true }
+    }
     if (!$script:QuotaLeader) {
         $shared = Read-LocalJson $script:QuotaFile
         if ($shared) { return $shared }

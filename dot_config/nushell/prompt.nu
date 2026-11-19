@@ -4,11 +4,10 @@ def host_os_name [] {
 
 def os_icon [] {
     let nu_os = ($nu.os-info.name | default '' | str lowercase)
-    let host_os = (host_os_name)
 
     if $nu_os == 'windows' {
         '󰖳'
-    } else if $host_os == 'NixOS' {
+    } else if (host_os_name) == 'NixOS' {
         ''
     } else if ('WSL_DISTRO_NAME' in $env) and (($env.WSL_DISTRO_NAME | str lowercase) | str contains 'ubuntu') {
         ''
@@ -22,7 +21,7 @@ def os_icon [] {
 }
 
 def prompt_dir_name [] {
-    let cwd = (pwd)
+    let cwd = $env.PWD
     let home = (
         $env.HOME?
         | default $env.USERPROFILE?
@@ -244,6 +243,11 @@ def git-fetch-status-data [] {
 }
 
 def git_status_data [] {
+    # Z: maps to \\nixos\share. Avoid probing .git over SMB on every redraw.
+    if $nu.os-info.name == 'windows' and ($env.PWD =~ '(?i)^(?:z:|\\\\)') {
+        return null
+    }
+
     let repo_root = (git-repo-root)
     if $repo_root == null {
         git-prompt-cache-clear

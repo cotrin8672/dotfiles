@@ -205,6 +205,8 @@ return {
 			if lsp_status == "" then
 				return ""
 			end
+			-- LSP progress is literal text; statusline interprets "%" as a directive.
+			lsp_status = lsp_status:gsub("%%", "%%%%")
 
 			if not total then
 				return table.concat({

@@ -1,6 +1,5 @@
 local float = require("shared.float")
 
-local MD_RENDER_PRELOAD_DELAY = 1500
 local md_render_preview
 
 local function get_md_render_preview()
@@ -8,26 +7,6 @@ local function get_md_render_preview()
 		md_render_preview = require("md-render.snacks").preview()
 	end
 	return md_render_preview
-end
-
-local function schedule_md_render_preload()
-	local preload = function()
-		vim.defer_fn(function()
-			pcall(get_md_render_preview)
-		end, MD_RENDER_PRELOAD_DELAY)
-	end
-
-	if vim.v.vim_did_enter == 1 then
-		preload()
-		return
-	end
-
-	local group = vim.api.nvim_create_augroup("SnacksPickerWarmup", { clear = true })
-	vim.api.nvim_create_autocmd("UIEnter", {
-		group = group,
-		once = true,
-		callback = preload,
-	})
 end
 
 local function open_picker(source, opts)
@@ -106,6 +85,7 @@ return {
 	config = function(_, opts)
 		enable_kitty_placeholders_for_wezterm()
 		require("snacks").setup(opts)
+		require("ui.indent_guides").setup()
 		-- Preview resolution can resume after close has destroyed the picker windows.
 		local picker = require("snacks.picker.core.picker")
 		local update_titles = picker.update_titles
@@ -114,7 +94,6 @@ return {
 				return update_titles(self)
 			end
 		end
-		schedule_md_render_preload()
 	end,
 	opts = {
 		image = {

@@ -152,32 +152,53 @@ local function is_visible()
 	return state.winid ~= nil and vim.api.nvim_win_is_valid(state.winid)
 end
 
-local function is_on_prompt_line()
-	local bufnr = assert(state.bufnr)
-	local row = vim.api.nvim_win_get_cursor(0)[1]
-	return row == vim.api.nvim_buf_line_count(bufnr)
+local function sync_modifiable(session_state, entering_insert)
+	local bufnr = session_state.bufnr
+	vim.bo[bufnr].modifiable = session_state.prompt ~= ""
+		and vim.api.nvim_get_current_buf() == bufnr
+		and (entering_insert or vim.api.nvim_get_mode().mode:sub(1, 1) == "i")
+end
+
+local function edit_buffer(bufnr, callback)
+	local modifiable = vim.bo[bufnr].modifiable
+	vim.bo[bufnr].modifiable = true
+	local ok, result = xpcall(callback, debug.traceback)
+	vim.bo[bufnr].modifiable = modifiable
+	if not ok then
+		error(result, 0)
+	end
+	return result
+end
+
+local function input_start(bufnr)
+	local row, col = unpack(vim.api.nvim_buf_get_mark(bufnr, ":"))
+	if row == 0 then
+		return vim.api.nvim_buf_line_count(bufnr), #state.prompt
+	end
+	return row, col
 end
 
 local function get_current_input()
-	if state.prompt == "" or not is_on_prompt_line() then
+	if state.prompt == "" or vim.api.nvim_win_get_cursor(0)[1] < input_start(state.bufnr) then
 		return nil
 	end
-	local line = vim.api.nvim_get_current_line()
-	if not vim.startswith(line, state.prompt) then
-		return nil
-	end
-	return line:sub(#state.prompt + 1)
+	return vim.fn.prompt_getinput(state.bufnr)
 end
 
 local function set_current_input(input)
-	if state.prompt == "" or not is_on_prompt_line() then
+	if get_current_input() == nil then
 		return
 	end
 
-	local line = state.prompt .. input
-	local row = vim.api.nvim_win_get_cursor(0)[1]
-	vim.api.nvim_set_current_line(line)
-	vim.api.nvim_win_set_cursor(0, { row, #line })
+	local bufnr = state.bufnr
+	local row, col = input_start(bufnr)
+	local last = vim.api.nvim_buf_line_count(bufnr)
+	local line = vim.api.nvim_buf_get_lines(bufnr, last - 1, last, false)[1]
+	vim.api.nvim_buf_set_text(bufnr, row - 1, col, last - 1, #line, vim.split(input, "\n", { plain = true }))
+	vim.api.nvim_buf_set_mark(bufnr, ":", row, col, {})
+	last = vim.api.nvim_buf_line_count(bufnr)
+	line = vim.api.nvim_buf_get_lines(bufnr, last - 1, last, false)[1]
+	vim.api.nvim_win_set_cursor(0, { last, #line })
 end
 
 local function clear_history_state()
@@ -361,6 +382,7 @@ local function render_prompt(bufnr)
 	if vim.fn.prompt_getprompt(bufnr) ~= state.prompt then
 		vim.fn.prompt_setprompt(bufnr, state.prompt)
 	end
+	sync_modifiable(state)
 	render_winbar()
 end
 
@@ -382,12 +404,82 @@ local function with_session(session_id, callback)
 	return result, extra
 end
 
+local function paste_input(lines)
+	if state.prompt == "" then
+		return false
+	end
+	local bufnr = assert(state.bufnr)
+	local mode = vim.api.nvim_get_mode().mode
+	local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+	local start_row, start_col = input_start(bufnr)
+	if mode:sub(1, 1) ~= "i" or row < start_row or (row == start_row and col < start_col) then
+		row = vim.api.nvim_buf_line_count(bufnr)
+		col = #vim.api.nvim_buf_get_lines(bufnr, row - 1, row, false)[1]
+	end
+	edit_buffer(bufnr, function()
+		vim.api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, lines)
+		vim.api.nvim_buf_set_mark(bufnr, ":", start_row, start_col, {})
+	end)
+	local last_row = row + #lines - 1
+	local last_col = #lines == 1 and col + #lines[1] or #lines[#lines]
+	if mode:sub(1, 1) ~= "i" then
+		vim.cmd.normal({ args = { vim.keycode("<Esc>") }, bang = true })
+		vim.cmd("startinsert!")
+	end
+	vim.api.nvim_win_set_cursor(0, { last_row, last_col })
+	clear_history_state()
+	return true
+end
+
+local default_paste = vim.paste
+vim.paste = function(lines, phase)
+	local session_id = vim.b.matlab_command_window_session_id
+	if not session_id or vim.fn.getcmdtype() ~= "" then
+		return default_paste(lines, phase)
+	end
+	return with_session(session_id, function()
+		return paste_input(lines)
+	end)
+end
+
 local function configure_buffer(bufnr)
 	local session_id = state.session_id
+	local session_state = state
 	vim.bo[bufnr].buftype = "prompt"
 	vim.bo[bufnr].bufhidden = "hide"
 	vim.bo[bufnr].swapfile = false
 	vim.bo[bufnr].filetype = "matlab-command-window"
+	vim.b[bufnr].matlab_command_window_session_id = session_id
+
+	-- Native prompt buffers allow Normal-mode operators to delete the prompt prefix.
+	vim.api.nvim_create_autocmd({ "InsertEnter", "ModeChanged", "BufEnter" }, {
+		buffer = bufnr,
+		callback = function(event)
+			sync_modifiable(session_state, event.event == "InsertEnter")
+		end,
+	})
+	vim.api.nvim_create_autocmd({ "InsertLeave", "BufLeave" }, {
+		buffer = bufnr,
+		callback = function()
+			vim.bo[bufnr].modifiable = false
+		end,
+	})
+	for _, key in ipairs({ "i", "I", "a", "A", "gi" }) do
+		vim.keymap.set("n", key, function()
+			if session_state.prompt == "" then
+				return ""
+			end
+			vim.bo[bufnr].modifiable = true
+			return key
+		end, { buffer = bufnr, expr = true, silent = true })
+	end
+	for _, key in ipairs({ "p", "P" }) do
+		vim.keymap.set({ "n", "x" }, key, function()
+			with_session(session_id, function()
+				paste_input(vim.split(vim.fn.getreg(vim.v.register):rep(vim.v.count1), "\n", { plain = true }))
+			end)
+		end, { buffer = bufnr, silent = true })
+	end
 
 	vim.keymap.set("n", "q", close_window, { buffer = bufnr, noremap = true, silent = true, nowait = true })
 	vim.keymap.set("n", "]e", function()
@@ -409,29 +501,33 @@ local function configure_buffer(bufnr)
 		desc = "Matlab previous session",
 	})
 
-	for _, mode in ipairs({ "n", "i" }) do
-		vim.keymap.set(mode, "<C-c>", function()
-			if on_interrupt then
-				on_interrupt(session_id)
-			end
+	local function interrupt()
+		if on_interrupt then
+			on_interrupt(session_id)
+		end
+	end
+	vim.fn.prompt_setinterrupt(bufnr, interrupt)
+	vim.keymap.set({ "n", "i" }, "<C-c>", interrupt, { buffer = bufnr, noremap = true, silent = true })
+	vim.keymap.set("n", "<leader>mi", interrupt, {
+		buffer = bufnr,
+		noremap = true,
+		silent = true,
+		desc = "Matlab interrupt",
+	})
+
+	for key, delta in pairs({ ["<Up>"] = -1, ["<Down>"] = 1 }) do
+		vim.keymap.set("i", key, function()
+			with_session(session_id, function()
+				local row = vim.api.nvim_win_get_cursor(0)[1]
+				local boundary = delta < 0 and input_start(bufnr) or vim.api.nvim_buf_line_count(bufnr)
+				if row ~= boundary then
+					vim.api.nvim_feedkeys(vim.keycode(key), "n", false)
+				elseif #state.history > 0 then
+					find_history(delta)
+				end
+			end)
 		end, { buffer = bufnr, noremap = true, silent = true })
 	end
-
-	vim.keymap.set("i", "<Up>", function()
-		with_session(session_id, function()
-			if #state.history > 0 then
-				find_history(-1)
-			end
-		end)
-	end, { buffer = bufnr, noremap = true, silent = true })
-
-	vim.keymap.set("i", "<Down>", function()
-		with_session(session_id, function()
-			if #state.history > 0 then
-				find_history(1)
-			end
-		end)
-	end, { buffer = bufnr, noremap = true, silent = true })
 
 	vim.fn.prompt_setcallback(bufnr, function(input)
 		local ok, err = M.submit(input, { echo = false }, session_id)
@@ -501,15 +597,15 @@ local function append_entries(entries)
 	end
 
 	local bufnr = ensure_buffer()
-	local line_count = vim.api.nvim_buf_line_count(bufnr)
-	local insert_at = math.max(line_count - 1, 0)
+	local prompt_row, prompt_col = input_start(bufnr)
+	local insert_at = prompt_row - 1
 	local views = {}
 	local following = {}
 	for _, winid in ipairs(vim.fn.win_findbuf(bufnr)) do
 		if vim.api.nvim_win_is_valid(winid) then
 			ignore_scroll_events(winid)
 			views[winid] = vim.api.nvim_win_call(winid, vim.fn.winsaveview)
-			following[winid] = vim.api.nvim_win_get_cursor(winid)[1] == line_count
+			following[winid] = vim.api.nvim_win_get_cursor(winid)[1] >= prompt_row
 		end
 	end
 
@@ -517,7 +613,10 @@ local function append_entries(entries)
 	for index, entry in ipairs(entries) do
 		lines[index] = entry.text
 	end
-	vim.api.nvim_buf_set_lines(bufnr, insert_at, insert_at, false, lines)
+	edit_buffer(bufnr, function()
+		vim.api.nvim_buf_set_lines(bufnr, insert_at, insert_at, false, lines)
+		vim.api.nvim_buf_set_mark(bufnr, ":", prompt_row + #lines, prompt_col, {})
+	end)
 
 	for index, entry in ipairs(entries) do
 		local group = highlight_group(entry.severity)
@@ -726,7 +825,9 @@ function M.handle_clc(session_id)
 		state.output_tail_severity = "normal"
 		state.warning_active = false
 		state.control_marker_tail = ""
-		vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {})
+		edit_buffer(bufnr, function()
+			vim.api.nvim_buf_set_lines(bufnr, 0, input_start(bufnr) - 1, false, {})
+		end)
 		vim.api.nvim_buf_clear_namespace(bufnr, output_namespace, 0, -1)
 		clear_history_state()
 		render_prompt(bufnr)

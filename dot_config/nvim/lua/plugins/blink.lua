@@ -65,7 +65,7 @@ return {
 				winblend = float.blend,
 			},
 			documentation = {
-				auto_show = true,
+				auto_show = false,
 				window = {
 					winblend = float.blend,
 					direction_priority = {

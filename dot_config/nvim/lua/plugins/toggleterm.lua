@@ -30,15 +30,15 @@ return {
 			return fallback
 		end
 
-		local function attach_close_keymaps(term)
+		local function attach_close_keymaps(term, key)
 			local opts = { buffer = term.bufnr, silent = true, desc = "Close floating terminal" }
 
-			vim.keymap.set("t", "<Esc>", function()
+			vim.keymap.set("t", key, function()
 				vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-\\><C-n>", true, false, true), "n", false)
 				term:close()
 			end, opts)
 
-			vim.keymap.set("n", "<Esc>", function()
+			vim.keymap.set("n", key, function()
 				term:close()
 			end, opts)
 		end
@@ -80,7 +80,9 @@ return {
 		local shell = Terminal:new({
 			hidden = true,
 			direction = "float",
-			on_open = attach_close_keymaps,
+			on_open = function(term)
+				attach_close_keymaps(term, "q")
+			end,
 			float_opts = {
 				border = "curved",
 				width = math.floor(vim.o.columns * 0.88),
@@ -91,7 +93,9 @@ return {
 			cmd = "lazygit",
 			hidden = true,
 			direction = "float",
-			on_open = attach_close_keymaps,
+			on_open = function(term)
+				attach_close_keymaps(term, "<Esc>")
+			end,
 			float_opts = {
 				border = "curved",
 				width = math.floor(vim.o.columns * 0.88),

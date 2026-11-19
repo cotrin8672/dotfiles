@@ -41,7 +41,7 @@
         "claude-sonnet-5-5": 256000,
         "claude-sonnet-5": 256000,
         "claude-fable-5": 256000,
-        "claude-opus-5-5": 256000,
+        "claude-opus-5-5": 475000,
         "claude-opus-5": 256000,
         "claude-opus-4-8": 256000,
         "claude-opus-4-7": 256000,
@@ -807,10 +807,10 @@
     "claude-desktop": false
   },
   "providerContextCaps": {
-    "claude-cli": 256000
+    "claude-cli": 475000
   },
   "providerContextCapValues": {
-    "claude-cli": 256000
+    "claude-cli": 475000
   },
   "multiAgentGuidanceEnabled": true,
   "codexShimAutoRestore": true,
@@ -893,9 +893,6 @@
     "gpt-5.6-terra",
     "gpt-5.6-luna",
     "gpt-5.5",
-    "gpt-6-astra",
-    "gpt-6.1-sol",
-    "gpt-6.1-terra",
     "claude-cli/claude-fable-5",
     "claude-cli/claude-fable-5-1",
     "claude-cli/claude-haiku-4-5",

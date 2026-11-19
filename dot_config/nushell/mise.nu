@@ -178,8 +178,15 @@ def --env mise-pwd-hook [] {
     mise-refresh
 }
 
+def mise-poll-config [cwd: string, os: string] {
+    # shortcut: Z: and UNC paths refresh on cd or `mise activate`, not on every prompt.
+    not ($os == 'windows' and ($cwd =~ '(?i)^(?:z:|\\\\)'))
+}
+
 def --env mise-prompt-hook [] {
-    mise-refresh
+    if (mise-poll-config $env.PWD $nu.os-info.name) {
+        mise-refresh
+    }
 }
 
 def --env add-hook [field: cell-path new_hook: any] {

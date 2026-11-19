@@ -69,6 +69,41 @@ try {
     }
     $script:UsageHttp = $client
 
+    foreach ($source in @('proxy', 'remote')) {
+        foreach ($used in @(100, 105)) {
+            $reset = '2099-01-01T00:00:00Z'
+            $windows = if ($source -eq 'proxy') {
+                @(Convert-ProxyQuota 'claude' @{ fiveHourPercent=$used; fiveHourResetAt=$reset; weeklyPercent=7; weeklyResetAt=$reset })
+            } else {
+                @(Convert-RemoteQuota 'claude' @{ five_hour=@{ utilization=$used; resets_at=$reset }; seven_day=@{ utilization=7; resets_at=$reset } })
+            }
+            $short = @($windows | Where-Object { $_.id -eq '5h' })
+            $week = @($windows | Where-Object { $_.id -eq '1w' })
+            Assert-Quota ($windows.Count -eq 2 -and $short.Count -eq 1 -and $short[0].usedPercent -eq 100) ($source + ' must retain an exhausted five-hour window at zero remaining quota')
+            Assert-Quota ($short[0].resetsAt -eq (To-IsoTime $reset) -and $short[0].durationSeconds -eq 18000) 'An exhausted window must retain its reset time and cycle duration'
+            Assert-Quota ($week.Count -eq 1 -and $week[0].usedPercent -eq 7) 'An exhausted five-hour window must preserve weekly usage'
+        }
+    }
+    foreach ($invalid in @($null, '105', $true, -1, [double]::NaN, [double]::PositiveInfinity)) {
+        Assert-Quota ($null -eq (New-QuotaWindow '5h' '5h' $invalid $null)) 'Malformed quota percentages must still be rejected'
+    }
+    Write-Output 'PASS exhausted quota windows remain visible with zero remaining quota and a reset time'
+
+    Reset-Fixture -AuthFailed $false -StoredAccess 'fixture-new'
+    $quotaMutex.ReleaseMutex()
+    $script:QuotaLeader = $false
+    [void](Get-UsageSnapshot)
+    Assert-Quota $script:QuotaLeader 'A follower must acquire the quota mutex after the previous leader exits'
+    $script:QuotaState.claude.next = 0L
+    [void](Get-UsageSnapshot)
+    $quotaMutex.ReleaseMutex()
+    $recursive = $true
+    try { $quotaMutex.ReleaseMutex() } catch [ApplicationException] { $recursive = $false }
+    Assert-Quota (!$recursive) 'The leader must not acquire the mutex recursively on later snapshots'
+    $script:QuotaLeader = $quotaMutex.WaitOne(0)
+    Assert-Quota $script:QuotaLeader 'The test must restore mutex ownership'
+    Write-Output 'PASS follower takes over after leader exit without recursive mutex ownership'
+
     Reset-Fixture -AuthFailed $false
     $script:FixtureAccess = 'fixture-old'
     $script:QuotaState.claude.task = New-FixtureTask -Status 401

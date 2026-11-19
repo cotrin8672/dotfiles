@@ -150,7 +150,13 @@ return {
 		})
 
 		vim.lsp.config("julials", {
-			capabilities = capabilities,
+			-- Keep Julia LSP enabled without watching files on SMB shares.
+			capabilities = vim.tbl_deep_extend("force", capabilities, {
+				workspace = {
+					didChangeWatchedFiles = { dynamicRegistration = false },
+				},
+			}),
+			cmd = vim.list_extend({ "mise", "exec", "--" }, vim.lsp.config.julials.cmd),
 			-- Neovim's Windows HOME fallback is not inherited by child processes.
 			cmd_env = { HOME = vim.env.HOME },
 		})

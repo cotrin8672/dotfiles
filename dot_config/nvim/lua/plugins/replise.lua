@@ -32,7 +32,10 @@ end
 
 return {
 	"cotrin8672/replise.nvim",
-	ft = "julia",
+	cmd = {
+		"RepliseStart", "RepliseStop", "RepliseRestart", "RepliseInterrupt",
+		"RepliseRun", "RepliseSend", "RepliseInlineClear", "RepliseInlineClearAll",
+	},
 	dependencies = { "Vigemus/iron.nvim" },
 	keys = {
 		{ "<leader>ee", function() require("replise").run_buffer({ save = true }) end, ft = "julia", desc = "Run current file" },
@@ -56,20 +59,15 @@ return {
 		{ "<BS>", function() require("replise.inline").clear() end, ft = "replise_inline", desc = "Close inline output" },
 	},
 	opts = function()
-		-- Use the real executable on Windows so Ctrl-C does not terminate the mise shim.
-		local julia = vim.fn.has("win32") == 1
-			and vim.fs.joinpath(vim.env.LOCALAPPDATA, "mise", "installs", "julia", "latest", "bin", "julia.exe")
-			or "julia"
 		return {
 			backends = {
 				julia = require("replise.backends.julia").new({
-					cmd = { julia },
+					cmd = { "mise", "exec", "--", "julia" },
 					instantiate = "on_change",
 					revise = true,
 					prescript = "using Pkg", -- Add startup code here; runs once per REPL.
 				}),
 			},
-			autostart = { "julia" },
 			inline = { enabled = true, style = "rails", max_height = 12, width = "full", max_lines = 1000, col_offset = 4 },
 			commands = true,
 		}
