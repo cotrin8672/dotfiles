@@ -48,15 +48,6 @@ try {
     if ($freshContent -match 'local_setting') { throw 'Fresh PCs inherited another machine''s settings' }
     if ($freshContent -notmatch 'model_catalog_json\s*=') { throw 'Fresh config has no OpenCodex catalog binding' }
 
-    New-Item -ItemType Directory -Path (Join-Path $source 'dot_opencodex'), (Join-Path $destination '.opencodex') -Force | Out-Null
-    Copy-Item -LiteralPath (Join-Path $repository 'dot_opencodex/private_config.json') -Destination (Join-Path $source 'dot_opencodex/private_config.json')
-    $modelTarget = Join-Path $destination '.opencodex/config.json'
-    & chezmoi --source $source --destination $destination --config $configFile --persistent-state (Join-Path $fixture 'state.boltdb') --force apply $modelTarget
-    if ($LASTEXITCODE -ne 0) { throw 'Fresh PC model config apply failed' }
-    $models = Get-Content -Raw -LiteralPath $modelTarget | ConvertFrom-Json
-    if ('claude-opus-5-5' -notin $models.providers.'claude-cli'.selectedModels -or 'claude-cli/claude-opus-5-5' -in $models.disabledModels) {
-        throw 'Applying the tracked models would hide Claude Opus 5.5'
-    }
     Write-Output 'CHEZMOI_CODEX_PORTABILITY_OK'
 } finally {
     $resolvedFixture = [IO.Path]::GetFullPath($fixture)

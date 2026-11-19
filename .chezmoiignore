@@ -1,4 +1,5 @@
 .config/starship/starship.toml
+.opencodex
 
 {{ if ne .chezmoi.os "windows" }}
 .glzr
