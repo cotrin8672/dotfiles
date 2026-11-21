@@ -29,7 +29,6 @@ function Reset-Fixture([bool]$AuthFailed = $true, [string]$StoredAccess = 'fixtu
     foreach ($request in $script:FixtureRequests) { if ($request) { $request.Dispose() } }
     $script:FixtureRequests = New-Object 'Collections.Generic.List[object]'
     $script:QuotaState = @{}
-    $script:CacheStamps = @{}
     $script:LastQuotaJson = $null
     $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
     $script:QuotaState.claude = @{
@@ -51,7 +50,6 @@ try {
     $ownsMutex = $script:QuotaLeader
     Assert-Quota $ownsMutex 'Isolated test must own its mutex'
     $script:UsageHttp.Dispose()
-    $script:ProxyHome = Join-Path $fixtureRoot 'proxy'
     $script:QuotaFile = Join-Path $fixtureRoot 'data\ai-cache.json'
     function Read-UsageIdentity([string]$Provider) {
         if ($Provider -eq 'codex' -or !$script:FixtureHasIdentity) { return $null }
@@ -69,20 +67,14 @@ try {
     }
     $script:UsageHttp = $client
 
-    foreach ($source in @('proxy', 'remote')) {
-        foreach ($used in @(100, 105)) {
-            $reset = '2099-01-01T00:00:00Z'
-            $windows = if ($source -eq 'proxy') {
-                @(Convert-ProxyQuota 'claude' @{ fiveHourPercent=$used; fiveHourResetAt=$reset; weeklyPercent=7; weeklyResetAt=$reset })
-            } else {
-                @(Convert-RemoteQuota 'claude' @{ five_hour=@{ utilization=$used; resets_at=$reset }; seven_day=@{ utilization=7; resets_at=$reset } })
-            }
-            $short = @($windows | Where-Object { $_.id -eq '5h' })
-            $week = @($windows | Where-Object { $_.id -eq '1w' })
-            Assert-Quota ($windows.Count -eq 2 -and $short.Count -eq 1 -and $short[0].usedPercent -eq 100) ($source + ' must retain an exhausted five-hour window at zero remaining quota')
-            Assert-Quota ($short[0].resetsAt -eq (To-IsoTime $reset) -and $short[0].durationSeconds -eq 18000) 'An exhausted window must retain its reset time and cycle duration'
-            Assert-Quota ($week.Count -eq 1 -and $week[0].usedPercent -eq 7) 'An exhausted five-hour window must preserve weekly usage'
-        }
+    foreach ($used in @(100, 105)) {
+        $reset = '2099-01-01T00:00:00Z'
+        $windows = @(Convert-RemoteQuota 'claude' @{ five_hour=@{ utilization=$used; resets_at=$reset }; seven_day=@{ utilization=7; resets_at=$reset } })
+        $short = @($windows | Where-Object { $_.id -eq '5h' })
+        $week = @($windows | Where-Object { $_.id -eq '1w' })
+        Assert-Quota ($windows.Count -eq 2 -and $short.Count -eq 1 -and $short[0].usedPercent -eq 100) 'An exhausted five-hour window must remain visible at zero remaining quota'
+        Assert-Quota ($short[0].resetsAt -eq (To-IsoTime $reset) -and $short[0].durationSeconds -eq 18000) 'An exhausted window must retain its reset time and cycle duration'
+        Assert-Quota ($week.Count -eq 1 -and $week[0].usedPercent -eq 7) 'An exhausted five-hour window must preserve weekly usage'
     }
     foreach ($invalid in @($null, '105', $true, -1, [double]::NaN, [double]::PositiveInfinity)) {
         Assert-Quota ($null -eq (New-QuotaWindow '5h' '5h' $invalid $null)) 'Malformed quota percentages must still be rejected'

@@ -10,16 +10,20 @@
 {{- $input = output "git" "-C" .chezmoi.sourceDir "show" (printf "%s:dot_codex/config.toml" $revision) -}}
 {{- end -}}
 {{- $config := fromToml $input -}}
+{{- if eq (base (replace "\\" "/" (toString (get $config "model_catalog_json")))) "opencodex-catalog.json" -}}
+{{- $config = $config | deleteValueAtPath "model_catalog_json" | deleteValueAtPath "model" -}}
+{{- end -}}
+{{- range $key := list "openai_base_url" "experimental_realtime_ws_base_url" -}}
+{{- if eq (get $config $key) "http://127.0.0.1:10100/v1" -}}
+{{- $config = deleteValueAtPath $key $config -}}
+{{- end -}}
+{{- end -}}
 {{- $config = $config
   | setValueAtPath "cli_auth_credentials_store" "file"
-  | setValueAtPath "model" "gpt-6.1-sol"
   | setValueAtPath "model_reasoning_effort" "max"
   | setValueAtPath "approval_policy" "never"
   | setValueAtPath "approvals_reviewer" "user"
   | setValueAtPath "sandbox_mode" "danger-full-access"
-  | setValueAtPath "model_catalog_json" (joinPath .chezmoi.homeDir ".codex" "opencodex-catalog.json")
-  | setValueAtPath "openai_base_url" "http://127.0.0.1:10100/v1"
-  | setValueAtPath "experimental_realtime_ws_base_url" "http://127.0.0.1:10100/v1"
   | setValueAtPath "desktop.keepRemoteControlAwakeWhilePluggedIn" true
   | setValueAtPath "desktop.composerEnterBehavior" "enter"
   | setValueAtPath "desktop.appearanceDarkCodeThemeId" "monokai"

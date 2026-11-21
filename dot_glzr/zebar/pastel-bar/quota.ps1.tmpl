@@ -1,9 +1,7 @@
-# Local proxy observations are preferred; a quiet or stopped proxy is supplemented by a
-# read-only usage GET at most every five minutes. Claude Code owns expired-login renewal;
+# Quota is refreshed with a read-only usage GET at most every five minutes.
+# Claude Code owns expired-login renewal;
 # its initialization-only process never receives a model prompt.
-$script:ProxyHome = if ($env:OPENCODEX_HOME) { $env:OPENCODEX_HOME } else { Join-Path $env:USERPROFILE '.opencodex' }
 $script:QuotaState = @{}
-$script:CacheStamps = @{}
 $script:QuotaFile = Join-Path $PSScriptRoot 'data\ai-cache.json'
 $script:QuotaMutex = New-Object Threading.Mutex($false, 'Local\ZebarPastelQuota-v1')
 try { $script:QuotaLeader = $script:QuotaMutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $script:QuotaLeader = $true }
@@ -110,25 +108,6 @@ function Start-ClaudeCredentialRefresh {
     }
 }
 
-function Convert-ProxyQuota([string]$Provider, $Quota) {
-    if (!$Quota) { return @() }
-    $windows = @()
-    if ($Provider -eq 'codex') {
-        $short = New-QuotaWindow '5h' '5h' $Quota.shortPercent $Quota.shortResetAt $Quota.shortWindowSeconds
-        if ($short -and $Quota.shortWindowSeconds -and $Quota.shortWindowSeconds -ne 18000) {
-            $short.label = '{0}h' -f ($Quota.shortWindowSeconds / 3600)
-        }
-    } else { $short = New-QuotaWindow '5h' '5h' $Quota.fiveHourPercent $Quota.fiveHourResetAt 18000 }
-    if ($short) { $windows += $short }
-    $week = New-QuotaWindow '1w' '1w' $Quota.weeklyPercent $Quota.weeklyResetAt 604800
-    if ($week) { $windows += $week }
-    if (!$week) {
-        $month = New-QuotaWindow '1mo' '1mo' $Quota.monthlyPercent $Quota.monthlyResetAt
-        if ($month) { $windows += $month }
-    }
-    return $windows
-}
-
 function Convert-RemoteQuota([string]$Provider, $Body) {
     if ($Provider -eq 'claude') {
         return @(New-QuotaWindow '5h' '5h' $Body.five_hour.utilization $Body.five_hour.resets_at 18000
@@ -172,7 +151,6 @@ function Get-UsageSnapshot {
             if ($state.key -and (!$identity -or $identity.key -ne $state.key)) {
                 $state.view = @{ status='loading'; plan=$null; windows=@(); updatedAt=$null; message='Account changed; waiting for fresh usage' }
                 $state.at = 0L; $state.next = 0L
-                $state.switchedAt = $now
             }
             if ($identity -and $state.authFailed -and $identity.access -cne $state.identity.access) {
                 $state.failures = 0; $state.next = 0L; $state.authFailed = $false
@@ -180,26 +158,6 @@ function Get-UsageSnapshot {
             $state.identity = $identity; $state.key = $identity.key
             $state.view.plan = $identity.plan
         }
-        $filename = if ($provider -eq 'codex') { 'codex-quota-cache.json' } else { 'claude-usage-admission.json' }
-        $path = Join-Path $script:ProxyHome $filename
-        try {
-            $stamp = (Get-Item -LiteralPath $path -ErrorAction Stop).LastWriteTimeUtc.Ticks
-            if ($script:CacheStamps[$provider] -ne $stamp) {
-                $disk = Read-LocalJson $path
-                if ($disk) {
-                    $script:CacheStamps[$provider] = $stamp
-                    $quota = if ($provider -eq 'codex') { $disk.quotas.__main__ } else { $disk.quota }
-                    # Only the current main account is used, never a pooled account chosen for a turn.
-                    $at = if ($quota.updatedAt) { [long]$quota.updatedAt } else { 0L }
-                    $windows = @(Convert-ProxyQuota $provider $quota)
-                    if ($windows.Count -and $at -gt $state.at -and $at -ge $state.switchedAt) {
-                        $state.at = $at
-                        $state.view.windows = $windows; $state.view.updatedAt = To-IsoTime $at
-                        $state.view.message = 'Usage from OpenCodex local cache'
-                    }
-                }
-            }
-        } catch { } # An atomic cache replacement may briefly make the file unavailable.
         # An old token's auth/network failure must not delay a renewed login; keep same-account 429 backoff.
         if ($state.task -and $state.task.IsCompleted -and ($state.requestKey -ne $state.key -or $state.requestAccess -cne $state.identity.access)) {
             $obsoleteResponse = $null
