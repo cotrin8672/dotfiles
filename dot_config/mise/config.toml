@@ -35,7 +35,8 @@ lefthook = "latest"
 gradle = "latest"
 carapace = "latest"
 "github:anomalyco/opencode" = "latest"
-"github:jolars/fatou" = "0.25.0"
+"github:jolars/fatou" = { version = "0.25.0", os = ["linux", "macos"] }
+"github:cotrin8672/fatou" = { version = "0.27.0-dev.6d93156", os = ["windows/x64"], prerelease = true, asset_pattern = "fatou-6d931569-windows-x64-gnu.zip" }
 "github:cordx56/rustowl" = "0.4.0"
 zellij = "latest"
 ast-index = "3.56.0"

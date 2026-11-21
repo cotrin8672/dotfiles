@@ -149,16 +149,16 @@ return {
 			capabilities = capabilities,
 		})
 
-		vim.lsp.config("julials", {
+		vim.lsp.config("fatou", {
+			cmd = { "fatou", "lsp" },
+			filetypes = { "julia" },
+			root_markers = { "Project.toml", "JuliaProject.toml", ".git" },
 			-- Keep Julia LSP enabled without watching files on SMB shares.
 			capabilities = vim.tbl_deep_extend("force", capabilities, {
 				workspace = {
 					didChangeWatchedFiles = { dynamicRegistration = false },
 				},
 			}),
-			cmd = vim.list_extend({ "mise", "exec", "--" }, vim.lsp.config.julials.cmd),
-			-- Neovim's Windows HOME fallback is not inherited by child processes.
-			cmd_env = { HOME = vim.env.HOME },
 		})
 
 		vim.lsp.config("ts_ls", {
@@ -193,8 +193,8 @@ return {
 			"bashls",
 			"clangd",
 			"cssls",
+			"fatou",
 			"html",
-			"julials",
 			"lua_ls",
 			"marksman",
 			"nushell",
