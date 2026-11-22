@@ -51,8 +51,6 @@ return {
 				},
 			},
 			accept = {
-				-- ponytail: disable completion dot-repeat until Blink/LuaSnip's mode switching is reliable.
-				dot_repeat = false,
 				auto_brackets = {
 					enabled = false,
 				},

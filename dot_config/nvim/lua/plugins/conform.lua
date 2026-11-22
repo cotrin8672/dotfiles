@@ -1,5 +1,3 @@
-local fatou_command
-
 return {
 	"stevearc/conform.nvim",
 	event = { "BufWritePre" },
@@ -7,19 +5,7 @@ return {
 		formatters = {
 			["google-java-format"] = { prepend_args = { "--aosp" } },
 			fatou = {
-				command = function()
-					if not fatou_command then
-						fatou_command = "fatou"
-						if vim.fn.executable("mise") == 1 then
-							local result = vim.system({ "mise", "which", "fatou" }, { text = true }):wait(5000)
-							local path = vim.trim(result.stdout or "")
-							if result.code == 0 and vim.fn.executable(path) == 1 then
-								fatou_command = path
-							end
-						end
-					end
-					return fatou_command
-				end,
+				command = "fatou",
 				args = { "format", "--safe", "-" },
 				stdin = true,
 				cwd = function(_, ctx)
