@@ -16,16 +16,17 @@ local ok, err = pcall(function()
 	assert(conform.get_formatter_info("fatou", buf).available, "Fatou executable unavailable")
 	assert(conform.list_formatters(buf)[1].name == "fatou", "Julia formatter must be Fatou")
 	assert(lint.linters_by_ft.julia[1] == "fatou", "Julia linter must be Fatou")
+	local writes = 0
+	vim.api.nvim_create_autocmd("BufWritePost", {
+		buffer = buf,
+		callback = function()
+			writes = writes + 1
+			assert(vim.fn.readfile(path)[1] == "x = 1 + 2", "First write must already contain formatted Julia")
+		end,
+	})
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "x=1+2" })
-	vim.cmd("write")
-	assert(
-		vim.wait(20000, function()
-			return vim.api.nvim_buf_get_lines(buf, 0, -1, false)[1] == "x = 1 + 2"
-				and not vim.bo[buf].modified
-				and vim.fn.readfile(path)[1] == "x = 1 + 2"
-		end, 20),
-		"Save must asynchronously format and update the file"
-	)
+	vim.cmd("wall")
+	assert(not vim.bo[buf].modified and vim.fn.readfile(path)[1] == "x = 1 + 2")
 
 	local namespace = lint.get_namespace("fatou")
 	for _, fileformat in ipairs({ "unix", "dos" }) do
@@ -44,6 +45,7 @@ local ok, err = pcall(function()
 		assert(diagnostic.source == "fatou" and diagnostic.code == "parse-error")
 		assert(diagnostic.lnum == 1 and diagnostic.col == 10, vim.inspect(diagnostic))
 	end
+	assert(writes == 1, "Julia must not write again after formatting")
 
 	-- A parser byte range after a UTF-8 identifier must stay a byte column.
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "α + value" })
