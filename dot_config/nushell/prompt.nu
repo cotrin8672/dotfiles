@@ -29,12 +29,22 @@ def prompt_dir_name [] {
         | path expand
     )
 
-    if ($home != '') and ($cwd == $home) {
+    let rel = if $home == '' { null } else { try { $cwd | path relative-to $home } catch { null } }
+    if $rel == null {
+        $cwd | str replace -a '\' '/'
+    } else if $rel == '' {
         '~'
     } else {
-        let base = ($cwd | path basename)
-        if $base == '' { '/' } else { $base }
+        '~/' + ($rel | str replace -a '\' '/')
     }
+}
+
+# Terminal cell width: strips ANSI and counts CJK as two cells.
+def display_width [s: string] {
+    $s
+    | ansi strip
+    | str replace -a -r '[\p{Han}\p{Hiragana}\p{Katakana}\x{3000}-\x{303F}\x{FF01}-\x{FF60}\x{FFE0}-\x{FFE6}]' '..'
+    | str length --grapheme-clusters
 }
 
 def prompt_theme [] {
@@ -50,6 +60,7 @@ def prompt_theme [] {
         modified: "#f1ff5e"
         conflicted: "#ff6e5e"
         untracked: "#5ef1ff"
+        line: "#5c6370"
     }
 }
 
@@ -358,7 +369,29 @@ def format_duration [ms: int] {
 def prompt_indicator [symbol: string] {
     let theme = (prompt_theme)
     let color = if (($env.LAST_EXIT_CODE? | default 0) == 0) { $theme.prompt } else { $theme.conflicted }
-    (ansi { fg: $color attr: 'b' }) + $symbol + (ansi reset)
+    (ansi { fg: $theme.line }) + "╰─" + (ansi { fg: $color attr: 'b' }) + $symbol + (ansi reset)
+}
+
+# Right end of the first line: last command's duration and failed exit code.
+def prompt_status_block [] {
+    let theme = (prompt_theme)
+    let bg = $theme.git_bg
+    let duration = (format_duration ($env.CMD_DURATION_MS? | default '0' | into int))
+    let code = ($env.LAST_EXIT_CODE? | default 0)
+
+    mut parts = []
+    if $duration != '' {
+        $parts = ($parts | append ((ansi { fg: $theme.modified bg: $bg }) + $" \u{f051f} ($duration) "))
+    }
+    if $code != 0 {
+        $parts = ($parts | append ((ansi { fg: $theme.conflicted bg: $bg }) + $" ✘ ($code) "))
+    }
+
+    let tail = (ansi { fg: $theme.line }) + "─" + (ansi reset)
+    if ($parts | is-empty) {
+        return $tail
+    }
+    (ansi { fg: $bg }) + "\u{e0b2}" + ($parts | str join) + (ansi reset) + (ansi { fg: $bg }) + "\u{e0b4}" + $tail
 }
 
 $env.PROMPT_COMMAND = {||
@@ -386,23 +419,23 @@ $env.PROMPT_COMMAND = {||
         $dir_sep + $git + $git_end + (ansi reset)
     }
 
-    "\n" + $os + $dir + $tail + "\n"
+    let left = (ansi { fg: $theme.line }) + "╭─" + $os + $dir + $tail
+    let right = (prompt_status_block)
+    let width = (try { (term size).columns } catch { 0 })
+    let fill_n = ([($width - 1 - (display_width $left) - (display_width $right)) 1] | math max)
+    let fill = (ansi { fg: $theme.line }) + ('' | fill -c "─" -w $fill_n) + (ansi reset)
+
+    $left + $fill + $right + "\n"
 }
 
-$env.PROMPT_COMMAND_RIGHT = {||
-    let duration_ms = (
-        $env.CMD_DURATION_MS?
-        | default '0'
-        | into int
-    )
-    let duration = (format_duration $duration_ms)
-    if $duration == '' {
-        ''
-    } else {
-        let theme = (prompt_theme)
-        (ansi { fg: $theme.clean }) + ' ' + $duration + (ansi reset)
-    }
-}
+$env.PROMPT_COMMAND_RIGHT = {|| '' }
+
+# Executed lines collapse to just the indicator.
+$env.TRANSIENT_PROMPT_COMMAND = {|| '' }
+$env.TRANSIENT_PROMPT_COMMAND_RIGHT = {|| '' }
+$env.TRANSIENT_PROMPT_INDICATOR = {|| (ansi { fg: (prompt_theme).prompt attr: 'b' }) + '❯ ' + (ansi reset) }
+$env.TRANSIENT_PROMPT_INDICATOR_VI_INSERT = $env.TRANSIENT_PROMPT_INDICATOR
+$env.TRANSIENT_PROMPT_INDICATOR_VI_NORMAL = {|| (ansi { fg: (prompt_theme).prompt attr: 'b' }) + '❮ ' + (ansi reset) }
 
 $env.PROMPT_INDICATOR = {|| (prompt_indicator '❯ ') }
 $env.PROMPT_INDICATOR_VI_INSERT = {|| (prompt_indicator '❯ ') }

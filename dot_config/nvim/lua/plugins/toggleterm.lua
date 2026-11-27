@@ -81,7 +81,10 @@ return {
 			hidden = true,
 			direction = "float",
 			on_open = function(term)
-				attach_close_keymaps(term, "q")
+				vim.keymap.set("t", "<Esc>", [[<C-\><C-n>]], { buffer = term.bufnr, desc = "Leave terminal mode" })
+				vim.keymap.set("n", "<Esc>", function()
+					term:close()
+				end, { buffer = term.bufnr, desc = "Close floating terminal" })
 			end,
 			float_opts = {
 				border = "curved",

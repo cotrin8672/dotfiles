@@ -10,6 +10,9 @@ $env.config.abbreviations = {
     gcm: "git commit -m"
     gco: "git checkout"
 
+    # ssh
+    sp: "ssh-pick"
+
     # gh
     ghrc: "gh repo create"
     ghpr: "gh pr list"
